@@ -137,7 +137,7 @@ export const categoryService = {
 
   async delete(id) {
     const categoryRef = doc(db, 'categories', id);
-    await updateDoc(categoryRef, { isActive: false });
+    await deleteDoc(categoryRef);
   },
 
   async getAll() {

@@ -25,6 +25,7 @@ export default function ProductDetailPage({ params }) {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [paymentMade, setPaymentMade] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -59,7 +60,7 @@ export default function ProductDetailPage({ params }) {
       (!selectedColor || v.color === selectedColor),
   );
 
-  const price = selectedVariant?.price || product.base_price;
+  const price = selectedVariant?.price || product.basePrice;
 
   const handleAddToCart = () => {
     if (sizes.length > 0 && !selectedSize) {
@@ -77,6 +78,23 @@ export default function ProductDetailPage({ params }) {
 
     addItem(product, selectedVariant, quantity);
     toast.success(`${product.name} added to cart`);
+  };
+
+  const handlePayment = () => {
+    // Navigate to checkout page with cart data
+    const checkoutData = {
+      product: product,
+      variant: selectedVariant,
+      quantity: quantity,
+      size: selectedSize,
+      color: selectedColor
+    };
+    
+    // Store checkout data in localStorage for checkout page to access
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    
+    // Navigate to checkout page
+    window.location.href = '/checkout';
   };
 
   const handleWhatsAppOrder = () => {
@@ -145,7 +163,7 @@ export default function ProductDetailPage({ params }) {
                 </span>
               </div>
               <p className="text-3xl font-black text-black tracking-tight">
-                ₵{product.basePrice?.toLocaleString()}
+                GH¢{price?.toLocaleString()}
               </p>
             </div>
 
@@ -226,13 +244,40 @@ export default function ProductDetailPage({ params }) {
                   <ShoppingCart className="h-5 w-5" />
                   <span>Add to Bag</span>
                 </button>
-                <button
-                  onClick={handleWhatsAppOrder}
-                  className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/10"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  <span>WhatsApp Order</span>
-                </button>
+                
+                {!paymentMade ? (
+                  <button
+                    onClick={handlePayment}
+                    className="flex items-center justify-center space-x-3 bg-blue-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-blue-500/10"
+                  >
+                    <Check className="h-5 w-5" />
+                    <span>Proceed to Payment</span>
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleWhatsAppOrder}
+                      className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/10"
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                      <span>WhatsApp Order</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const text = `Hi Carly Hub, I want to ask about delivery pricing for:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}`;
+                        window.open(
+                          `https://wa.me/233123456789?text=${encodeURIComponent(text)}`,
+                          "_blank",
+                        );
+                      }}
+                      className="flex items-center justify-center space-x-3 bg-orange-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-orange-500/10"
+                    >
+                      <Truck className="h-5 w-5" />
+                      <span>Ask Delivery Price</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Trust Info */}

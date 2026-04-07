@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -10,16 +11,27 @@ import {
   X,
   Image as ImageIcon,
   Loader2,
+  Search,
+  Filter,
+  Package,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
 import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from "@/utils/firebaseData";
+import ColorPicker from "@/components/ColorPicker";
 
 export default function AdminProductsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [upload] = useUpload();
   const [isUploading, setIsUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const [form, setForm] = useState({
     name: "",
@@ -29,7 +41,7 @@ export default function AdminProductsPage() {
     costPrice: "",
     isFeatured: false,
     images: [],
-    variants: [{ size: "", color: "", stock: 0, price: "", sku: "" }],
+    variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
   });
 
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -71,7 +83,7 @@ export default function AdminProductsPage() {
         costPrice: "",
         isFeatured: false,
         images: [],
-        variants: [{ size: "", color: "", stock: 0, price: "", sku: "" }],
+        variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
       });
     },
   });
@@ -177,15 +189,16 @@ export default function AdminProductsPage() {
         </header>
 
         {isAdding ? (
-          <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Basic Information Section */}
             <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-100">
-                General Info
+              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+                Basic Information
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Product Name
+                    Product Name *
                   </label>
                   <input
                     className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
@@ -196,7 +209,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Category
+                    Category *
                   </label>
                   <select
                     className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
@@ -230,9 +243,10 @@ export default function AdminProductsPage() {
               </div>
             </section>
 
+            {/* Media Section */}
             <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-100">
-                Media
+              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+                Product Images
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {form.images.map((img, i) => (
@@ -273,10 +287,11 @@ export default function AdminProductsPage() {
               </div>
             </section>
 
+            {/* Variants Section */}
             <section className="space-y-6">
-              <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <h2 className="text-xl font-black uppercase tracking-widest">
-                  Variants & Stock
+                  Product Variants
                 </h2>
                 <button
                   onClick={addVariant}
@@ -289,49 +304,12 @@ export default function AdminProductsPage() {
                 {form.variants.map((v, i) => (
                   <div
                     key={i}
-                    className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-2xl relative group"
+                    className="bg-gray-50 rounded-2xl p-6 space-y-4"
                   >
-                    <input
-                      placeholder="Size"
-                      className="bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                      value={v.size}
-                      onChange={(e) => updateVariant(i, "size", e.target.value)}
-                    />
-                    <input
-                      placeholder="Color"
-                      className="bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                      value={v.color}
-                      onChange={(e) =>
-                        updateVariant(i, "color", e.target.value)
-                      }
-                    />
-                    <input
-                      type="number"
-                      placeholder="Stock"
-                      className="bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                      value={v.stock}
-                      onChange={(e) =>
-                        updateVariant(i, "stock", Number(e.target.value))
-                      }
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      className="bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                      value={v.price}
-                      onChange={(e) =>
-                        updateVariant(i, "price", Number(e.target.value))
-                      }
-                    />
-                    <div className="flex items-center space-x-2">
-                      <input
-                        placeholder="SKU"
-                        className="flex-grow bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.sku}
-                        onChange={(e) =>
-                          updateVariant(i, "sku", e.target.value)
-                        }
-                      />
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
+                        Variant {i + 1}
+                      </h3>
                       <button
                         onClick={() => removeVariant(i)}
                         className="text-gray-300 hover:text-red-500"
@@ -339,27 +317,99 @@ export default function AdminProductsPage() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Size
+                        </label>
+                        <input
+                          placeholder="e.g., M, L, XL"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.size}
+                          onChange={(e) => updateVariant(i, "size", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Stock Quantity
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.stock}
+                          onChange={(e) =>
+                            updateVariant(i, "stock", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Price
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.price}
+                          onChange={(e) =>
+                            updateVariant(i, "price", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          SKU
+                        </label>
+                        <input
+                          placeholder="e.g., TSHIRT-RED-M"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.sku}
+                          onChange={(e) =>
+                            updateVariant(i, "sku", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Color
+                      </label>
+                      <ColorPicker
+                        value={v.hexColor}
+                        onChange={(hexColor) => {
+                          updateVariant(i, "hexColor", hexColor);
+                          if (!v.color) {
+                            updateVariant(i, "color", hexColor);
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
 
+            {/* Pricing Section */}
             <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-100">
-                Pricing & Profit
+              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+                Pricing & Featured
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Buying Price (Cost)
+                    Cost Price (Buying Price)
                   </label>
                   <input
                     type="number"
                     className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                    value={form.cost_price}
+                    value={form.costPrice}
                     onChange={(e) =>
                       setForm({ ...form, costPrice: e.target.value })
                     }
+                    placeholder="0.00"
                   />
                 </div>
                 <div className="space-y-2">
@@ -373,21 +423,22 @@ export default function AdminProductsPage() {
                     onChange={(e) =>
                       setForm({ ...form, basePrice: e.target.value })
                     }
+                    placeholder="0.00"
                   />
                 </div>
               </div>
-              <div className="flex items-center space-x-4 p-6 bg-black text-white rounded-2xl">
-                <div className="flex-grow">
+              <div className="flex items-center justify-between p-6 bg-black text-white rounded-2xl">
+                <div>
                   <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
                     Estimated Profit
                   </h4>
                   <p className="text-2xl font-black">
-                    ₵{Number(form.basePrice - form.costPrice).toLocaleString()}
+                    GH¢{Number(form.basePrice - form.costPrice).toLocaleString()}
                   </p>
                 </div>
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <span className="text-[10px] font-black uppercase tracking-widest">
-                    Featured
+                    Featured Product
                   </span>
                   <input
                     type="checkbox"
@@ -401,6 +452,7 @@ export default function AdminProductsPage() {
               </div>
             </section>
 
+            {/* Submit Button */}
             <button
               onClick={() => {
                 if (editingId) {
@@ -417,7 +469,7 @@ export default function AdminProductsPage() {
               }
               className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
             >
-              {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Deploy Product"}
+              {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Create Product"}
             </button>
           </div>
         ) : (
@@ -474,10 +526,31 @@ export default function AdminProductsPage() {
                         {getCategoryName(p.categoryId)}
                       </td>
                       <td className="px-8 py-6">
-                        <div
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${totalStock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
-                        >
-                          {totalStock} in stock
+                        <div className="space-y-2">
+                          <div
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${totalStock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
+                          >
+                            {totalStock} in stock
+                          </div>
+                          {p.variants && p.variants.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              {p.variants.slice(0, 3).map((variant, idx) => (
+                                (variant.color || variant.colorName || variant.hexColor) && (
+                                  <div
+                                    key={idx}
+                                    className="w-4 h-4 rounded-full border border-gray-300"
+                                    style={{ 
+                                      backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc' 
+                                    }}
+                                    title={variant.colorName || variant.color || 'Unknown color'}
+                                  />
+                                )
+                              ))}
+                              {p.variants.length > 3 && (
+                                <span className="text-xs text-gray-500">+{p.variants.length - 3}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-8 py-6 font-black text-sm">
@@ -495,7 +568,14 @@ export default function AdminProductsPage() {
                               costPrice: p.costPrice || "",
                               isFeatured: p.isFeatured,
                               images: p.images || [],
-                              variants: p.variants || [{ size: "", color: "", stock: 0, price: "", sku: "" }],
+                              variants: p.variants?.map(v => ({
+                                size: v.size || "",
+                                color: v.colorName || v.color || "",
+                                stock: v.stock || 0,
+                                price: v.price || "",
+                                sku: v.sku || "",
+                                hexColor: v.hexColor || ""
+                              })) || [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
                             });
                             setIsAdding(true);
                           }}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, Loader2, CheckCircle2, ShieldCheck, User, Phone, MessageCircle, CreditCard } from 'lucide-react';
+import { ChevronLeft, Info, Loader2, CheckCircle2, ShieldCheck, User, Phone, MessageCircle, CreditCard, Mail } from 'lucide-react';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import LocationSearch from './LocationSearch';
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
@@ -104,9 +106,34 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
   };
 
   const deductInventory = async (cartItems) => {
-    // This will be handled by the order creation endpoint
-    // which will update Firestore inventory
-    return Promise.resolve();
+    try {
+      // Update stock for each item in Firestore
+      for (const item of cartItems) {
+        const productRef = doc(db, 'products', item.product.id);
+        const productDoc = await getDoc(productRef);
+        
+        if (productDoc.exists()) {
+          const productData = productDoc.data();
+          const variants = productData.variants || [];
+          
+          // Find the specific variant and update its stock
+          const updatedVariants = variants.map(variant => {
+            if (variant.id === item.variant.id) {
+              const currentStock = variant.stock || 0;
+              const newStock = Math.max(0, currentStock - item.quantity);
+              return { ...variant, stock: newStock };
+            }
+            return variant;
+          });
+          
+          // Update the product with new stock levels
+          await updateDoc(productRef, { variants: updatedVariants });
+        }
+      }
+    } catch (error) {
+      console.error('Error deducting inventory:', error);
+      throw error;
+    }
   };
 
   const createOrder = async (reference, paymentData) => {
@@ -372,13 +399,6 @@ const Input = ({ label, value, onChange, placeholder, type = 'text', icon }) => 
       />
     </div>
   </div>
-);
-
-const Mail = ({ size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-    <polyline points="22,6 12,13 2,6" />
-  </svg>
 );
 
 export default PaystackCheckout;

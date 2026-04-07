@@ -173,23 +173,42 @@ export default function HomePage() {
               <a
                 key={category.id}
                 href={`/products?category=${category.name}`}
-                className="group relative h-[280px] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-white border border-gray-100"
+                className="group relative h-[280px] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 bg-white border border-gray-100 transform hover:scale-105"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative h-full p-8 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{category.name}</h3>
-                    <p className="text-gray-600 text-sm">
-                      {category.name === "Fashion" && "Premium clothing & accessories"}
-                      {category.name === "Shoes" && "Designer footwear collection"}
-                      {category.name === "Accessories" && "Bags, watches & more"}
+                {/* Category Image Background */}
+                {category.image ? (
+                  <div className="absolute inset-0">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover:from-black/80 group-hover:via-black/40 transition-all duration-500"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-500"></div>
+                )}
+                
+                {/* Hover Overlay Effect */}
+                <div className="absolute inset-0 bg-gradient-to-t from-purple-600/20 via-transparent to-blue-600/20 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                
+                <div className="relative h-full p-8 flex flex-col justify-between text-white">
+                  <div className="transform transition-all duration-500 group-hover:translate-y-2">
+                    <h3 className="text-xl font-bold text-white mb-2 drop-shadow-lg transition-all duration-500 group-hover:text-2xl group-hover:text-yellow-300">
+                      {category.name}
+                    </h3>
+                    <p className="text-white/90 text-sm drop-shadow-lg transition-all duration-500 group-hover:text-white group-hover:mb-4">
+                      {category.description || "Explore our collection"}
                     </p>
                   </div>
-                  <div className="flex items-center text-black font-bold text-sm group-hover:text-gray-700">
-                    <span>Explore</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="flex items-center text-white font-bold text-sm transition-all duration-500 group-hover:text-yellow-300 group-hover:translate-x-2">
+                    <span className="transition-all duration-500 group-hover:mr-2">Explore</span>
+                    <ArrowRight className="h-4 w-4 transition-all duration-500 group-hover:translate-x-2 group-hover:scale-125" />
                   </div>
                 </div>
+                
+                {/* Shimmer Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-1000"></div>
               </a>
             ))}
           </div>

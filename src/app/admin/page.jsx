@@ -28,7 +28,7 @@ import {
   Line,
 } from "recharts";
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { db } from '../../lib/firebase';
 
 // Product management functions
 const handleAddProduct = async (productData) => {
@@ -138,27 +138,24 @@ export default function AdminDashboard() {
   });
 
   // Calculate stats from real products data
-  const calculatedStats = {
-    totalRevenue: products.reduce((sum, p) => sum + (p.basePrice || 0), 0),
-    totalProfit: products.reduce((sum, p) => sum + (p.basePrice || 0) * 0.3, 0), // 30% profit margin
-    totalOrders: products.length,
-    totalCustomers: 89, // Mock - replace with real user count
+  const stats = {
+    totalRevenue: 0, // No sales yet
+    totalProfit: 0, // No profit yet
+    totalOrders: 0, // No orders yet
+    totalCustomers: 0, // No customers yet
     salesData: [
-      { name: "Jan", sales: Math.floor(Math.random() * 100000) },
-      { name: "Feb", sales: Math.floor(Math.random() * 100000) },
-      { name: "Mar", sales: Math.floor(Math.random() * 100000) },
-      { name: "Apr", sales: Math.floor(Math.random() * 100000) },
-      { name: "May", sales: Math.floor(Math.random() * 100000) },
-      { name: "Jun", sales: Math.floor(Math.random() * 100000) },
+      { name: "Jan", sales: 0 },
+      { name: "Feb", sales: 0 },
+      { name: "Mar", sales: 0 },
+      { name: "Apr", sales: 0 },
+      { name: "May", sales: 0 },
+      { name: "Jun", sales: 0 },
     ],
   };
 
-  const { data: adminStats, isLoading } = useQuery({
-    queryKey: ["admin", "stats"],
-    queryFn: async () => {
-      return calculatedStats;
-    },
-  });
+  // Use direct stats instead of React Query to avoid cache issues
+  const adminStats = stats;
+  const isLoading = false;
 
   // Product management functions
   const handleDeleteProduct = async (productId) => {
@@ -179,17 +176,35 @@ export default function AdminDashboard() {
     }
   };
 
-  const SidebarItem = ({ icon: Icon, label, id }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`w-full flex items-center space-x-4 px-6 py-4 transition-all ${activeTab === id ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50 hover:text-black"}`}
-    >
-      <Icon className="h-5 w-5" />
-      <span className="font-bold uppercase tracking-widest text-xs">
-        {label}
-      </span>
-    </button>
-  );
+  const SidebarItem = ({ icon: Icon, label, id }) => {
+    const routeMap = {
+      overview: '/admin',
+      categories: '/admin/categories',
+      inventory: '/admin/products',
+      orders: '/admin/orders',
+      'manual-sales': '/admin/manual-sales',
+      customers: '/admin/customers',
+      financials: '/admin/financials',
+    };
+
+    const handleClick = () => {
+      if (id === 'overview') {
+        setActiveTab(id);
+      } else {
+        window.location.href = routeMap[id] || '/admin';
+      }
+    };
+
+    return (
+      <button
+        onClick={handleClick}
+        className={`w-full flex items-center space-x-4 px-6 py-4 transition-all ${activeTab === id ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50 hover:text-black"}`}
+      >
+        <Icon className="h-5 w-5" />
+        <span className="font-bold uppercase tracking-widest text-xs">{label}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">

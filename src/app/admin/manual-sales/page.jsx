@@ -22,6 +22,7 @@ export default function ManualSalesPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [customPrice, setCustomPrice] = useState(null);
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
@@ -35,7 +36,7 @@ export default function ManualSalesPage() {
     p.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addItemToSale = () => {
+  const addItemToSale = (customPrice = null) => {
     if (!selectedProduct || !selectedVariant) {
       toast.error("Please select a product and variant");
       return;
@@ -46,6 +47,9 @@ export default function ManualSalesPage() {
       return;
     }
 
+    const basePrice = selectedVariant.price || selectedProduct.basePrice;
+    const finalPrice = customPrice || basePrice;
+
     const newItem = {
       productId: selectedProduct.id,
       variantId: selectedVariant.id,
@@ -53,9 +57,14 @@ export default function ManualSalesPage() {
       variantInfo: {
         size: selectedVariant.size,
         color: selectedVariant.color,
+        sku: selectedVariant.sku || '',
+        material: selectedVariant.material || '',
+        fullDetails: `${selectedVariant.size} - ${selectedVariant.color}${selectedVariant.material ? ` - ${selectedVariant.material}` : ''}`,
       },
       quantity: quantity,
-      price: selectedVariant.price || selectedProduct.basePrice,
+      basePrice: basePrice,
+      price: finalPrice,
+      discountAmount: customPrice ? (basePrice - customPrice) : 0,
     };
 
     setSaleForm({
@@ -68,6 +77,7 @@ export default function ManualSalesPage() {
     setSelectedVariant(null);
     setQuantity(1);
     setSearchTerm("");
+    setCustomPrice(null);
   };
 
   const removeItem = (index) => {
@@ -278,12 +288,11 @@ export default function ManualSalesPage() {
                       >
                         {selectedProduct.variants?.map((variant) => (
                           <option key={variant.id} value={variant.id}>
-                            {variant.size} - {variant.color} (Stock: {variant.stock})
+                            {variant.size} - {variant.color}{variant.material ? ` - ${variant.material}` : ''} (Stock: {variant.stock}) {variant.sku ? `[${variant.sku}]` : ''}
                           </option>
                         ))}
                       </select>
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                         Quantity

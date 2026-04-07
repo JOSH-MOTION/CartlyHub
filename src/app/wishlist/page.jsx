@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Wishlist from "@/components/Wishlist";
 import useCart from "@/store/useCart";
 import useUser from "@/utils/useUser";
 
 export default function WishlistPage() {
+  const navigate = useNavigate();
   const { addItem } = useCart();
   const { user } = useUser();
-
-  const navigate = (path) => {
-    window.location.href = path;
-  };
 
   const handleAddToCart = (productId, variantId, quantity) => {
     // Find the product to get variant info

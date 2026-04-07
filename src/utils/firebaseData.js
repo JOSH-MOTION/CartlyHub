@@ -114,7 +114,17 @@ export const updateCategory = async (categoryId, categoryData) => {
     return { success: true };
   } catch (error) {
     console.error('Error updating category:', error);
-    throw error;
+    
+    // Provide more specific error messages
+    if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. Please check Firebase Firestore security rules. Categories collection needs read/write permissions.');
+    } else if (error.code === 'not-found') {
+      throw new Error('Category not found');
+    } else if (error.code === 'unavailable') {
+      throw new Error('Firebase service unavailable. Please check your internet connection.');
+    } else {
+      throw new Error(`Failed to update category: ${error.message}`);
+    }
   }
 };
 
@@ -125,5 +135,28 @@ export const deleteCategory = async (categoryId) => {
   } catch (error) {
     console.error('Error deleting category:', error);
     throw error;
+  }
+};
+
+export const getOrders = async () => {
+  try {
+    const ordersQuery = query(
+      collection(db, 'orders'), 
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(ordersQuery);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
   }
 };
