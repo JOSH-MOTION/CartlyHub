@@ -1,10 +1,10 @@
 import React from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 import ProductCard from './ProductCard';
 import { ArrowLeft, Heart } from 'lucide-react';
 
 const Wishlist = ({ navigate, addToCart }) => {
-  const { products, wishlist } = useAppContext();
+  const { products, wishlist } = useApp();
 
   const wishlistProducts = products.filter(product => wishlist.includes(product.id));
 
@@ -38,7 +38,7 @@ const Wishlist = ({ navigate, addToCart }) => {
         <div className="text-center py-16">
           <Heart size={64} className="mx-auto text-stone-300 mb-4" />
           <h2 className="text-xl font-semibold text-stone-700 mb-2">No items in wishlist</h2>
-          <p className="text-stone-600 mb-6">Start adding items you love to see them here</p>
+          <p className="text-stone-600 mb-6">Start adding items to your wishlist</p>
           <button 
             onClick={() => navigate('/products')}
             className="bg-orange-500 text-white px-6 py-3 rounded-sm hover:bg-orange-600 transition-colors font-medium"

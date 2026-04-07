@@ -145,7 +145,7 @@ export default function ProductDetailPage({ params }) {
                 </span>
               </div>
               <p className="text-3xl font-black text-black tracking-tight">
-                ₦₵{product.basePrice?.toLocaleString()}
+                ₵{product.basePrice?.toLocaleString()}
               </p>
             </div>
 

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
-import { getCategories, createCategory } from "@/utils/firebaseData";
+import { getCategories, createCategory, updateCategory, deleteCategory } from "@/utils/firebaseData";
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
@@ -58,12 +58,7 @@ export default function AdminCategoriesPage() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      return res.json();
+      return await updateCategory(id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["categories"]);
@@ -78,10 +73,7 @@ export default function AdminCategoriesPage() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id) => {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: "DELETE",
-      });
-      return res.json();
+      return await deleteCategory(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["categories"]);

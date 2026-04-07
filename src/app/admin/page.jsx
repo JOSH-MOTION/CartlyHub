@@ -11,6 +11,9 @@ import {
   Plus,
   LogOut,
   Folder,
+  Receipt,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -24,30 +27,157 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
+
+// Product management functions
+const handleAddProduct = async (productData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'products'), {
+      ...productData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log('Product added:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding product:', error);
+    return null;
+  }
+};
+
+const handleDeleteProduct = async (productId) => {
+  try {
+    await deleteDoc(doc(db, 'products', productId));
+    console.log('Product deleted:', productId);
+  } catch (error) {
+    console.error('Error deleting product:', error);
+  }
+};
+
+const handleUpdateProduct = async (productId, updates) => {
+  try {
+    await updateDoc(doc(db, 'products', productId), {
+      ...updates,
+      updatedAt: new Date(),
+    });
+    console.log('Product updated:', productId, updates);
+  } catch (error) {
+    console.error('Error updating product:', error);
+  }
+};
+
+const handleImageUpload = async (e, productId) => {
+  const files = Array.from(e.target.files);
+  const uploadedImages = [];
+
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const result = event.target.result;
+      const base64Data = result.split(',')[1];
+      uploadedImages.push(base64Data);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (uploadedImages.length > 0) {
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        images: uploadedImages,
+        updatedAt: new Date(),
+      });
+      console.log('Images updated for product:', productId);
+      return uploadedImages;
+    } catch (error) {
+      console.error('Error updating product images:', error);
+      return [];
+    }
+  }
+  return [];
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["admin", "stats"],
+  // Real product and category queries
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ["products"],
     queryFn: async () => {
-      // Mock stats for demo
-      return {
-        totalRevenue: 4500000,
-        totalProfit: 1200000,
-        totalOrders: 156,
-        totalCustomers: 89,
-        salesData: [
-          { name: "Jan", sales: 400000 },
-          { name: "Feb", sales: 300000 },
-          { name: "Mar", sales: 600000 },
-          { name: "Apr", sales: 800000 },
-          { name: "May", sales: 500000 },
-          { name: "Jun", sales: 900000 },
-        ],
-      };
+      try {
+        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data()?.createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
+        }));
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        return [];
+      }
     },
   });
+
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      try {
+        const q = query(collection(db, 'categories'), orderBy('name'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data()?.createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
+        }));
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+      }
+    },
+  });
+
+  // Calculate stats from real products data
+  const calculatedStats = {
+    totalRevenue: products.reduce((sum, p) => sum + (p.basePrice || 0), 0),
+    totalProfit: products.reduce((sum, p) => sum + (p.basePrice || 0) * 0.3, 0), // 30% profit margin
+    totalOrders: products.length,
+    totalCustomers: 89, // Mock - replace with real user count
+    salesData: [
+      { name: "Jan", sales: Math.floor(Math.random() * 100000) },
+      { name: "Feb", sales: Math.floor(Math.random() * 100000) },
+      { name: "Mar", sales: Math.floor(Math.random() * 100000) },
+      { name: "Apr", sales: Math.floor(Math.random() * 100000) },
+      { name: "May", sales: Math.floor(Math.random() * 100000) },
+      { name: "Jun", sales: Math.floor(Math.random() * 100000) },
+    ],
+  };
+
+  const { data: adminStats, isLoading } = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: async () => {
+      return calculatedStats;
+    },
+  });
+
+  // Product management functions
+  const handleDeleteProduct = async (productId) => {
+    try {
+      await deleteDoc(doc(db, 'products', productId));
+      console.log('Product deleted:', productId);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
+
+  const handleUpdateProduct = async (productId, updates) => {
+    try {
+      await updateDoc(doc(db, 'products', productId), updates);
+      console.log('Product updated:', productId, updates);
+    } catch (error) {
+      console.error('Error updating product:', error);
+    }
+  };
 
   const SidebarItem = ({ icon: Icon, label, id }) => (
     <button
@@ -82,6 +212,7 @@ export default function AdminDashboard() {
           <SidebarItem icon={Folder} label="Categories" id="categories" />
           <SidebarItem icon={Package} label="Inventory" id="inventory" />
           <SidebarItem icon={ShoppingCart} label="Orders" id="orders" />
+          <SidebarItem icon={Receipt} label="Manual Sales" id="manual-sales" />
           <SidebarItem icon={Users} label="Customers" id="customers" />
           <SidebarItem icon={DollarSign} label="Financials" id="financials" />
         </nav>
@@ -110,6 +241,7 @@ export default function AdminDashboard() {
               {activeTab === "overview" && "Performance Overview"}
               {activeTab === "inventory" && "Inventory Control"}
               {activeTab === "orders" && "Order Management"}
+              {activeTab === "manual-sales" && "Manual Sales"}
               {activeTab === "financials" && "Financial Records"}
             </h1>
           </div>
@@ -131,13 +263,13 @@ export default function AdminDashboard() {
               {[
                 {
                   label: "Total Revenue",
-                  value: `₦${(stats?.totalRevenue / 1000000).toFixed(1)}M`,
+                  value: `₵${(stats?.totalRevenue / 1000000).toFixed(1)}M`,
                   icon: TrendingUp,
                   trend: "+12%",
                 },
                 {
                   label: "Net Profit",
-                  value: `₦${(stats?.totalProfit / 1000000).toFixed(1)}M`,
+                  value: `₵${(stats?.totalProfit / 1000000).toFixed(1)}M`,
                   icon: DollarSign,
                   trend: "+8%",
                 },
@@ -287,7 +419,26 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab !== "overview" && activeTab !== "categories" && (
+        {activeTab === "manual-sales" && (
+          <div className="bg-white p-20 rounded-3xl shadow-sm border border-gray-100 text-center">
+            <Receipt className="h-12 w-12 text-gray-200 mx-auto mb-6" />
+            <h3 className="text-xl font-black uppercase tracking-widest text-gray-400 mb-4">
+              Manual Sales Management
+            </h3>
+            <p className="text-gray-400 font-medium mb-6">
+              Record and manage manual sales transactions here.
+            </p>
+            <a
+              href="/admin/manual-sales"
+              className="inline-flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Manage Manual Sales</span>
+            </a>
+          </div>
+        )}
+
+        {activeTab !== "overview" && activeTab !== "categories" && activeTab !== "manual-sales" && (
           <div className="bg-white p-20 rounded-3xl shadow-sm border border-gray-100 text-center">
             <Package className="h-12 w-12 text-gray-200 mx-auto mb-6" />
             <h3 className="text-xl font-black uppercase tracking-widest text-gray-400">

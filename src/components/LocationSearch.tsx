@@ -200,8 +200,8 @@ const LocationSearch: React.FC<LocationSearchProps> = ({ value, onChange, placeh
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {showCustomHintOnly && (
         <div className="absolute bottom-full left-0 right-0 mt-2 bg-orange-50 border border-orange-200 rounded-lg p-3 z-40 shadow-xl">

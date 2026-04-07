@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Info, Loader2, CheckCircle2, ShieldCheck, User, Phone, Copy, Ticket, X, MessageCircle } from 'lucide-react';
 import { CartItem, OrderStatus } from '../types';
 import { useAppContext } from '../context/AppContext';
-import LocationSearch from './LocationSearch';
+import LocationSearch from './LocationSearch.tsx';
 
 // Ghana MOMO Configuration
 const MOMO_CONFIG = {
@@ -217,7 +217,7 @@ Thank you.
                   <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                     <div>
                       <p className="text-stone-400 text-xs mb-2 uppercase tracking-widest font-bold">Transfer Amount</p>
-                      <h3 className="text-4xl font-serif font-bold text-orange-400">GH₵ {finalTotal.toLocaleString()}</h3>
+                      <h3 className="text-4xl font-serif font-bold text-orange-400">₵ {finalTotal.toLocaleString()}</h3>
                     </div>
                     <div className="flex flex-col items-center md:items-end">
                       <p className="text-stone-400 text-xs mb-2 uppercase tracking-widest font-bold">Joshua Doe</p>
@@ -277,7 +277,7 @@ Thank you.
                         <p className="text-[10px] text-stone-400 uppercase tracking-widest">Qty: {item.quantity} • {variant?.size || 'OS'}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-stone-900 text-sm">GH₵ {((variant?.price || 0) * item.quantity).toLocaleString()}</span>
+                    <span className="font-bold text-stone-900 text-sm">₵ {((variant?.price || 0) * item.quantity).toLocaleString()}</span>
                   </div>
                 );
               })}
@@ -308,17 +308,17 @@ Thank you.
             <div className="space-y-4 pt-4">
               <div className="flex justify-between text-sm text-stone-400 font-medium">
                 <span>Subtotal</span>
-                <span>GH₵ {subtotal.toLocaleString()}</span>
+                <span>₵ {subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-sm text-orange-600 font-bold">
                   <span>Discount</span>
-                  <span>- GH₵ {discountAmount.toLocaleString()}</span>
+                  <span>- ₵ {discountAmount.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-3xl font-serif font-bold text-stone-900 pt-6">
                 <span>Total</span>
-                <span className="text-stone-900 tracking-tight">GH₵ {finalTotal.toLocaleString()}</span>
+                <span className="text-stone-900 tracking-tight">₵ {finalTotal.toLocaleString()}</span>
               </div>
             </div>
           </div>

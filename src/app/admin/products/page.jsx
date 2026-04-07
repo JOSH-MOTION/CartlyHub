@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
-import { getProducts, getCategories, createProduct } from "@/utils/firebaseData";
+import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from "@/utils/firebaseData";
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -73,6 +73,33 @@ export default function AdminProductsPage() {
         images: [],
         variants: [{ size: "", color: "", stock: 0, price: "", sku: "" }],
       });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      return await updateProduct(id, data);
+    },
+    onError: () => {
+      throw new Error("Failed to update product");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["admin", "products"]);
+      toast.success("Product updated successfully");
+      setEditingId(null);
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id) => {
+      return await deleteProduct(id);
+    },
+    onError: () => {
+      throw new Error("Failed to delete product");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["admin", "products"]);
+      toast.success("Product deleted successfully");
     },
   });
 
@@ -375,15 +402,22 @@ export default function AdminProductsPage() {
             </section>
 
             <button
-              onClick={() => createProductMutation.mutate(form)}
+              onClick={() => {
+                if (editingId) {
+                  updateProductMutation.mutate({ id: editingId, data: form });
+                } else {
+                  createProductMutation.mutate(form);
+                }
+              }}
               disabled={
                 createProductMutation.isLoading ||
+                updateProductMutation.isLoading ||
                 !form.name ||
-                !form.category_id
+                !form.categoryId
               }
               className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
             >
-              {createProductMutation.isLoading ? "Saving..." : "Deploy Product"}
+              {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Deploy Product"}
             </button>
           </div>
         ) : (
@@ -450,10 +484,30 @@ export default function AdminProductsPage() {
                         ₵{Number(p.basePrice).toLocaleString()}
                       </td>
                       <td className="px-8 py-6 text-right space-x-2">
-                        <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                        <button 
+                          onClick={() => {
+                            setEditingId(p.id);
+                            setForm({
+                              name: p.name,
+                              description: p.description,
+                              categoryId: p.categoryId,
+                              basePrice: p.basePrice,
+                              costPrice: p.costPrice || "",
+                              isFeatured: p.isFeatured,
+                              images: p.images || [],
+                              variants: p.variants || [{ size: "", color: "", stock: 0, price: "", sku: "" }],
+                            });
+                            setIsAdding(true);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
+                        <button 
+                          onClick={() => deleteProductMutation.mutate(p.id)}
+                          disabled={deleteProductMutation.isLoading}
+                          className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors disabled:opacity-50"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </td>

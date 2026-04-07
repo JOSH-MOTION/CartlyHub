@@ -105,7 +105,7 @@ export default function DebugProductsPage() {
                         <strong>ID:</strong> {product.id}
                       </div>
                       <div>
-                        <strong>Base Price:</strong> ₦{product.basePrice}
+                        <strong>Base Price:</strong> ₵{product.basePrice}
                       </div>
                       <div>
                         <strong>Category ID:</strong> {product.categoryId}
@@ -127,7 +127,7 @@ export default function DebugProductsPage() {
                       <strong>Variants:</strong> {product.variants?.length || 0}
                       {product.variants?.map((variant, idx) => (
                         <div key={idx} className="ml-4 text-sm bg-gray-100 p-2 rounded mt-1">
-                          {variant.size} - {variant.color} - ₦{variant.price} - Stock: {variant.stock}
+                          {variant.size} - {variant.color} - ₵{variant.price} - Stock: {variant.stock}
                         </div>
                       ))}
                     </div>

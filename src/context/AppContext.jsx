@@ -56,28 +56,7 @@ export const AppProvider = ({ children }) => {
   const cartTotal = cart.reduce((total, item) => total + (item.variant?.price || item.product?.basePrice || 0) * item.quantity, 0);
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
-  // Load cart from localStorage
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Failed to parse cart from localStorage:', error);
-      }
-    }
-  }, []);
-
-  // Save cart to localStorage
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  // Save wishlist to localStorage
-  useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-
+  
   // Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {

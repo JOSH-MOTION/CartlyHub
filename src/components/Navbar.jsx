@@ -12,11 +12,15 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useApp } from '../context/AppContext';
+import useCart from '../store/useCart';
+import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
-  const { user, cart, totalItems, isCartOpen, setCartOpen, signOut } = useApp();
+  const { user, signOut } = useApp();
+  const { items } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -24,7 +28,7 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const cartCount = totalItems;
+  const cartCount = items.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <nav
@@ -80,14 +84,14 @@ export default function Navbar() {
               className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
             >
               <Heart className="h-5 w-5" />
-              {totalItems > 0 && (
+              {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
-                  {totalItems}
+                  {cartCount}
                 </span>
               )}
             </a>
             <button
-              onClick={() => setCartOpen(!isCartOpen)}
+              onClick={() => setIsCartOpen(!isCartOpen)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -168,6 +172,9 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      
+      {/* Cart Sidebar */}
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>
   );
 }

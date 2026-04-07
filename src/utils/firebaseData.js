@@ -87,3 +87,43 @@ export const createProduct = async (productData) => {
     throw error;
   }
 };
+
+export const updateProduct = async (productId, productData) => {
+  try {
+    await productService.update(productId, productData);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
+};
+
+export const deleteProduct = async (productId) => {
+  try {
+    await productService.delete(productId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+};
+
+export const updateCategory = async (categoryId, categoryData) => {
+  try {
+    await categoryService.update(categoryId, categoryData);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating category:', error);
+    throw error;
+  }
+};
+
+export const deleteCategory = async (categoryId) => {
+  try {
+    await categoryService.delete(categoryId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    throw error;
+  }
+};

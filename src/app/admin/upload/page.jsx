@@ -179,7 +179,7 @@ export default function ProductUpload() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Base Price (₦) *
+                  Base Price (₵) *
                 </label>
                 <input
                   type="number"
