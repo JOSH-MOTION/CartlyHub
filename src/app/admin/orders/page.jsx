@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, Eye, Package, Truck, CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
-import { getOrders } from "@/utils/firebaseData";
+import { getOrders, getManualSales } from "@/utils/firebaseData";
 
 export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
@@ -14,10 +14,24 @@ export default function AdminOrdersPage() {
     queryKey: ["admin-orders"],
     queryFn: async () => {
       try {
-        const orders = await getOrders();
-        return orders || [];
+        const [onlineOrders, manualSales] = await Promise.all([
+          getOrders(),
+          getManualSales()
+        ]);
+        
+        // Add source label to online orders
+        const processedOnline = onlineOrders.map(o => ({ ...o, source: 'online' }));
+        
+        // Combine and sort by date descending
+        const combined = [...processedOnline, ...manualSales].sort((a, b) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateB - dateA;
+        });
+        
+        return combined;
       } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error('Error fetching consolidated orders:', error);
         return [];
       }
     },
@@ -169,7 +183,13 @@ export default function AdminOrdersPage() {
                       Total
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Profit
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Source
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -212,9 +232,15 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                          {getStatusIcon(order.status)}
-                          <span className="ml-1">{order.status || 'unknown'}</span>
+                        <div className="text-sm font-bold text-green-600">
+                          GH¢{order.totalProfit?.toLocaleString() || '0'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.source === 'manual' ? 'bg-gray-100 text-gray-800' : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {order.source === 'manual' ? 'Manual' : 'Online'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

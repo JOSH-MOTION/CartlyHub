@@ -1,6 +1,6 @@
 import sql from "@/app/api/utils/sql";
 
-export async function POST(request) {
+export async function action({ request }) {
   try {
     const { reference } = await request.json();
 

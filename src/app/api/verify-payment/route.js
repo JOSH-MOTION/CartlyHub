@@ -3,7 +3,7 @@ import { OrderStatus } from '../../../types';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-export async function POST(request) {
+export async function action({ request }) {
   try {
     const { reference, orderId } = await request.json();
 
@@ -89,7 +89,7 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
+export async function loader({ request }) {
   try {
     const url = new URL(request.url);
     const reference = url.searchParams.get('reference');

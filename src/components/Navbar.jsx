@@ -16,7 +16,7 @@ import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
-  const { user, signOut } = useApp();
+  const { user, signOut, wishlist } = useApp();
   const { items } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -74,19 +74,13 @@ export default function Navbar() {
               <Search className="h-5 w-5" />
             </button>
             <a
-              href="/products?category=shoes"
-              className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors"
-            >
-              Shoes
-            </a>
-            <a
               href="/wishlist"
               className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
             >
               <Heart className="h-5 w-5" />
-              {cartCount > 0 && (
+              {wishlist?.length > 0 && (
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
-                  {cartCount}
+                  {wishlist.length}
                 </span>
               )}
             </a>
@@ -166,7 +160,7 @@ export default function Navbar() {
             <a href="/account/orders" className="text-sm font-bold uppercase">
               My Orders
             </a>
-            <a href="/account/wishlist" className="text-sm font-bold uppercase">
+            <a href="/wishlist" className="text-sm font-bold uppercase">
               Wishlist
             </a>
           </div>

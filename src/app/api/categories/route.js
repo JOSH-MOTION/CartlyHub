@@ -1,6 +1,6 @@
 import { categoryService } from '../../../services/firestore';
 
-export async function GET() {
+export async function loader() {
   try {
     const categories = await categoryService.getAll();
     return Response.json(categories);
@@ -13,7 +13,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
+export async function action({ request }) {
   try {
     const body = await request.json();
     const { name, description, image } = body;

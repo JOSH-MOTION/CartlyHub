@@ -1,94 +1,202 @@
 import { db } from '../../../lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, increment, Timestamp, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, deleteDoc, increment, Timestamp, query, orderBy, getDocs } from 'firebase/firestore';
 
-export async function POST(request) {
+export async function action({ request }) {
+  const method = request.method;
+
   try {
-    const body = await request.json();
-    const { customerName, customerPhone, paymentMethod, notes, items, totalAmount, status, paymentStatus } = body;
+    if (method === 'POST') {
+      const body = await request.json();
+      const { customerName, customerPhone, paymentMethod, notes, items, totalAmount, status, paymentStatus } = body;
 
-    // Validate items
-    if (!items || items.length === 0) {
-      return Response.json({ error: 'No items in sale' }, { status: 400 });
-    }
-
-    // Check stock availability and deduct inventory
-    for (const item of items) {
-      const productRef = doc(db, 'products', item.productId);
-      const productSnap = await getDoc(productRef);
-      
-      if (!productSnap.exists()) {
-        return Response.json({ error: `Product ${item.productName} not found` }, { status: 404 });
+      // Validate items
+      if (!items || items.length === 0) {
+        return Response.json({ error: 'No items in sale' }, { status: 400 });
       }
 
-      const productData = productSnap.data();
-      const variantIndex = productData.variants?.findIndex(v => v.id === item.variantId);
+      // Check stock availability and deduct inventory
+      let totalProfit = 0;
+      const itemsWithSnapshots = [];
 
-      if (variantIndex === -1) {
-        return Response.json({ error: `Variant not found for ${item.productName}` }, { status: 404 });
-      }
-
-      const variant = productData.variants[variantIndex];
-      
-      // Check stock
-      if (variant.stock < item.quantity) {
-        return Response.json({ 
-          error: `Insufficient stock for ${item.productName}. Available: ${variant.stock}, Requested: ${item.quantity}` 
-        }, { status: 400 });
-      }
-
-      // Deduct stock
-      const updatedVariants = productData.variants.map((v, idx) => {
-        if (idx === variantIndex) {
-          return {
-            ...v,  
-            stock: Math.max(0, v.stock - item.quantity)  
-          };
+      for (const item of items) {
+        const productRef = doc(db, 'products', item.productId);
+        const productSnap = await getDoc(productRef);
+        
+        if (!productSnap.exists()) {
+          return Response.json({ error: `Product ${item.productName} not found` }, { status: 404 });
         }
-        return v;
-      });
 
-      await updateDoc(productRef, {
-        variants: updatedVariants,
-        updatedAt: Timestamp.now()
+        const productData = productSnap.data();
+        const variantIndex = productData.variants?.findIndex(v => v.id === item.variantId);
+
+        if (variantIndex === -1) {
+          return Response.json({ error: `Variant not found for ${item.productName}` }, { status: 404 });
+        }
+
+        const variant = productData.variants[variantIndex];
+        
+        // Robust cost detection (checks for common field name variations)
+        const costPrice = Number(
+          productData.costPrice || 
+          productData.cost_price || 
+          productData.buying_price || 
+          productData.buyingPrice || 
+          0
+        );
+
+        const sellingPrice = Number(item.price || 0);
+        const quantity = Number(item.quantity || 1);
+        const itemProfit = (sellingPrice - costPrice) * quantity;
+        
+        totalProfit += itemProfit;
+
+        itemsWithSnapshots.push({
+          ...item,
+          costPrice: costPrice,
+          profit: itemProfit
+        });
+        
+        // Check stock
+        if (variant.stock < item.quantity) {
+          return Response.json({ 
+            error: `Insufficient stock for ${item.productName}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+          }, { status: 400 });
+        }
+
+        // Deduct stock
+        const updatedVariants = productData.variants.map((v, idx) => {
+          if (idx === variantIndex) {
+            return {
+              ...v,  
+              stock: Math.max(0, v.stock - item.quantity)  
+            };
+          }
+          return v;
+        });
+
+        await updateDoc(productRef, {
+          variants: updatedVariants,
+          updatedAt: Timestamp.now()
+        });
+      }
+
+      // Create manual sale record
+      const saleData = {
+        customerName,
+        customerPhone: customerPhone || null,
+        paymentMethod,
+        notes: notes || null,
+        items: itemsWithSnapshots,
+        totalAmount,
+        totalProfit,
+        status: status || 'completed',
+        paymentStatus: paymentStatus || 'paid',
+        saleType: 'manual',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+
+      const saleRef = await addDoc(collection(db, 'manualSales'), saleData);
+
+      return Response.json({ 
+        success: true, 
+        saleId: saleRef.id,
+        message: 'Sale recorded successfully and inventory updated'
       });
     }
 
-    // Create manual sale record
-    const saleData = {
-      customerName,
-      customerPhone: customerPhone || null,
-      paymentMethod,
-      notes: notes || null,
-      items,
-      totalAmount,
-      status: status || 'completed',
-      paymentStatus: paymentStatus || 'paid',
-      saleType: 'manual',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
+    if (method === 'DELETE') {
+      const body = await request.json();
+      const { saleId } = body;
 
-    const saleRef = await addDoc(collection(db, 'manual_sales'), saleData);
+      if (!saleId) {
+        return Response.json({ error: 'Sale ID required' }, { status: 400 });
+      }
 
-    return Response.json({ 
-      success: true, 
-      saleId: saleRef.id,
-      message: 'Sale recorded successfully and inventory updated'
-    });
+      // 1. Fetch the sale to get items for stock restoration
+      const saleRef = doc(db, 'manualSales', saleId);
+      const saleSnap = await getDoc(saleRef);
+
+      if (!saleSnap.exists()) {
+        return Response.json({ error: 'Sale not found' }, { status: 404 });
+      }
+
+      const saleData = saleSnap.data();
+
+      // 2. Restore stock
+      for (const item of saleData.items || []) {
+        const productRef = doc(db, 'products', item.productId);
+        const productSnap = await getDoc(productRef);
+        
+        if (productSnap.exists()) {
+          const productData = productSnap.data();
+          const updatedVariants = productData.variants?.map(v => {
+            if (v.id === item.variantId) {
+              return { ...v, stock: (Number(v.stock) || 0) + (Number(item.quantity) || 0) };
+            }
+            return v;
+          });
+
+          await updateDoc(productRef, {
+            variants: updatedVariants,
+            updatedAt: Timestamp.now()
+          });
+        }
+      }
+
+      // 3. Delete the sale record
+      await deleteDoc(saleRef);
+
+      return Response.json({ success: true, message: 'Sale deleted and stock restored' });
+    }
+
+    if (method === 'PUT') {
+      const body = await request.json();
+      const { saleId, updates } = body;
+
+      if (!saleId || !updates) {
+        return Response.json({ error: 'Sale ID and updates required' }, { status: 400 });
+      }
+
+      const saleRef = doc(db, 'manualSales', saleId);
+      
+      // We only allow editing metadata to prevent inventory desync via simple PUT
+      // To edit items, user should delete and re-add.
+      const allowedUpdates = {
+        customerName: updates.customerName,
+        customerPhone: updates.customerPhone,
+        notes: updates.notes,
+        paymentMethod: updates.paymentMethod,
+        status: updates.status,
+        paymentStatus: updates.paymentStatus,
+        updatedAt: Timestamp.now()
+      };
+
+      // Remove undefined fields
+      Object.keys(allowedUpdates).forEach(key => 
+        allowedUpdates[key] === undefined && delete allowedUpdates[key]
+      );
+
+      await updateDoc(saleRef, allowedUpdates);
+
+      return Response.json({ success: true, message: 'Sale updated' });
+    }
+
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (error) {
-    console.error('Manual sale error:', error);
+    console.error(`Manual sale ${method} error:`, error);
     return Response.json({ 
-      error: 'Failed to record sale',
+      error: `Failed to ${method.toLowerCase()} sale`,
       message: error.message 
     }, { status: 500 });
   }
 }
 
-export async function GET(request) {
+export async function loader({ request }) {
   try {
     const salesQuery = query(
-      collection(db, 'manual_sales'),
+      collection(db, 'manualSales'),
       orderBy('createdAt', 'desc')
     );
     

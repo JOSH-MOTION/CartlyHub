@@ -1,6 +1,6 @@
 import { productService } from '../../../services/firestore';
 
-export async function GET({ request }) {
+export async function loader({ request }) {
   try {
     const url = new URL(request.url);
     const featured = url.searchParams.get('featured');
@@ -41,7 +41,7 @@ export async function GET({ request }) {
   }
 }
 
-export async function POST(request) {
+export async function action({ request }) {
   try {
     // Note: Admin check would go here (checking session role)
     const body = await request.json();
@@ -64,11 +64,15 @@ export async function POST(request) {
       description,
       categoryId: category_id,
       images,
-      basePrice: base_price,
-      costPrice: cost_price,
-      isFeatured: is_featured,
+      basePrice: Number(base_price || 0),
+      costPrice: Number(cost_price || body.costPrice || 0),
+      isFeatured: is_featured || false,
       isActive: true,
-      variants: variants || [],
+      variants: (variants || []).map(v => ({
+        ...v,
+        price: Number(v.price || 0),
+        stock: Number(v.stock || 0)
+      })),
     });
 
     return Response.json({ id: productId, success: true });

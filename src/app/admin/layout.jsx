@@ -15,13 +15,17 @@ export default function AdminLayout() {
   const location = useLocation();
 
   const SidebarItem = ({ icon: Icon, label, route }) => {
-    // Check if the current URL exactly matches for the dashboard root, or starts with it for subroutes.
-    const isActive = location.pathname === route || (route !== "/admin" && location.pathname.startsWith(route));
-    
+    // Exact match for /admin, otherwise check if path starts with route
+    const isActive = location.pathname === route ||
+      (route !== "/admin" && location.pathname.startsWith(route + "/"));
+
     return (
       <button
         onClick={() => route && navigate(route)}
-        className={`w-full flex items-center space-x-4 px-6 py-4 transition-all ${isActive ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50 hover:text-black"}`}
+        className={`w-full flex items-center space-x-4 px-6 py-4 transition-all ${isActive
+            ? "bg-black text-white"
+            : "text-gray-500 hover:bg-gray-50 hover:text-black"
+          }`}
       >
         <Icon className="h-5 w-5" />
         <span className="font-bold uppercase tracking-widest text-xs">{label}</span>
@@ -31,8 +35,8 @@ export default function AdminLayout() {
 
   return (
     <div className="bg-gray-50 flex font-sans w-full min-h-screen">
-      {/* Sidebar - fixed and full height */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col sticky top-0 h-screen shrink-0">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 shrink-0">
         <div className="p-8 pb-12">
           <button
             onClick={() => navigate('/')}
@@ -45,7 +49,7 @@ export default function AdminLayout() {
           </button>
         </div>
 
-        <nav className="flex-grow">
+        <nav className="flex-grow overflow-y-auto">
           <SidebarItem icon={LayoutDashboard} label="Overview" route="/admin" />
           <SidebarItem icon={Folder} label="Categories" route="/admin/categories" />
           <SidebarItem icon={Package} label="Inventory" route="/admin/products" />
@@ -68,11 +72,10 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area Container */}
-      <main className="flex-grow min-w-0">
-        {/* We moved padding to the children so they can control it if they need full bleed */}
-        <div className="p-12 w-full h-full">
-            <Outlet />
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-12">
+          <Outlet />
         </div>
       </main>
     </div>

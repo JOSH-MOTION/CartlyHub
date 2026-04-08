@@ -160,3 +160,93 @@ export const getOrders = async () => {
     return [];
   }
 };
+
+export const getCustomers = async () => {
+  try {
+    // 1. Fetch data from both sources
+    const [orders, manualSalesSnapshot] = await Promise.all([
+      getOrders(),
+      getDocs(query(collection(db, 'manualSales'), orderBy('createdAt', 'desc')))
+    ]);
+
+    const manualSales = manualSalesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : (typeof doc.data().createdAt === 'string' ? new Date(doc.data().createdAt) : new Date()),
+    }));
+
+    // 2. Aggregate by Phone (or Name as fallback)
+    const customersMap = new Map();
+
+    const processRecord = (record) => {
+      const name = record.customerName || record.shippingAddress?.fullName || 'Unknown';
+      const phone = record.customerPhone || record.shippingAddress?.phone || 'No Phone';
+      const email = record.customerEmail || record.shippingAddress?.email || '';
+      
+      // Use Phone + Name as unique key
+      const key = `${phone}_${name}`.toLowerCase();
+
+      if (!customersMap.has(key)) {
+        customersMap.set(key, {
+          id: key,
+          name,
+          phone,
+          email,
+          totalSpend: 0,
+          totalProfit: 0,
+          orderCount: 0,
+          lastOrderDate: record.createdAt,
+          orders: []
+        });
+      }
+
+      const customer = customersMap.get(key);
+      customer.totalSpend += Number(record.totalAmount || 0);
+      customer.totalProfit += Number(record.totalProfit || 0);
+      customer.orderCount += 1;
+      
+      if (new Date(record.createdAt) > new Date(customer.lastOrderDate)) {
+        customer.lastOrderDate = record.createdAt;
+      }
+      
+      customer.orders.push({
+        id: record.id,
+        date: record.createdAt,
+        amount: record.totalAmount,
+        type: record.saleType || 'online'
+      });
+    };
+
+    orders.forEach(processRecord);
+    manualSales.forEach(processRecord);
+
+    return Array.from(customersMap.values()).sort((a, b) => b.totalSpend - a.totalSpend);
+    
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return [];
+  }
+};
+export const getManualSales = async () => {
+  try {
+    const salesQuery = query(
+      collection(db, 'manualSales'),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(salesQuery);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
+        source: 'manual'
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching manual sales:', error);
+    return [];
+  }
+};

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Save, X, Search, Loader2, DollarSign, Phone, User as UserIcon, Package } from "lucide-react";
+import { Plus, Trash2, Save, X, Search, Loader2, DollarSign, Phone, User as UserIcon, Package, Edit, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getProducts } from "@/utils/firebaseData";
 
@@ -24,11 +24,63 @@ export default function ManualSalesPage() {
   const [quantity, setQuantity] = useState(1);
   const [customPrice, setCustomPrice] = useState(null);
 
+  const [editingSaleId, setEditingSaleId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    customerName: "",
+    customerPhone: "",
+    notes: "",
+  });
+
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       return await getProducts();
     },
+  });
+
+  const { data: pastSales, isLoading: pastSalesLoading } = useQuery({
+    queryKey: ["manualSales"],
+    queryFn: async () => {
+      const response = await fetch('/api/manual-sales');
+      const result = await response.json();
+      return result.data || [];
+    },
+  });
+
+  const deleteSaleMutation = useMutation({
+    mutationFn: async (saleId) => {
+      const response = await fetch('/api/manual-sales', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saleId }),
+      });
+      if (!response.ok) throw new Error('Failed to delete sale');
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["manualSales"]);
+      queryClient.invalidateQueries(["products"]);
+      toast.success("Sale deleted and stock restored");
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const updateSaleMutation = useMutation({
+    mutationFn: async ({ saleId, updates }) => {
+      const response = await fetch('/api/manual-sales', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saleId, updates }),
+      });
+      if (!response.ok) throw new Error('Failed to update sale');
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["manualSales"]);
+      setEditingSaleId(null);
+      toast.success("Sale updated successfully");
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   const filteredProducts = products?.filter(p => 
@@ -60,7 +112,8 @@ export default function ManualSalesPage() {
         color: selectedVariant.color,
         sku: selectedVariant.sku || '',
         material: selectedVariant.material || '',
-        fullDetails: `${selectedVariant.size} - ${selectedVariant.color}${selectedVariant.material ? ` - ${selectedVariant.material}` : ''}`,
+        fullDetails: `${selectedVariant.color || 'Standard'} - ${selectedVariant.size}${selectedVariant.material ? ` - ${selectedVariant.material}` : ''}`,
+        hexColor: selectedVariant.hexColor,
       },
       quantity: quantity,
       basePrice: basePrice,
@@ -101,7 +154,8 @@ export default function ManualSalesPage() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to record sale');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Failed to record sale');
       }
       
       return response.json();
@@ -125,7 +179,8 @@ export default function ManualSalesPage() {
   });
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    console.log("Submitting sale:", saleForm);
     
     if (saleForm.items.length === 0) {
       toast.error("Please add at least one item");
@@ -267,24 +322,51 @@ export default function ManualSalesPage() {
 
                 {selectedProduct && (
                   <>
-                    <div className="space-y-2">
+                    <div className="md:col-span-2 space-y-3">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Variant
+                        Select Color & Size
                       </label>
-                      <select
-                        className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
-                        value={selectedVariant?.id || ""}
-                        onChange={(e) => {
-                          const variant = selectedProduct.variants?.find(v => v.id === e.target.value);
-                          setSelectedVariant(variant || null);
-                        }}
-                      >
+                      <div className="flex flex-wrap gap-2">
                         {selectedProduct.variants?.map((variant) => (
-                          <option key={variant.id} value={variant.id}>
-                            {variant.size} - {variant.color}{variant.material ? ` - ${variant.material}` : ''} (Stock: {variant.stock}) {variant.sku ? `[${variant.sku}]` : ''}
-                          </option>
+                          <button
+                            key={variant.id}
+                            type="button"
+                            onClick={() => setSelectedVariant(variant)}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
+                              selectedVariant?.id === variant.id
+                                ? "border-black bg-black text-white shadow-lg"
+                                : "border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200"
+                            } ${variant.stock <= 0 ? "opacity-30 cursor-not-allowed grayscale" : ""}`}
+                            disabled={variant.stock <= 0}
+                          >
+                            {/* Color Swatch */}
+                            {variant.hexColor ? (
+                              <div 
+                                className="w-4 h-4 rounded-full border border-white/20 shadow-sm"
+                                style={{ backgroundColor: variant.hexColor }}
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-gray-300 border border-white/20" title="No color color set" />
+                            )}
+                            <div className="text-left">
+                              <p className="font-bold text-xs leading-none mb-1 capitalize">
+                                {variant.color || "Standard"}
+                              </p>
+                              <p className={`text-[9px] font-black uppercase tracking-wider ${
+                                selectedVariant?.id === variant.id ? "text-white/60" : "text-gray-400"
+                              }`}>
+                                Size: {variant.size} • Stock: {variant.stock}
+                              </p>
+                            </div>
+                          </button>
                         ))}
-                      </select>
+                      </div>
+                      {selectedVariant && (
+                        <p className="text-[10px] font-bold text-green-600 mt-2 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedVariant.hexColor || '#ccc' }} />
+                          Matched: {selectedVariant.color || 'Standard'} • Size: {selectedVariant.size} | GH₵{selectedVariant.price || selectedProduct.basePrice}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -332,11 +414,19 @@ export default function ManualSalesPage() {
                   <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Items in Sale</h3>
                   {saleForm.items.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                      <div className="flex-grow">
-                        <p className="font-bold">{item.productName}</p>
-                        <p className="text-xs text-gray-500">
-                          {item.variantInfo.size} - {item.variantInfo.color} × {item.quantity}
-                        </p>
+                      <div className="flex-grow flex items-center gap-3">
+                        {item.variantInfo.hexColor && (
+                          <div 
+                            className="w-4 h-4 rounded-full border border-gray-200 shadow-sm flex-shrink-0"
+                                style={{ backgroundColor: item.variantInfo.hexColor }}
+                          />
+                        )}
+                        <div>
+                          <p className="font-bold">{item.productName}</p>
+                          <p className="text-xs text-gray-500">
+                            {item.variantInfo.color || 'Standard'} • Size: {item.variantInfo.size} × {item.quantity}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-bold text-lg">GH₵{(item.price * item.quantity).toLocaleString()}</span>
@@ -373,10 +463,10 @@ export default function ManualSalesPage() {
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={recordSaleMutation.isLoading || saleForm.items.length === 0}
+                disabled={recordSaleMutation.isPending || saleForm.items.length === 0}
                 className="bg-black text-white py-6 px-12 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {recordSaleMutation.isLoading ? (
+                {recordSaleMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                 ) : (
                   "Record Sale"
@@ -385,14 +475,136 @@ export default function ManualSalesPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white p-20 rounded-3xl shadow-sm border border-gray-100 text-center">
-            <DollarSign className="h-16 w-16 text-gray-200 mx-auto mb-6" />
-            <h3 className="text-xl font-black uppercase tracking-widest text-gray-400 mb-4">
-              No Active Sale
-            </h3>
-            <p className="text-gray-400 font-medium mb-8">
-              Click "New Sale" to record an in-person or WhatsApp sale.
-            </p>
+          <div className="space-y-8">
+            <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center">
+              <DollarSign className="h-16 w-16 text-gray-200 mx-auto mb-6" />
+              <h3 className="text-xl font-black uppercase tracking-widest text-gray-400 mb-4">
+                Manual Sales Overview
+              </h3>
+              <p className="text-gray-400 font-medium mb-8 max-w-md mx-auto">
+                No active sale in progress. Click "New Sale" to record an in-person, Instagram or WhatsApp order.
+              </p>
+            </div>
+
+            {/* Recent Sales Table */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                 <h3 className="text-sm font-black uppercase tracking-widest">Recent Records</h3>
+                 <span className="text-[10px] font-bold text-gray-400">Showing last {pastSales?.length || 0} sales</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50/50">
+                    <tr>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Customer</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Details</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Amount</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Profit</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Date</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 font-black">
+                    {pastSales?.map((sale) => (
+                      <tr key={sale.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-8 py-6">
+                           {editingSaleId === sale.id ? (
+                             <input 
+                               value={editForm.customerName}
+                               onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
+                               className="bg-gray-50 border-0 outline-none p-1 rounded w-full text-xs font-black uppercase"
+                             />
+                           ) : (
+                             <>
+                               <p className="font-black text-xs uppercase">{sale.customerName}</p>
+                               <p className="text-[9px] font-bold text-gray-400 mt-1">{sale.customerPhone || 'No Phone'}</p>
+                             </>
+                           )}
+                        </td>
+                        <td className="px-8 py-6">
+                           {editingSaleId === sale.id ? (
+                              <input 
+                                value={editForm.notes}
+                                onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                                placeholder="Notes..."
+                                className="bg-gray-50 border-0 outline-none p-1 rounded w-full text-[10px]"
+                              />
+                           ) : (
+                             <p className="text-[10px] font-bold text-gray-500 italic">
+                               {sale.items?.length} items • {sale.paymentMethod}
+                             </p>
+                           )}
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="font-black text-sm text-gray-400">GH₵{sale.totalAmount?.toLocaleString()}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="font-black text-sm text-green-600">GH₵{sale.totalProfit?.toLocaleString() || '0'}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="text-[10px] font-bold text-gray-400">
+                             {new Date(sale.createdAt).toLocaleDateString()}
+                           </p>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <div className="flex items-center justify-end space-x-3">
+                            {editingSaleId === sale.id ? (
+                              <>
+                                <button 
+                                  onClick={() => updateSaleMutation.mutate({ saleId: sale.id, updates: editForm })}
+                                  className="text-green-600 hover:text-green-800"
+                                >
+                                  <Save className="h-4 w-4" />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingSaleId(null)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button 
+                                  onClick={() => {
+                                    setEditingSaleId(sale.id);
+                                    setEditForm({
+                                      customerName: sale.customerName,
+                                      customerPhone: sale.customerPhone || "",
+                                      notes: sale.notes || "",
+                                    });
+                                  }}
+                                  className="text-gray-400 hover:text-black transition-colors"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if(confirm('Are you sure? This will RESTORE the inventory for these items.')) {
+                                      deleteSaleMutation.mutate(sale.id);
+                                    }
+                                  }}
+                                  className="text-gray-300 hover:text-red-600 transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {(!pastSales || pastSales.length === 0) && (
+                      <tr>
+                        <td colSpan="4" className="px-8 py-12 text-center text-gray-300 font-bold uppercase text-[10px] tracking-widest">
+                          No sales recorded yet
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
     </div>

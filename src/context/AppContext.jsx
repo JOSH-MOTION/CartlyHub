@@ -44,7 +44,17 @@ export const AppProvider = ({ children }) => {
   // Cart State
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlist, setWishlist] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('carly-hub-wishlist');
+      try {
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
 
   // Admin State
   const [inventoryProducts, setInventoryProducts] = useState([]);
@@ -187,6 +197,12 @@ export const AppProvider = ({ children }) => {
   };
 
   // Wishlist Actions
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('carly-hub-wishlist', JSON.stringify(wishlist));
+    }
+  }, [wishlist]);
+
   const toggleWishlist = (productId) => {
     setWishlist(prev => 
       prev.includes(productId) 

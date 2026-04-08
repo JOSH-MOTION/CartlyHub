@@ -89,22 +89,22 @@ export default function AdminProductsPage() {
   });
 
   const validateProduct = (data) => {
-  if (!data.name || data.name.trim().length < 3) {
-    toast.error('Product name must be at least 3 characters');
-    return false;
-  }
-  if (!data.categoryId) {
-    toast.error('Please select a category');
-    return false;
-  }
-  if (data.basePrice <= 0) {
-    toast.error('Price must be greater than 0');
-    return false;
-  }
-  return true;
-};
+    if (!data.name || data.name.trim().length < 3) {
+      toast.error('Product name must be at least 3 characters');
+      return false;
+    }
+    if (!data.categoryId) {
+      toast.error('Please select a category');
+      return false;
+    }
+    if (data.basePrice <= 0) {
+      toast.error('Price must be greater than 0');
+      return false;
+    }
+    return true;
+  };
 
-const updateProductMutation = useMutation({
+  const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       return await updateProduct(id, data);
     },
@@ -133,25 +133,48 @@ const updateProductMutation = useMutation({
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
     setIsUploading(true);
+
     try {
       const uploadedUrls = [];
+
       for (const file of files) {
-        // useUpload can handle URL, base64 or file (depending on platform)
-        // Since we are on web, we use browser file
-        const { url, error } = await upload({ url: URL.createObjectURL(file) });
-        if (error) throw new Error(error);
-        uploadedUrls.push(url);
+        // Convert file to base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Call upload API
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64 }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Upload failed');
+        }
+
+        const data = await response.json();
+        uploadedUrls.push(data.url);
       }
+
       setForm({ ...form, images: [...form.images, ...uploadedUrls] });
-      toast.success("Images uploaded");
+      toast.success(`${uploadedUrls.length} image(s) uploaded!`);
+
     } catch (err) {
-      toast.error("Upload failed");
+      console.error('Upload error:', err);
+      toast.error(err.message || 'Upload failed');
     } finally {
       setIsUploading(false);
     }
   };
-
   const addVariant = () => {
     setForm({
       ...form,
@@ -174,450 +197,450 @@ const updateProductMutation = useMutation({
 
   return (
     <div className="space-y-4">
-        <header className="flex justify-between items-end mb-12">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
-              Catalog
-            </span>
-            <h1 className="text-4xl font-black tracking-tighter uppercase">
-              Product Management
-            </h1>
-          </div>
-          <button
-            onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center space-x-3 bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
-          >
-            {isAdding ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Plus className="h-5 w-5" />
-            )}
-            <span>{isAdding ? "Cancel" : "New Product"}</span>
-          </button>
-        </header>
+      <header className="flex justify-between items-end mb-12">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+            Catalog
+          </span>
+          <h1 className="text-4xl font-black tracking-tighter uppercase">
+            Product Management
+          </h1>
+        </div>
+        <button
+          onClick={() => setIsAdding(!isAdding)}
+          className="flex items-center space-x-3 bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
+        >
+          {isAdding ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Plus className="h-5 w-5" />
+          )}
+          <span>{isAdding ? "Cancel" : "New Product"}</span>
+        </button>
+      </header>
 
-        {isAdding ? (
-          <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Basic Information Section */}
-            <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
-                Basic Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Product Name *
-                  </label>
-                  <input
-                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="E.g. Premium White Tee"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Category *
-                  </label>
-                  <select
-                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
-                    value={form.categoryId}
-                    onChange={(e) =>
-                      setForm({ ...form, categoryId: e.target.value })
-                    }
-                  >
-                    <option value="">Select Category</option>
-                    {categories?.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+      {isAdding ? (
+        <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Basic Information Section */}
+          <section className="space-y-6">
+            <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+              Basic Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Product Name *
+                </label>
+                <input
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="E.g. Premium White Tee"
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Description
+                  Category *
                 </label>
-                <textarea
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold resize-none"
-                  rows="4"
-                  value={form.description}
+                <select
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
+                  value={form.categoryId}
                   onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
+                    setForm({ ...form, categoryId: e.target.value })
                   }
-                  placeholder="Crafted from 100% Egyptian cotton..."
-                />
+                >
+                  <option value="">Select Category</option>
+                  {categories?.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </section>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Description
+              </label>
+              <textarea
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold resize-none"
+                rows="4"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                placeholder="Crafted from 100% Egyptian cotton..."
+              />
+            </div>
+          </section>
 
-            {/* Media Section */}
-            <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
-                Product Images
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {form.images.map((img, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-gray-100 rounded-2xl relative group overflow-hidden"
+          {/* Media Section */}
+          <section className="space-y-6">
+            <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+              Product Images
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {form.images.map((img, i) => (
+                <div
+                  key={i}
+                  className="aspect-square bg-gray-100 rounded-2xl relative group overflow-hidden"
+                >
+                  <img src={img} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        images: form.images.filter((_, idx) => idx !== i),
+                      })
+                    }
+                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <img src={img} className="w-full h-full object-cover" />
+                    <Trash2 className="h-6 w-6" />
+                  </button>
+                </div>
+              ))}
+              <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
+                {isUploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-black" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-gray-300" />
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">
+                  Upload
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </label>
+            </div>
+          </section>
+
+          {/* Variants Section */}
+          <section className="space-y-6">
+            <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-black uppercase tracking-widest">
+                Product Variants
+              </h2>
+              <button
+                onClick={addVariant}
+                className="text-xs font-black uppercase tracking-widest px-4 py-2 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all"
+              >
+                Add Variant
+              </button>
+            </div>
+            <div className="space-y-4">
+              {form.variants.map((v, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-50 rounded-2xl p-6 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
+                      Variant {i + 1}
+                    </h3>
                     <button
-                      onClick={() =>
-                        setForm({
-                          ...form,
-                          images: form.images.filter((_, idx) => idx !== i),
-                        })
-                      }
-                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeVariant(i)}
+                      className="text-gray-300 hover:text-red-500"
                     >
-                      <Trash2 className="h-6 w-6" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                ))}
-                <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
-                  {isUploading ? (
-                    <Loader2 className="h-8 w-8 animate-spin text-black" />
-                  ) : (
-                    <ImageIcon className="h-8 w-8 text-gray-300" />
-                  )}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">
-                    Upload
-                  </span>
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
-              </div>
-            </section>
 
-            {/* Variants Section */}
-            <section className="space-y-6">
-              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                <h2 className="text-xl font-black uppercase tracking-widest">
-                  Product Variants
-                </h2>
-                <button
-                  onClick={addVariant}
-                  className="text-xs font-black uppercase tracking-widest px-4 py-2 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all"
-                >
-                  Add Variant
-                </button>
-              </div>
-              <div className="space-y-4">
-                {form.variants.map((v, i) => (
-                  <div
-                    key={i}
-                    className="bg-gray-50 rounded-2xl p-6 space-y-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
-                        Variant {i + 1}
-                      </h3>
-                      <button
-                        onClick={() => removeVariant(i)}
-                        className="text-gray-300 hover:text-red-500"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                          Size
-                        </label>
-                        <input
-                          placeholder="e.g., M, L, XL"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                          value={v.size}
-                          onChange={(e) => updateVariant(i, "size", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                          Stock Quantity
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="0"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                          value={v.stock}
-                          onChange={(e) =>
-                            updateVariant(i, "stock", Number(e.target.value))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                          Price
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="0.00"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                          value={v.price}
-                          onChange={(e) =>
-                            updateVariant(i, "price", Number(e.target.value))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                          SKU
-                        </label>
-                        <input
-                          placeholder="e.g., TSHIRT-RED-M"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                          value={v.sku}
-                          onChange={(e) =>
-                            updateVariant(i, "sku", e.target.value)
-                          }
-                        />
-                      </div>
-                    </div>
-                    
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Color
+                        Size
                       </label>
-                      <ColorPicker
-                        value={v.hexColor}
-                        onChange={(hexColor) => {
-                          updateVariant(i, "hexColor", hexColor);
-                          if (!v.color) {
-                            updateVariant(i, "color", hexColor);
-                          }
-                        }}
+                      <input
+                        placeholder="e.g., M, L, XL"
+                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        value={v.size}
+                        onChange={(e) => updateVariant(i, "size", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Stock Quantity
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        value={v.stock}
+                        onChange={(e) =>
+                          updateVariant(i, "stock", Number(e.target.value))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Price
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        value={v.price}
+                        onChange={(e) =>
+                          updateVariant(i, "price", Number(e.target.value))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        SKU
+                      </label>
+                      <input
+                        placeholder="e.g., TSHIRT-RED-M"
+                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        value={v.sku}
+                        onChange={(e) =>
+                          updateVariant(i, "sku", e.target.value)
+                        }
                       />
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
 
-            {/* Pricing Section */}
-            <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
-                Pricing & Featured
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Cost Price (Buying Price)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                    value={form.costPrice}
-                    onChange={(e) =>
-                      setForm({ ...form, costPrice: e.target.value })
-                    }
-                    placeholder="0.00"
-                  />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      Color
+                    </label>
+                    <ColorPicker
+                      value={v.hexColor}
+                      onChange={(hexColor) => {
+                        updateVariant(i, "hexColor", hexColor);
+                        if (!v.color) {
+                          updateVariant(i, "color", hexColor);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Base Selling Price
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                    value={form.basePrice}
-                    onChange={(e) =>
-                      setForm({ ...form, basePrice: e.target.value })
-                    }
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-6 bg-black text-white rounded-2xl">
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
-                    Estimated Profit
-                  </h4>
-                  <p className="text-2xl font-black">
-                    GH¢{Number(form.basePrice - form.costPrice).toLocaleString()}
-                  </p>
-                </div>
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    Featured Product
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="w-6 h-6 rounded-lg bg-white/10 accent-white"
-                    checked={form.isFeatured}
-                    onChange={(e) =>
-                      setForm({ ...form, isFeatured: e.target.checked })
-                    }
-                  />
+              ))}
+            </div>
+          </section>
+
+          {/* Pricing Section */}
+          <section className="space-y-6">
+            <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+              Pricing & Featured
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Cost Price (Buying Price)
                 </label>
+                <input
+                  type="number"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.costPrice}
+                  onChange={(e) =>
+                    setForm({ ...form, costPrice: e.target.value })
+                  }
+                  placeholder="0.00"
+                />
               </div>
-            </section>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Base Selling Price
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.basePrice}
+                  onChange={(e) =>
+                    setForm({ ...form, basePrice: e.target.value })
+                  }
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-6 bg-black text-white rounded-2xl">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                  Estimated Profit
+                </h4>
+                <p className="text-2xl font-black">
+                  GH¢{Number(form.basePrice - form.costPrice).toLocaleString()}
+                </p>
+              </div>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  Featured Product
+                </span>
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 rounded-lg bg-white/10 accent-white"
+                  checked={form.isFeatured}
+                  onChange={(e) =>
+                    setForm({ ...form, isFeatured: e.target.checked })
+                  }
+                />
+              </label>
+            </div>
+          </section>
 
-            {/* Submit Button */}
-            <button
-              onClick={() => {
-                if (editingId) {
-                  if (!validateProduct(form)) {
-                    return;
-                  }
-                  updateProductMutation.mutate({ id: editingId, data: form });
-                } else {
-                  if (!validateProduct(form)) {
-                    return;
-                  }
-                  createProductMutation.mutate(form);
+          {/* Submit Button */}
+          <button
+            onClick={() => {
+              if (editingId) {
+                if (!validateProduct(form)) {
+                  return;
                 }
-              }}
-              disabled={
-                createProductMutation.isLoading ||
-                updateProductMutation.isLoading ||
-                !form.name ||
-                !form.categoryId
+                updateProductMutation.mutate({ id: editingId, data: form });
+              } else {
+                if (!validateProduct(form)) {
+                  return;
+                }
+                createProductMutation.mutate(form);
               }
-              className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
-            >
-              {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Create Product"}
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Product
-                  </th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Category
-                  </th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Inventory
-                  </th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Price
-                  </th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {products?.map((p) => {
-                  const totalStock =
-                    p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) ||
-                    0;
-                  return (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <td className="px-8 py-6">
-                        <div className="flex items-center space-x-4">
-                          <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                            <img
-                              src={p.images?.[0]}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-black text-sm uppercase tracking-tight">
-                              {p.name}
-                            </p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                              #{p.slug}
-                            </p>
-                          </div>
+            }}
+            disabled={
+              createProductMutation.isLoading ||
+              updateProductMutation.isLoading ||
+              !form.name ||
+              !form.categoryId
+            }
+            className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
+          >
+            {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Create Product"}
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Product
+                </th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Category
+                </th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Inventory
+                </th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Price
+                </th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {products?.map((p) => {
+                const totalStock =
+                  p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) ||
+                  0;
+                return (
+                  <tr
+                    key={p.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-8 py-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                          <img
+                            src={p.images?.[0]}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                      </td>
-                      <td className="px-8 py-6 text-sm font-bold text-gray-500 uppercase tracking-widest">
-                        {getCategoryName(p.categoryId)}
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="space-y-2">
-                          <div
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${totalStock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
-                          >
-                            {totalStock} in stock
-                          </div>
-                          {p.variants && p.variants.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              {p.variants.slice(0, 3).map((variant, idx) => (
-                                (variant.color || variant.colorName || variant.hexColor) && (
-                                  <div
-                                    key={idx}
-                                    className="w-4 h-4 rounded-full border border-gray-300"
-                                    style={{ 
-                                      backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc' 
-                                    }}
-                                    title={variant.colorName || variant.color || 'Unknown color'}
-                                  />
-                                )
-                              ))}
-                              {p.variants.length > 3 && (
-                                <span className="text-xs text-gray-500">+{p.variants.length - 3}</span>
-                              )}
-                            </div>
-                          )}
+                        <div>
+                          <p className="font-black text-sm uppercase tracking-tight">
+                            {p.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                            #{p.slug}
+                          </p>
                         </div>
-                      </td>
-                      <td className="px-8 py-6 font-black text-sm">
-                        ₵{Number(p.basePrice).toLocaleString()}
-                      </td>
-                      <td className="px-8 py-6 text-right space-x-2">
-                        <button 
-                          onClick={() => {
-                            setEditingId(p.id);
-                            setForm({
-                              name: p.name,
-                              description: p.description,
-                              categoryId: p.categoryId,
-                              basePrice: p.basePrice,
-                              costPrice: p.costPrice || "",
-                              isFeatured: p.isFeatured,
-                              images: p.images || [],
-                              variants: p.variants?.map(v => ({
-                                size: v.size || "",
-                                color: v.colorName || v.color || "",
-                                stock: v.stock || 0,
-                                price: v.price || "",
-                                sku: v.sku || "",
-                                hexColor: v.hexColor || ""
-                              })) || [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
-                            });
-                            setIsAdding(true);
-                          }}
-                          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-sm font-bold text-gray-500 uppercase tracking-widest">
+                      {getCategoryName(p.categoryId)}
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="space-y-2">
+                        <div
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${totalStock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
                         >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            if (!confirm('Are you sure? This action cannot be undone.')) {
-                              return;
-                            }
-                            deleteProductMutation.mutate(p.id);
-                          }}
-                          disabled={deleteProductMutation.isLoading}
-                          className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors disabled:opacity-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      
+                          {totalStock} in stock
+                        </div>
+                        {p.variants && p.variants.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {p.variants.slice(0, 3).map((variant, idx) => (
+                              (variant.color || variant.colorName || variant.hexColor) && (
+                                <div
+                                  key={idx}
+                                  className="w-4 h-4 rounded-full border border-gray-300"
+                                  style={{
+                                    backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc'
+                                  }}
+                                  title={variant.colorName || variant.color || 'Unknown color'}
+                                />
+                              )
+                            ))}
+                            {p.variants.length > 3 && (
+                              <span className="text-xs text-gray-500">+{p.variants.length - 3}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 font-black text-sm">
+                      ₵{Number(p.basePrice).toLocaleString()}
+                    </td>
+                    <td className="px-8 py-6 text-right space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingId(p.id);
+                          setForm({
+                            name: p.name,
+                            description: p.description,
+                            categoryId: p.categoryId,
+                            basePrice: p.basePrice,
+                            costPrice: p.costPrice || "",
+                            isFeatured: p.isFeatured,
+                            images: p.images || [],
+                            variants: p.variants?.map(v => ({
+                              size: v.size || "",
+                              color: v.colorName || v.color || "",
+                              stock: v.stock || 0,
+                              price: v.price || "",
+                              sku: v.sku || "",
+                              hexColor: v.hexColor || ""
+                            })) || [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+                          });
+                          setIsAdding(true);
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm('Are you sure? This action cannot be undone.')) {
+                            return;
+                          }
+                          deleteProductMutation.mutate(p.id);
+                        }}
+                        disabled={deleteProductMutation.isLoading}
+                        className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {productsLoading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-white" />

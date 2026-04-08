@@ -64,23 +64,77 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: manualSales = [], isLoading: manualSalesLoading } = useQuery({
+    queryKey: ["manualSales"],
+    queryFn: async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'manualSales'));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (error) {
+        console.error("Error fetching manual sales for overview:", error);
+        return [];
+      }
+    },
+  });
+
   // Calculate live stats
-  const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-  const totalOrders = orders.length;
+  const onlineRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+  const manualRevenue = manualSales.reduce((sum, sale) => sum + (Number(sale.totalAmount) || 0), 0);
+  
+  const onlineProfit = orders.reduce((sum, order) => sum + (order.totalProfit || 0), 0);
+  const manualProfit = manualSales.reduce((sum, sale) => sum + (Number(sale.totalProfit) || 0), 0);
+  
+  const totalRevenue = onlineRevenue + manualRevenue;
+  const totalProfit = onlineProfit + manualProfit;
+  const totalOrders = orders.length + manualSales.length;
+
+  // Aggregate sales data for charts
+  const getMonthlyData = () => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const lastSixMonths = [];
+    const now = new Date();
+
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      lastSixMonths.push({
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        name: months[d.getMonth()],
+        revenue: 0,
+        orders: 0
+      });
+    }
+
+    // Combined transactions
+    const allTransactions = [...orders, ...manualSales];
+
+    allTransactions.forEach(t => {
+      if (!t.createdAt) return;
+      const date = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+      const m = date.getMonth();
+      const y = date.getFullYear();
+
+      const dataPoint = lastSixMonths.find(p => p.month === m && p.year === y);
+      if (dataPoint) {
+        dataPoint.revenue += Number(t.totalAmount || 0);
+        dataPoint.orders += 1;
+      }
+    });
+
+    return lastSixMonths;
+  };
+
+  const chartData = getMonthlyData();
 
   const stats = {
     totalRevenue: totalRevenue,
-    totalProfit: totalRevenue * 0.4, // Rough approximation if cost not fully tracked per item yet
+    totalProfit: totalProfit, 
     totalOrders: totalOrders,
     totalInventory: products.length,
-    salesData: [
-      { name: "Jan", sales: 2000 },
-      { name: "Feb", sales: 3000 },
-      { name: "Mar", sales: 2500 },
-      { name: "Apr", sales: 4000 },
-      { name: "May", sales: totalRevenue > 0 ? totalRevenue : 5500 },
-      { name: "Jun", sales: 6000 },
-    ],
+    onlineCount: orders.length,
+    manualCount: manualSales.length,
+    salesData: chartData,
   };
 
   const isLoading = productsLoading || categoriesLoading || ordersLoading;
@@ -178,8 +232,12 @@ export default function AdminDashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
                 <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
-                <Tooltip cursor={{ fill: "#f9f9f9" }} contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} />
-                <Bar dataKey="sales" fill="#000000" radius={[8, 8, 0, 0]} />
+                <Tooltip 
+                  cursor={{ fill: "#f9f9f9" }} 
+                  formatter={(value) => [`GH₵${value.toLocaleString()}`, "Revenue"]}
+                  contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} 
+                />
+                <Bar dataKey="revenue" fill="#000000" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -192,8 +250,11 @@ export default function AdminDashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
                 <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
-                <Tooltip contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} />
-                <Line type="monotone" dataKey="sales" stroke="#000000" strokeWidth={4} dot={{ r: 6, fill: "#000", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 8 }} />
+                <Tooltip 
+                  formatter={(value) => [value, "Orders"]}
+                  contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} 
+                />
+                <Line type="monotone" dataKey="orders" stroke="#000000" strokeWidth={4} dot={{ r: 6, fill: "#000", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 8 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

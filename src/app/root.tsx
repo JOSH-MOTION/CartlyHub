@@ -31,6 +31,7 @@ import { serializeError } from 'serialize-error';
 import { Toaster, toast } from 'sonner';
 import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import { AppProvider } from '../context/AppContext';
+import Providers from '../components/Providers';
 import type { Route } from './+types/root';
 
 export const links = () => [
@@ -455,8 +456,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <AppProvider>
+    <Providers>
       <Outlet />
-    </AppProvider>
+    </Providers>
   );
 }

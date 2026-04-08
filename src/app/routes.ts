@@ -18,6 +18,7 @@ type Tree = {
 	isParam: boolean;
 	paramName: string;
 	isCatchAll: boolean;
+	routeFile?: string;
 };
 
 function buildRouteTree(dir: string, basePath = ''): Tree {
@@ -59,74 +60,94 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 			node.hasPage = true;
 		} else if (file === 'layout.jsx') {
 			node.hasLayout = true;
+		} else if (file === 'route.js' || file === 'route.ts') {
+			node.routeFile = file;
 		}
 	}
 
 	return node;
 }
 
-function generateRoutes(node: Tree): RouteConfigEntry[] {
-	const routes: RouteConfigEntry[] = [];
+function generateRoutes(node: Tree): { uiRoutes: RouteConfigEntry[], resourceRoutes: RouteConfigEntry[] } {
+	const uiRoutes: RouteConfigEntry[] = [];
+	const resourceRoutes: RouteConfigEntry[] = [];
 
+	// Handle Page
 	if (node.hasPage) {
 		const componentPath =
 			node.path === '' ? `./${node.path}page.jsx` : `./${node.path}/page.jsx`;
 
 		if (node.path === '') {
-			routes.push(index(componentPath));
+			uiRoutes.push(index(componentPath));
 		} else {
-			// Handle parameter routes
 			let routePath = node.path;
-
-			// Replace all parameter segments in the path
 			const segments = routePath.split('/');
 			const processedSegments = segments.map((segment) => {
 				if (segment.startsWith('[') && segment.endsWith(']')) {
 					const paramName = segment.slice(1, -1);
-
-					// Handle catch-all parameters (e.g., [...ids] becomes *)
-					if (paramName.startsWith('...')) {
-						return '*'; // React Router's catch-all syntax
-					}
-					// Handle optional parameters (e.g., [[id]] becomes :id?)
-					if (paramName.startsWith('[') && paramName.endsWith(']')) {
-						return `:${paramName.slice(1, -1)}?`;
-					}
-					// Handle regular parameters (e.g., [id] becomes :id)
+					if (paramName.startsWith('...')) return '*';
 					return `:${paramName}`;
 				}
 				return segment;
 			});
-
 			routePath = processedSegments.join('/');
-			routes.push(route(routePath, componentPath));
+			uiRoutes.push(route(routePath, componentPath));
 		}
 	}
 
-	for (const child of node.children) {
-		routes.push(...generateRoutes(child));
+	// Handle API Route
+	if (node.routeFile) {
+		const componentPath =
+			node.path === '' ? `./${node.path}${node.routeFile}` : `./${node.path}/${node.routeFile}`;
+
+		let routePath = node.path;
+		const segments = routePath.split('/');
+		const processedSegments = segments.map((segment) => {
+			if (segment.startsWith('[') && segment.endsWith(']')) {
+				const paramName = segment.slice(1, -1);
+				if (paramName.startsWith('...')) return '*';
+				return `:${paramName}`;
+			}
+			return segment;
+		});
+
+		routePath = processedSegments.join('/');
+		resourceRoutes.push(route(routePath, componentPath));
 	}
 
+	// Recursively collect children
+	for (const child of node.children) {
+		const { uiRoutes: childUi, resourceRoutes: childRes } = generateRoutes(child);
+		uiRoutes.push(...childUi);
+		resourceRoutes.push(...childRes);
+	}
+
+	// Wrap UI routes in layout if present (ONLY for UI routes, never API routes)
 	if (node.hasLayout && node.path !== '') {
 		const layoutPath = `./${node.path}/layout.jsx`;
-		// We use the directory name as the layout route path to ensure proper nesting
-        // However, in RR7 layout() without a path is a layout route.
-        // To avoid duplication, we check if the routes inside already carry the prefix.
-		return [layout(layoutPath, routes)];
+		return {
+			uiRoutes: [layout(layoutPath, uiRoutes)],
+			resourceRoutes
+		};
 	}
 
-	return routes;
+	return { uiRoutes, resourceRoutes };
 }
+
 if (import.meta.env.DEV) {
 	import.meta.glob('./**/page.jsx', {});
+	import.meta.glob('./**/route.js', {});
+	import.meta.glob('./**/route.ts', {});
 	if (import.meta.hot) {
 		import.meta.hot.accept((newSelf) => {
 			import.meta.hot?.invalidate();
 		});
 	}
 }
+
 const tree = buildRouteTree(__dirname);
 const notFound = route('*?', './__create/not-found.tsx');
-const routes = [...generateRoutes(tree), notFound];
+const { uiRoutes, resourceRoutes } = generateRoutes(tree);
+const routes = [...uiRoutes, ...resourceRoutes, notFound];
 
 export default routes;

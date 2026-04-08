@@ -1,7 +1,7 @@
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
-export async function POST(request) {
+export async function action({ request }) {
   try {
     const body = await request.json();
     const {
@@ -23,6 +23,9 @@ export async function POST(request) {
     }
 
     // Check stock availability and deduct inventory
+    let totalProfit = 0;
+    const itemsWithSnapshots = [];
+
     for (const item of items) {
       const productRef = doc(db, 'products', item.productId);
       const productSnap = await getDoc(productRef);
@@ -39,6 +42,27 @@ export async function POST(request) {
       }
 
       const variant = productData.variants[variantIndex];
+      
+      // Robust cost detection (checks for common field name variations)
+      const costPrice = Number(
+        productData.costPrice || 
+        productData.cost_price || 
+        productData.buying_price || 
+        productData.buyingPrice || 
+        0
+      );
+
+      const sellingPrice = Number(item.price || 0);
+      const quantity = Number(item.quantity || 1);
+      const itemProfit = (sellingPrice - costPrice) * quantity;
+      
+      totalProfit += itemProfit;
+
+      itemsWithSnapshots.push({
+        ...item,
+        costPrice: costPrice,
+        profit: itemProfit
+      });
       
       // Check stock
       if (variant.stock < item.quantity) {
@@ -70,8 +94,9 @@ export async function POST(request) {
       customerEmail: customerEmail || null,
       customerPhone,
       deliveryAddress,
-      items,
+      items: itemsWithSnapshots,
       totalAmount,
+      totalProfit,
       status: status || 'pending',
       paymentMethod: paymentMethod || 'paystack',
       paymentReference: paymentReference || null,

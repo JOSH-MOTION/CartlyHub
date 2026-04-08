@@ -17,10 +17,12 @@ import {
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
 import { getProducts } from "@/utils/firebaseData";
+import { useApp } from "@/context/AppContext";
 
 export default function ProductDetailPage({ params }) {
   const { id } = params;
   const { addItem } = useCart();
+  const { toggleWishlist, wishlist } = useApp();
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -51,23 +53,43 @@ export default function ProductDetailPage({ params }) {
     );
 
   const variants = product.variants || [];
-  const sizes = [...new Set(variants.map((v) => v.size))].filter(Boolean);
-  const colors = [...new Set(variants.map((v) => v.color))].filter(Boolean);
+  
+  // Dynamic filtering based on interdependencies
+  const allColors = [...new Set(variants.map((v) => v.color || v.colorName))].filter(Boolean);
+  const allSizes = [...new Set(variants.map((v) => v.size))].filter(Boolean);
+
+  // Sizes available for the selected color (or all if none selected)
+  const availableSizes = selectedColor 
+    ? [...new Set(variants.filter(v => (v.color || v.colorName) === selectedColor).map(v => v.size))].filter(Boolean)
+    : allSizes;
+
+  // Colors available for the selected size (or all if none selected)
+  const availableColors = selectedSize
+    ? [...new Set(variants.filter(v => v.size === selectedSize).map(v => v.color || v.colorName))].filter(Boolean)
+    : allColors;
 
   const selectedVariant = variants.find(
     (v) =>
       (!selectedSize || v.size === selectedSize) &&
-      (!selectedColor || v.color === selectedColor),
+      (!selectedColor || (v.color || v.colorName) === selectedColor),
   );
 
   const price = selectedVariant?.price || product.basePrice;
 
+  const handleSizeSelect = (size) => {
+    setSelectedSize(size === selectedSize ? "" : size);
+  };
+
+  const handleColorSelect = (color) => {
+    setSelectedColor(color === selectedColor ? "" : color);
+  };
+
   const handleAddToCart = () => {
-    if (sizes.length > 0 && !selectedSize) {
+    if (availableSizes.length > 0 && !selectedSize) {
       toast.error("Please select a size");
       return;
     }
-    if (colors.length > 0 && !selectedColor) {
+    if (availableColors.length > 0 && !selectedColor) {
       toast.error("Please select a color");
       return;
     }
@@ -76,9 +98,27 @@ export default function ProductDetailPage({ params }) {
       return;
     }
 
+    if (selectedVariant.stock <= 0) {
+      toast.error("This item is currently out of stock");
+      return;
+    }
+
+    if (quantity > selectedVariant.stock) {
+      toast.error(`Only ${selectedVariant.stock} items left in stock`);
+      return;
+    }
+
     addItem(product, selectedVariant, quantity);
-    toast.success(`${product.name} added to cart`);
+    toast.success(`${product.name} added to bag`);
   };
+
+  const handleToggleWishlist = () => {
+    toggleWishlist(product.id);
+    const isInWishlist = wishlist?.includes(product.id);
+    toast.success(isInWishlist ? `${product.name} removed from wishlist` : `${product.name} added to wishlist`);
+  };
+
+  const isInWishlist = wishlist?.includes(product.id);
 
   const handlePayment = () => {
     // Navigate to checkout page with cart data
@@ -122,8 +162,11 @@ export default function ProductDetailPage({ params }) {
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
               />
-              <button className="absolute top-6 right-6 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                <Heart className="h-6 w-6" />
+              <button 
+                onClick={handleToggleWishlist}
+                className={`absolute top-6 right-6 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 border ${isInWishlist ? 'bg-red-500 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100 hover:text-red-500'}`}
+              >
+                <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -169,7 +212,7 @@ export default function ProductDetailPage({ params }) {
 
             <div className="space-y-8">
               {/* Size Selector */}
-              {sizes.length > 0 && (
+              {allSizes.length > 0 && (
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <label className="text-xs font-black uppercase tracking-widest text-gray-900">
@@ -179,56 +222,90 @@ export default function ProductDetailPage({ params }) {
                       Size Guide
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`h-12 w-16 flex items-center justify-center rounded-xl font-bold transition-all border-2 ${selectedSize === size ? "bg-black text-white border-black" : "bg-white text-black border-gray-100 hover:border-black"}`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {allSizes.map((size) => {
+                      const isAvailable = availableSizes.includes(size);
+                      return (
+                        <button
+                          key={size}
+                          onClick={() => handleSizeSelect(size)}
+                          disabled={!isAvailable}
+                          className={`h-12 w-14 flex items-center justify-center rounded-xl font-black transition-all border-2 
+                            ${selectedSize === size 
+                              ? "bg-black text-white border-black" 
+                              : isAvailable 
+                                ? "bg-white text-black border-gray-100 hover:border-black" 
+                                : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed"}`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Color Selector */}
-              {colors.length > 0 && (
+              {allColors.length > 0 && (
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-gray-900 mb-4">
                     Select Color
                   </label>
-                  <div className="flex flex-wrap gap-3">
-                    {colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-6 h-12 flex items-center justify-center rounded-xl font-bold transition-all border-2 ${selectedColor === color ? "bg-black text-white border-black" : "bg-white text-black border-gray-100 hover:border-black"}`}
-                      >
-                        {color}
-                      </button>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {allColors.map((color) => {
+                      const isAvailable = availableColors.includes(color);
+                      const variantMatch = variants.find(v => (v.color || v.colorName) === color);
+                      const hexColor = variantMatch?.hexColor;
+                      
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => handleColorSelect(color)}
+                          disabled={!isAvailable}
+                          className={`px-4 h-12 flex items-center justify-center rounded-xl font-black transition-all border-2 
+                            ${selectedColor === color 
+                              ? "bg-black text-white border-black shadow-lg" 
+                              : isAvailable 
+                                ? "bg-white text-black border-gray-100 hover:border-black" 
+                                : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed"}`}
+                        >
+                          {hexColor && (
+                             <span 
+                               className={`w-3 h-3 rounded-full mr-2 border ${isAvailable ? 'border-gray-200' : 'border-gray-100 opacity-30'}`} 
+                               style={{ backgroundColor: hexColor }}
+                             />
+                          )}
+                          {color}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Quantity */}
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-900 mb-4">
-                  Quantity
+                <label className="block text-xs font-black uppercase tracking-widest text-gray-900 mb-4 flex items-center justify-between">
+                  <span>Quantity</span>
+                  {selectedVariant && (
+                    <span className={`text-[10px] ${selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedVariant.stock > 0 ? `${selectedVariant.stock} available` : 'Out of Stock'}
+                    </span>
+                  )}
                 </label>
                 <div className="inline-flex items-center p-1 bg-gray-50 rounded-2xl border border-gray-100">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-3 hover:bg-white rounded-xl transition-colors"
+                    disabled={selectedVariant?.stock === 0}
+                    className="p-3 hover:bg-white rounded-xl transition-colors disabled:opacity-30"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="px-6 font-black text-lg">{quantity}</span>
+                  <span className="px-6 font-black text-lg">{selectedVariant?.stock === 0 ? 0 : quantity}</span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="p-3 hover:bg-white rounded-xl transition-colors"
+                    onClick={() => setQuantity(Math.min(selectedVariant?.stock || 100, quantity + 1))}
+                    disabled={selectedVariant?.stock === 0 || quantity >= (selectedVariant?.stock || 0)}
+                    className="p-3 hover:bg-white rounded-xl transition-colors disabled:opacity-30"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
