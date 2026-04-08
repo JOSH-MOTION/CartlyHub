@@ -77,7 +77,9 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
-  clearScreen: false,
+  css: {
+    postcss: './postcss.config.js',
+  },
   server: {
     allowedHosts: true,
     host: '0.0.0.0',

@@ -48,11 +48,15 @@ export async function POST(request) {
       }
 
       // Deduct stock
-      const updatedVariants = [...productData.variants];
-      updatedVariants[variantIndex] = {
-        ...variant,
-        stock: variant.stock - item.quantity
-      };
+      const updatedVariants = productData.variants.map((v, idx) => {
+        if (idx === variantIndex) {
+          return {
+            ...v,  // Preserve ALL properties
+            stock: Math.max(0, v.stock - item.quantity)  // Prevent negative stock
+          };
+        }
+        return v;
+      });
 
       await updateDoc(productRef, {
         variants: updatedVariants,

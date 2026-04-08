@@ -88,7 +88,23 @@ export default function AdminProductsPage() {
     },
   });
 
-  const updateProductMutation = useMutation({
+  const validateProduct = (data) => {
+  if (!data.name || data.name.trim().length < 3) {
+    toast.error('Product name must be at least 3 characters');
+    return false;
+  }
+  if (!data.categoryId) {
+    toast.error('Please select a category');
+    return false;
+  }
+  if (data.basePrice <= 0) {
+    toast.error('Price must be greater than 0');
+    return false;
+  }
+  return true;
+};
+
+const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       return await updateProduct(id, data);
     },
@@ -456,8 +472,14 @@ export default function AdminProductsPage() {
             <button
               onClick={() => {
                 if (editingId) {
+                  if (!validateProduct(form)) {
+                    return;
+                  }
                   updateProductMutation.mutate({ id: editingId, data: form });
                 } else {
+                  if (!validateProduct(form)) {
+                    return;
+                  }
                   createProductMutation.mutate(form);
                 }
               }}
@@ -584,7 +606,12 @@ export default function AdminProductsPage() {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => deleteProductMutation.mutate(p.id)}
+                          onClick={() => {
+                            if (!confirm('Are you sure? This action cannot be undone.')) {
+                              return;
+                            }
+                            deleteProductMutation.mutate(p.id);
+                          }}
                           disabled={deleteProductMutation.isLoading}
                           className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors disabled:opacity-50"
                         >
@@ -599,6 +626,12 @@ export default function AdminProductsPage() {
           </div>
         )}
       </main>
+      
+      {productsLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Loader2 className="h-12 w-12 animate-spin text-white" />
+        </div>
+      )}
     </div>
   );
 }

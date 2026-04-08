@@ -406,7 +406,12 @@ export default function AdminCategoriesPage() {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(category.id)}
+                            onClick={() => {
+                              if (!confirm('Are you sure? This action cannot be undone.')) {
+                                return;
+                              }
+                              handleDelete(category.id);
+                            }}
                             disabled={deleteCategoryMutation.isLoading}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                           >
@@ -424,6 +429,12 @@ export default function AdminCategoriesPage() {
         </div>
         </div>
       </div>
+      
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Loader2 className="h-12 w-12 animate-spin text-white" />
+        </div>
+      )}
     </div>
   );
 }

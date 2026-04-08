@@ -1,4 +1,5 @@
 import Providers from "@/components/Providers";
+import "../global.css";
 
 export default function RootLayout({ children }) {
   return (

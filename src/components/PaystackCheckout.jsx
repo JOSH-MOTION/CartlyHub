@@ -73,7 +73,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
     handler.openIframe();
   };
 
-  const verifyPayment = async (reference) => {
+  const verifyPayment = async (reference, retries = 3) => {
     setLoading(true);
     try {
       const response = await fetch('/api/verify-payment', {
@@ -82,24 +82,29 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
         body: JSON.stringify({ reference })
       });
 
+      if (!response.ok && retries > 0) {
+        // Retry after 2 seconds
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return verifyPayment(reference, retries - 1);
+      }
+
       const data = await response.json();
       
       if (data.success && data.data.status === 'success') {
         setPaymentVerified(true);
-        
-        // Deduct stock for each item
         await deductInventory(cart);
-        
-        // Create order record
         await createOrder(reference, data.data);
-        
         setStep(3);
       } else {
-        alert('Payment verification failed. Please contact support.');
+        throw new Error('Payment verification failed');
       }
     } catch (error) {
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return verifyPayment(reference, retries - 1);
+      }
       console.error('Payment verification error:', error);
-      alert('Error verifying payment. Please contact support with reference: ' + reference);
+      alert('Payment verification failed. Please contact support with reference: ' + reference);
     } finally {
       setLoading(false);
     }

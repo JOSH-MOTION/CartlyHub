@@ -1,5 +1,5 @@
 import { db } from '../../../lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, increment, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, increment, Timestamp, query, orderBy, getDocs } from 'firebase/firestore';
 
 export async function POST(request) {
   try {
@@ -37,11 +37,15 @@ export async function POST(request) {
       }
 
       // Deduct stock
-      const updatedVariants = [...productData.variants];
-      updatedVariants[variantIndex] = {
-        ...variant,
-        stock: variant.stock - item.quantity
-      };
+      const updatedVariants = productData.variants.map((v, idx) => {
+        if (idx === variantIndex) {
+          return {
+            ...v,  
+            stock: Math.max(0, v.stock - item.quantity)  
+          };
+        }
+        return v;
+      });
 
       await updateDoc(productRef, {
         variants: updatedVariants,
