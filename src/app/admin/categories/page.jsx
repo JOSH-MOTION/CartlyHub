@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -164,32 +164,22 @@ export default function AdminCategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to Admin Dashboard</span>
-          </button>
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+            Inventory
+          </span>
+          <h2 className="text-4xl font-black tracking-tighter uppercase">Categories Management</h2>
         </div>
+        <button
+          onClick={() => setIsAdding(true)}
+          className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Category</span>
+        </button>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Categories Management</h2>
-            <button
-              onClick={() => setIsAdding(true)}
-              className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Category</span>
-            </button>
-          </div>
 
       {/* Add Category Form */}
       {isAdding && (
@@ -425,8 +415,6 @@ export default function AdminCategoriesPage() {
               ))}
             </tbody>
           </table>
-        </div>
-        </div>
         </div>
       </div>
       

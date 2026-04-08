@@ -28,8 +28,8 @@ export default function AdminSetup() {
   if (loading) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans">
-      <div className="max-w-md w-full bg-white p-12 rounded-3xl shadow-xl text-center space-y-8">
+    <div className="flex items-center justify-center py-12">
+      <div className="max-w-md w-full bg-white p-12 rounded-3xl shadow-xl text-center space-y-8 border border-gray-100">
         <div className="p-6 bg-black rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-xl shadow-black/20">
           <ShieldCheck className="h-10 w-10 text-white" />
         </div>

@@ -36,7 +36,7 @@ export default function ManualSalesPage() {
     p.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addItemToSale = (customPrice = null) => {
+  const addItemToSale = () => {
     if (!selectedProduct || !selectedVariant) {
       toast.error("Please select a product and variant");
       return;
@@ -48,7 +48,8 @@ export default function ManualSalesPage() {
     }
 
     const basePrice = selectedVariant.price || selectedProduct.basePrice;
-    const finalPrice = customPrice || basePrice;
+    // Ensure customPrice state is respected if it was typed
+    const finalPrice = customPrice !== null ? customPrice : basePrice;
 
     const newItem = {
       productId: selectedProduct.id,
@@ -64,7 +65,7 @@ export default function ManualSalesPage() {
       quantity: quantity,
       basePrice: basePrice,
       price: finalPrice,
-      discountAmount: customPrice ? (basePrice - customPrice) : 0,
+      discountAmount: customPrice !== null ? (basePrice - customPrice) : 0,
     };
 
     setSaleForm({
@@ -147,15 +148,7 @@ export default function ManualSalesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex font-sans">
-      {/* Mini Sidebar */}
-      <aside className="w-20 bg-black flex flex-col items-center py-8 space-y-8">
-        <a href="/admin" className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-colors">
-          <Package className="h-6 w-6" />
-        </a>
-      </aside>
-
-      <main className="flex-grow p-12">
+    <div className="space-y-4">
         <header className="flex justify-between items-end mb-12">
           <div>
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
@@ -306,6 +299,20 @@ export default function ManualSalesPage() {
                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                       />
                     </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex justify-between pr-2">
+                        Custom Price (Optional)
+                        {selectedProduct && <span className="text-gray-300">Default: ₵{selectedVariant?.price || selectedProduct?.basePrice || 0}</span>}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Leave empty for default price..."
+                        className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold placeholder:text-gray-300"
+                        value={customPrice === null ? "" : customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value === "" ? null : Number(e.target.value))}
+                      />
+                    </div>
                   </>
                 )}
               </div>
@@ -388,7 +395,6 @@ export default function ManualSalesPage() {
             </p>
           </div>
         )}
-      </main>
     </div>
   );
 }

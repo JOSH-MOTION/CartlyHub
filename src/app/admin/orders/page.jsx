@@ -73,24 +73,22 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
-              <p className="text-gray-600 mt-1">Manage and track all customer orders</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => refetch()}
-                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Refresh
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+            Customers
+          </span>
+          <h1 className="text-4xl font-black tracking-tighter uppercase">Orders Management</h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => refetch()}
+            className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all shadow-lg shadow-black/10"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 

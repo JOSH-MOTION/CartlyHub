@@ -7,7 +7,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { addRenderIds } from './plugins/addRenderIds';
 import { aliases } from './plugins/aliases';
 import consoleToParent from './plugins/console-to-parent';
-import { layoutWrapperPlugin } from './plugins/layouts';
 import { loadFontsFromTailwindSource } from './plugins/loadFontsFromTailwindSource';
 import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
@@ -29,6 +28,8 @@ export default defineConfig({
       '@auth/core/errors',
       'fsevents',
       'lightningcss',
+      'html-to-image',
+      '@react-aria/button',
     ],
   },
   logLevel: 'info',
@@ -60,7 +61,6 @@ export default defineConfig({
     reactRouter(),
     tsconfigPaths(),
     aliases(),
-    layoutWrapperPlugin(),
   ],
   resolve: {
     alias: {
@@ -73,9 +73,7 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
-  css: {
-    postcss: './postcss.config.js',
-  },
+
   server: {
     allowedHosts: true,
     host: '0.0.0.0',

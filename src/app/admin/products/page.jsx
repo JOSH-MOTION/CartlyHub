@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -173,15 +173,7 @@ const updateProductMutation = useMutation({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex font-sans">
-      {/* Mini Sidebar Link to Dashboard */}
-      <aside className="w-20 bg-black flex flex-col items-center py-8 space-y-8">
-        <a href="/admin" className="p-3 bg-white/10 rounded-xl text-white">
-          <Edit className="h-6 w-6" />
-        </a>
-      </aside>
-
-      <main className="flex-grow p-12">
+    <div className="space-y-4">
         <header className="flex justify-between items-end mb-12">
           <div>
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
@@ -625,7 +617,6 @@ const updateProductMutation = useMutation({
             </table>
           </div>
         )}
-      </main>
       
       {productsLoading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

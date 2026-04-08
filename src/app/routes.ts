@@ -5,6 +5,7 @@ import {
 	type RouteConfigEntry,
 	index,
 	route,
+	layout,
 } from '@react-router/dev/routes';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -13,6 +14,7 @@ type Tree = {
 	path: string;
 	children: Tree[];
 	hasPage: boolean;
+	hasLayout: boolean;
 	isParam: boolean;
 	paramName: string;
 	isCatchAll: boolean;
@@ -24,6 +26,7 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		path: basePath,
 		children: [],
 		hasPage: false,
+		hasLayout: false,
 		isParam: false,
 		isCatchAll: false,
 		paramName: '',
@@ -54,7 +57,9 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 			node.children.push(childNode);
 		} else if (file === 'page.jsx') {
 			node.hasPage = true;
-    }
+		} else if (file === 'layout.jsx') {
+			node.hasLayout = true;
+		}
 	}
 
 	return node;
@@ -100,6 +105,14 @@ function generateRoutes(node: Tree): RouteConfigEntry[] {
 
 	for (const child of node.children) {
 		routes.push(...generateRoutes(child));
+	}
+
+	if (node.hasLayout && node.path !== '') {
+		const layoutPath = `./${node.path}/layout.jsx`;
+		// We use the directory name as the layout route path to ensure proper nesting
+        // However, in RR7 layout() without a path is a layout route.
+        // To avoid duplication, we check if the routes inside already carry the prefix.
+		return [layout(layoutPath, routes)];
 	}
 
 	return routes;
