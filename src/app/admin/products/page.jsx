@@ -143,9 +143,9 @@ export default function AdminProductsPage() {
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', import.meta.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'eccomerce');
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'eccomerce');
 
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dlng6dqtl'}/image/upload`, {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dlng6dqtl'}/image/upload`, {
           method: 'POST',
           body: formData,
         });
