@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { productService } from '../../../services/firestore';
 
 export async function GET(request) {

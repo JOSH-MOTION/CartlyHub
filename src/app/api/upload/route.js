@@ -60,6 +60,8 @@ async function uploadToCloudinary({
 
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   if (request.method !== 'POST') {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
