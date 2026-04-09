@@ -72,7 +72,7 @@ export const productService = {
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       };
-    });
+    }).filter(p => p.isActive !== false);
   },
 
   async getFeatured() {
@@ -92,7 +92,7 @@ export const productService = {
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       };
-    });
+    }).filter(p => p.isActive !== false);
   },
 
   async getByCategory(categoryId) {
@@ -111,7 +111,7 @@ export const productService = {
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       };
-    });
+    }).filter(p => p.isActive !== false);
   },
 };
 

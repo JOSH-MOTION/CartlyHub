@@ -48,6 +48,9 @@ export const getProducts = async (options = {}) => {
       };
     });
     
+    // Filter out soft-deleted products
+    products = products.filter(product => product.isActive !== false);
+    
     // Apply filters
     if (featured) {
       products = products.filter(product => product.isFeatured);

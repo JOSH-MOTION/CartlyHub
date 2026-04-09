@@ -133,6 +133,7 @@ export default function ColorPicker({ value, onChange }) {
                            hsl(${hue}, 100%, 50%)`
               }}
               onMouseDown={(e) => {
+                e.preventDefault();
                 handleSaturationLightnessChange(e);
                 const handleMouseMove = (moveEvent) => {
                   handleSaturationLightnessChange(moveEvent);
@@ -166,6 +167,7 @@ export default function ColorPicker({ value, onChange }) {
                 background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
               }}
               onMouseDown={(e) => {
+                e.preventDefault();
                 handleHueChange(e);
                 const handleMouseMove = (moveEvent) => {
                   handleHueChange(moveEvent);

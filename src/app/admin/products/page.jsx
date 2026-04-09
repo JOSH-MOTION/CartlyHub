@@ -401,19 +401,27 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                      Color
-                    </label>
-                    <ColorPicker
-                      value={v.hexColor}
-                      onChange={(hexColor) => {
-                        updateVariant(i, "hexColor", hexColor);
-                        if (!v.color) {
-                          updateVariant(i, "color", hexColor);
-                        }
-                      }}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Color Name
+                      </label>
+                      <input
+                        placeholder="e.g., Navy Blue"
+                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        value={v.colorName || v.color || ""}
+                        onChange={(e) => updateVariant(i, "color", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Color HEX
+                      </label>
+                      <ColorPicker
+                        value={v.hexColor}
+                        onChange={(hexColor) => updateVariant(i, "hexColor", hexColor)}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
