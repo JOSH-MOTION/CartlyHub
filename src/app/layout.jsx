@@ -2,6 +2,7 @@ import Providers from "@/components/Providers";
 import "./global.css";
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://carlyhub.surge.sh"),
   title: "Carly Hub | Premium Fashion in Ghana",
   description: "Premium fashion marketplace delivering quality across Ghana.",
   openGraph: {

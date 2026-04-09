@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { cloudinaryService } from '../../../services/cloudinary';
 import { toast } from 'sonner';
 
 export default function ProductUpload() {
@@ -23,10 +22,27 @@ export default function ProductUpload() {
   const handleImageUpload = async (files) => {
     try {
       setLoading(true);
-      const imageUrls = await cloudinaryService.uploadMultipleImages(Array.from(files));
+      
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'eccomerce');
+        
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) throw new Error('Upload failed');
+        return response.json();
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const newImageUrls = results.map(result => result.secure_url);
+
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, ...imageUrls.map(img => img.secure_url)]
+        images: [...prev.images, ...newImageUrls]
       }));
       toast.success('Images uploaded successfully!');
     } catch (error) {

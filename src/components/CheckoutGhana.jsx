@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Info, Loader2, CheckCircle2, ShieldCheck, User, Phone, Copy, Ticket, X, MessageCircle } from 'lucide-react';
 import { CartItem, OrderStatus } from '../types';
-import { useAppContext } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 import LocationSearch from './LocationSearch.tsx';
 
 // Ghana MOMO Configuration
@@ -13,7 +13,7 @@ const MOMO_CONFIG = {
 };
 
 const CheckoutGhana = ({ cart, total: subtotal, userProfile, onComplete, onCancel }) => {
-  const { promotions, products: liveProducts } = useAppContext();
+  const { promotions, products: liveProducts } = useApp();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [promoCode, setPromoCode] = useState('');

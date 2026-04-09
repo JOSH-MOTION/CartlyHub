@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { orderService } from '../../../services/firestore';
+import { db } from '../../../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { OrderStatus } from '../../../types';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
@@ -52,10 +53,10 @@ export async function POST(request) {
 
     // Update order in Firestore
     if (orderId) {
-      await orderService.updateStatus(orderId, OrderStatus.PROCESSING);
+      const orderRef = doc(db, 'orders', orderId);
       
-      // Update payment details
-      await orderService.update(orderId, {
+      await updateDoc(orderRef, {
+        status: OrderStatus.PROCESSING,
         paymentDetails: {
           reference: paymentData.reference,
           transactionId: paymentData.id.toString(),

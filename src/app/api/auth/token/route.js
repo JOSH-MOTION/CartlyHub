@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getToken } from '@auth/core/jwt';
+
+export const dynamic = 'force-dynamic';
 export async function GET(request) {
 	const [token, jwt] = await Promise.all([
 		getToken({

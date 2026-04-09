@@ -10,7 +10,7 @@ export default function WishlistPage() {
     <div className="min-h-screen bg-white font-sans">
       <Navbar />
       
-      <Wishlist navigate={navigate} />
+      <Wishlist navigate={router.push} />
     </div>
   );
 }

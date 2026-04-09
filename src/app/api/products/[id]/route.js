@@ -1,6 +1,6 @@
 import sql from "@/app/api/utils/sql";
 
-export async function loader({ request, params }) {
+export async function GET(request, { params }) {
   try {
     const { id } = params;
     const [product] = await sql`

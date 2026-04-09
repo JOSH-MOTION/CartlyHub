@@ -1,18 +1,21 @@
 "use client";
 
-import useAuth from "@/utils/useAuth";
+import { useApp } from "@/context/AppContext";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 function LogoutPage() {
-  const { signOut } = useAuth();
+  const { signOut } = useApp();
+  const router = useRouter();
 
   useEffect(() => {
-    signOut({
-      callbackUrl: "/",
-      redirect: true,
-    });
-  }, [signOut]);
+    const performSignOut = async () => {
+      await signOut();
+      router.push("/");
+    };
+    performSignOut();
+  }, [signOut, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 font-sans">
