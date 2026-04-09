@@ -108,13 +108,14 @@ export default function AdminProductsPage() {
     mutationFn: async ({ id, data }) => {
       return await updateProduct(id, data);
     },
-    onError: () => {
-      throw new Error("Failed to update product");
+    onError: (error) => {
+      toast.error(error.message || "Failed to update product");
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["admin", "products"]);
       toast.success("Product updated successfully");
       setEditingId(null);
+      setIsAdding(false);
     },
   });
 
@@ -180,9 +181,11 @@ export default function AdminProductsPage() {
   };
 
   const updateVariant = (index, field, value) => {
-    const newVariants = [...form.variants];
-    newVariants[index][field] = value;
-    setForm({ ...form, variants: newVariants });
+    setForm((prev) => {
+      const newVariants = [...prev.variants];
+      newVariants[index] = { ...newVariants[index], [field]: value };
+      return { ...prev, variants: newVariants };
+    });
   };
 
   const removeVariant = (index) => {

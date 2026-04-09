@@ -8,6 +8,8 @@ export default function ColorPicker({ value, onChange }) {
   const [saturation, setSaturation] = useState(100);
   const [lightness, setLightness] = useState(50);
   const pickerRef = useRef(null);
+  const saturationRef = useRef(null);
+  const hueRef = useRef(null);
 
   // Convert HSL to Hex
   const hslToHex = (h, s, l) => {
@@ -72,7 +74,8 @@ export default function ColorPicker({ value, onChange }) {
   }, []);
 
   const handleSaturationLightnessChange = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!saturationRef.current) return;
+    const rect = saturationRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const newSaturation = Math.max(0, Math.min(100, (x / rect.width) * 100));
@@ -86,7 +89,8 @@ export default function ColorPicker({ value, onChange }) {
   };
 
   const handleHueChange = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!hueRef.current) return;
+    const rect = hueRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const newHue = Math.max(0, Math.min(360, (x / rect.width) * 360));
     
@@ -121,6 +125,7 @@ export default function ColorPicker({ value, onChange }) {
           {/* Saturation/Lightness Square */}
           <div className="mb-4">
             <div
+              ref={saturationRef}
               className="w-64 h-64 rounded cursor-crosshair relative"
               style={{
                 background: `linear-gradient(to bottom, transparent, black),
@@ -155,6 +160,7 @@ export default function ColorPicker({ value, onChange }) {
           {/* Hue Slider */}
           <div className="mb-4">
             <div
+              ref={hueRef}
               className="w-64 h-8 rounded cursor-pointer relative"
               style={{
                 background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
