@@ -69,21 +69,24 @@ export default function Navbar() {
           </div>
 
           {/* Icons */}
-          <div className="flex items-center space-x-5">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <Search className="h-5 w-5" />
-            </button>
-            <a
-              href="/wishlist"
-              className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
-            >
-              <Heart className="h-5 w-5" />
-              {wishlist?.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
-                  {wishlist.length}
-                </span>
-              )}
-            </a>
+          <div className="flex items-center space-x-3 md:space-x-5">
+            <div className="hidden md:flex items-center space-x-5">
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Search className="h-5 w-5" />
+              </button>
+              <a
+                href="/wishlist"
+                className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
+              >
+                <Heart className="h-5 w-5" />
+                {wishlist?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
+                    {wishlist.length}
+                  </span>
+                )}
+              </a>
+            </div>
+            
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
@@ -95,29 +98,33 @@ export default function Navbar() {
                 </span>
               )}
             </button>
-            <div className="h-6 w-[1px] bg-gray-200 mx-2 hidden sm:block"></div>
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <a href="/account/orders" className="hidden sm:block">
-                  <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                    <User className="h-4 w-4" />
-                  </div>
-                </a>
-                <button
-                  onClick={signOut}
-                  className="text-sm font-bold uppercase hover:underline"
+            <div className="h-6 w-[1px] bg-gray-200 mx-2 hidden md:block"></div>
+            
+            <div className="hidden md:flex items-center space-x-4">
+              {user ? (
+                <>
+                  <a href="/account/orders" className="block">
+                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 hover:bg-gray-200 transition-colors">
+                      <User className="h-4 w-4" />
+                    </div>
+                  </a>
+                  <button
+                    onClick={signOut}
+                    className="text-sm font-bold uppercase hover:underline"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <a
+                  href="/account/signin"
+                  className="text-sm font-bold uppercase tracking-widest px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <a
-                href="/account/signin"
-                className="text-sm font-bold uppercase tracking-widest px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Login
-              </a>
-            )}
+                  Login
+                </a>
+              )}
+            </div>
+
             <button
               className="md:hidden p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -135,6 +142,10 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="pb-4 border-b border-gray-100 flex items-center bg-gray-50 rounded-xl px-4 py-2">
+             <Search className="h-4 w-4 text-gray-400 mr-2" />
+             <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full text-sm" />
+          </div>
           <a
             href="/products"
             className="block text-lg font-bold uppercase tracking-widest"
@@ -153,16 +164,28 @@ export default function Navbar() {
           >
             Shoes
           </a>
-          <a href="/wishlist" className="block text-lg font-bold uppercase tracking-widest">
-            Wishlist
-          </a>
-          <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-            <a href="/account/orders" className="text-sm font-bold uppercase">
-              My Orders
+          
+          <div className="pt-4 border-t border-gray-100 flex flex-col space-y-4">
+            <a href="/wishlist" className="flex items-center space-x-2 text-sm font-bold uppercase">
+              <Heart className="h-4 w-4" />
+              <span>Wishlist {wishlist?.length > 0 ? `(${wishlist.length})` : ''}</span>
             </a>
-            <a href="/wishlist" className="text-sm font-bold uppercase">
-              Wishlist
-            </a>
+            {user ? (
+              <>
+                <a href="/account/orders" className="flex items-center space-x-2 text-sm font-bold uppercase">
+                  <User className="h-4 w-4" />
+                  <span>My Orders</span>
+                </a>
+                <button onClick={signOut} className="flex items-center space-x-2 text-sm font-bold uppercase text-red-500 text-left">
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <a href="/account/signin" className="flex items-center justify-center w-full bg-black text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest">
+                Login / Register
+              </a>
+            )}
           </div>
         </div>
       )}

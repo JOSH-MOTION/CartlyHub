@@ -1,14 +1,15 @@
+import { NextResponse } from 'next/server';
 import { orderService } from '../../../services/firestore';
 import { OrderStatus } from '../../../types';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-export async function action({ request }) {
+export async function POST(request) {
   try {
     const { reference, orderId } = await request.json();
 
     if (!reference) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: 'Reference is required' },
         { status: 400 }
       );
@@ -25,7 +26,7 @@ export async function action({ request }) {
     const verification = await response.json();
 
     if (!verification.status) {
-      return Response.json(
+      return NextResponse.json(
         { 
           success: false, 
           error: 'Payment verification failed',
@@ -39,7 +40,7 @@ export async function action({ request }) {
 
     // Check if payment was successful
     if (paymentData.status !== 'success') {
-      return Response.json(
+      return NextResponse.json(
         { 
           success: false, 
           error: 'Payment was not successful',
@@ -63,7 +64,7 @@ export async function action({ request }) {
       });
     }
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       message: 'Payment verified successfully',
       data: {
@@ -78,7 +79,7 @@ export async function action({ request }) {
   } catch (error) {
     console.error('Payment verification error:', error);
     
-    return Response.json(
+    return NextResponse.json(
       { 
         success: false, 
         error: 'Internal server error',
@@ -89,13 +90,13 @@ export async function action({ request }) {
   }
 }
 
-export async function loader({ request }) {
+export async function GET(request) {
   try {
     const url = new URL(request.url);
     const reference = url.searchParams.get('reference');
 
     if (!reference) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: 'Reference is required' },
         { status: 400 }
       );
@@ -111,7 +112,7 @@ export async function loader({ request }) {
 
     const transaction = await response.json();
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       data: transaction.data,
     });
@@ -119,7 +120,7 @@ export async function loader({ request }) {
   } catch (error) {
     console.error('Transaction details error:', error);
     
-    return Response.json(
+    return NextResponse.json(
       { 
         success: false, 
         error: 'Internal server error',

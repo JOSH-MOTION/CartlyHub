@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -24,7 +24,7 @@ import { getProducts, getCategories, createProduct, updateProduct, deleteProduct
 import ColorPicker from "@/components/ColorPicker";
 
 export default function AdminProductsPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -141,28 +141,22 @@ export default function AdminProductsPage() {
       const uploadedUrls = [];
 
       for (const file of files) {
-        // Convert file to base64
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', import.meta.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'eccomerce');
 
-        // Call upload API
-        const response = await fetch('/api/upload', {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dlng6dqtl'}/image/upload`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64 }),
+          body: formData,
         });
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.error || 'Upload failed');
+          throw new Error(error.error?.message || 'Upload failed');
         }
 
         const data = await response.json();
-        uploadedUrls.push(data.url);
+        uploadedUrls.push(data.secure_url);
       }
 
       setForm({ ...form, images: [...form.images, ...uploadedUrls] });

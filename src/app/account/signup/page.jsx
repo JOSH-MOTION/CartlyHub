@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import useAuth from "@/utils/useAuth";
+import { useApp } from "@/context/AppContext";
+import { useRouter } from "next/navigation";
 import { UserPlus, Mail, Lock, ArrowRight, Chrome, User } from "lucide-react";
 
 function SignUpPage() {
@@ -9,7 +12,8 @@ function SignUpPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
-  const { signUpWithCredentials } = useAuth();
+  const { signUp } = useApp();
+  const router = useRouter();
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -17,13 +21,8 @@ function SignUpPage() {
     setError(null);
 
     try {
-      await signUpWithCredentials({
-        email,
-        password,
-        name,
-        callbackUrl: "/",
-        redirect: true,
-      });
+      await signUp(email, password, name);
+      router.push("/");
     } catch (err) {
       setError("Could not create account. Email may already be in use.");
       setLoading(false);

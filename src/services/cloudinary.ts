@@ -57,7 +57,7 @@ export class CloudinaryService {
 
       return new Promise((resolve, reject) => {
         cloudinary.uploader.upload(
-          file instanceof File ? file.path || file : file,
+          file instanceof File ? (file as any).path || file : file,
           uploadOptions,
           (error, result) => {
             if (error) {
@@ -287,7 +287,7 @@ export class CloudinaryService {
       return new Promise((resolve, reject) => {
         cloudinary.api.create_folder(
           folderPath,
-          (error, result) => {
+          (error: any, result: any) => {
             if (error) {
               reject(error);
             } else {
@@ -324,7 +324,7 @@ export class CloudinaryService {
       return new Promise((resolve, reject) => {
         cloudinary.api.resources(
           listOptions,
-          (error, result) => {
+          (error: any, result: any) => {
             if (error) {
               reject(error);
             } else {

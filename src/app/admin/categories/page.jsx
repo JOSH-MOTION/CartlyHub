@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { getCategories, createCategory, updateCategory, deleteCategory } from "@/utils/firebaseData";
 
 export default function AdminCategoriesPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [upload] = useUpload();

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import useUser from "@/utils/useUser";
 import { ShieldCheck, ArrowRight, Loader2 } from "lucide-react";

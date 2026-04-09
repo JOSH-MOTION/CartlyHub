@@ -1,6 +1,7 @@
+import { NextResponse } from 'next/server';
 import sql from "@/app/api/utils/sql";
 
-export async function action({ request }) {
+export async function POST(request) {
   try {
     const { reference } = await request.json();
 
@@ -18,9 +19,9 @@ export async function action({ request }) {
       WHERE payment_reference = ${reference}
     `;
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Verify payment error:", error);
-    return Response.json({ error: "Verification failed" }, { status: 500 });
+    return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }

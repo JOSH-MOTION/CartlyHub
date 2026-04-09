@@ -58,7 +58,13 @@ async function uploadToCloudinary({
   }
 }
 
+import { NextResponse } from 'next/server';
+
 export async function POST(request) {
+  if (request.method !== 'POST') {
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
   try {
     const contentType = request.headers.get('content-type') || '';
 
@@ -70,7 +76,7 @@ export async function POST(request) {
       const file = formData.get('file');
 
       if (!file) {
-        return Response.json({ error: 'No file provided' }, { status: 400 });
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 });
       }
 
       // Convert file to buffer
@@ -85,7 +91,7 @@ export async function POST(request) {
       const buffer = Buffer.from(await request.arrayBuffer());
       uploadData = { buffer };
     } else {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Unsupported content type' },
         { status: 400 }
       );
@@ -93,29 +99,16 @@ export async function POST(request) {
 
     const result = await uploadToCloudinary(uploadData);
 
-    return Response.json(result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Upload error:', error);
-    return Response.json(
+    return NextResponse.json(
       { error: error.message || 'Upload failed' },
       { status: 500 }
     );
   }
 }
 
-// Important: Export other methods as 405
 export async function GET() {
-  return Response.json({ error: 'Method not allowed' }, { status: 405 });
-}
-
-export async function PUT() {
-  return Response.json({ error: 'Method not allowed' }, { status: 405 });
-}
-
-export async function DELETE() {
-  return Response.json({ error: 'Method not allowed' }, { status: 405 });
-}
-
-export async function PATCH() {
-  return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }

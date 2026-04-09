@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, Loader2, CheckCircle2, ShieldCheck, User, Phone, MessageCircle, CreditCard, Mail } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -152,7 +154,8 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
           productName: item.product?.name,
           variantInfo: {
             size: item.variant?.size,
-            color: item.variant?.color
+            color: item.variant?.colorName || item.variant?.color || item.variant?.hexColor || null,
+            hexColor: item.variant?.hexColor || null
           }
         })),
         totalAmount: finalTotal,
@@ -193,7 +196,9 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
       const product = item.product;
       const variant = item.variant;
       const sizeLine = variant?.size ? `\n📏 Size: ${variant.size}` : '';
-      return `🛍 ${product?.name}${sizeLine}\n📦 Qty: ${item.quantity}`;
+      const colorText = variant?.colorName || variant?.color || variant?.hexColor;
+      const colorLine = colorText ? `\n🎨 Color: ${colorText}` : '';
+      return `🛍 ${product?.name}${sizeLine}${colorLine}\n📦 Qty: ${item.quantity}`;
     }).join('\n\n');
 
     const message = `Hello Carly Hub 👋
@@ -364,7 +369,22 @@ Please confirm delivery time. Thank you! 🙏`;
                       </div>
                       <div>
                         <p className="text-sm font-bold text-stone-900 line-clamp-1">{product?.name}</p>
-                        <p className="text-[10px] text-stone-400 uppercase tracking-widest">Qty: {item.quantity} • {variant?.size || 'OS'}</p>
+                        <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                          <span>Qty: {item.quantity}</span>
+                          <span className="text-stone-200 px-0.5">•</span>
+                          <span>{variant?.size || 'OS'}</span>
+                          {(variant?.color || variant?.colorName || variant?.hexColor) && (
+                            <>
+                              <span className="text-stone-200 px-0.5">•</span>
+                              <span className="flex items-center gap-1">
+                                {variant?.hexColor && (
+                                  <span className="w-2 h-2 rounded-full border border-stone-300" style={{ backgroundColor: variant.hexColor }} />
+                                )}
+                                {variant?.colorName || variant?.color || 'Color'}
+                              </span>
+                            </>
+                          )}
+                        </p>
                       </div>
                     </div>
                     <span className="font-bold text-stone-900 text-sm">GH₵ {((variant?.price || product?.basePrice || 0) * item.quantity).toLocaleString()}</span>

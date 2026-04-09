@@ -1,7 +1,8 @@
+import { NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
-export async function action({ request }) {
+export async function POST(request) {
   try {
     const body = await request.json();
     const {
@@ -19,7 +20,7 @@ export async function action({ request }) {
 
     // Validate items
     if (!items || items.length === 0) {
-      return Response.json({ error: 'No items in order' }, { status: 400 });
+      return NextResponse.json({ error: 'No items in order' }, { status: 400 });
     }
 
     // Check stock availability and deduct inventory
@@ -31,14 +32,14 @@ export async function action({ request }) {
       const productSnap = await getDoc(productRef);
       
       if (!productSnap.exists()) {
-        return Response.json({ error: `Product not found` }, { status: 404 });
+        return NextResponse.json({ error: `Product not found` }, { status: 404 });
       }
 
       const productData = productSnap.data();
       const variantIndex = productData.variants?.findIndex(v => v.id === item.variantId);
 
       if (variantIndex === -1) {
-        return Response.json({ error: `Variant not found` }, { status: 404 });
+        return NextResponse.json({ error: `Variant not found` }, { status: 404 });
       }
 
       const variant = productData.variants[variantIndex];
@@ -66,7 +67,7 @@ export async function action({ request }) {
       
       // Check stock
       if (variant.stock < item.quantity) {
-        return Response.json({ 
+        return NextResponse.json({ 
           error: `Insufficient stock. Available: ${variant.stock}, Requested: ${item.quantity}` 
         }, { status: 400 });
       }
@@ -107,7 +108,7 @@ export async function action({ request }) {
 
     const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
-    return Response.json({ 
+    return NextResponse.json({ 
       success: true, 
       orderId: orderRef.id,
       message: 'Order created successfully and inventory updated'
@@ -115,7 +116,7 @@ export async function action({ request }) {
 
   } catch (error) {
     console.error('Create order error:', error);
-    return Response.json({ 
+    return NextResponse.json({ 
       error: 'Failed to create order',
       message: error.message 
     }, { status: 500 });

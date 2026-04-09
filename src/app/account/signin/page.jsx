@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import useAuth from "@/utils/useAuth";
+import { useApp } from "@/context/AppContext";
+import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, ArrowRight, Chrome } from "lucide-react";
 
 function SignInPage() {
@@ -8,7 +11,8 @@ function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { signInWithCredentials } = useAuth();
+  const { signIn } = useApp();
+  const router = useRouter();
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -16,12 +20,8 @@ function SignInPage() {
     setError(null);
 
     try {
-      await signInWithCredentials({
-        email,
-        password,
-        callbackUrl: "/",
-        redirect: true,
-      });
+      await signIn(email, password);
+      router.push("/");
     } catch (err) {
       setError("Invalid email or password. Please try again.");
       setLoading(false);

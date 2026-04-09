@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import sql from "@/app/api/utils/sql";
 import { auth } from "@/auth";
 
@@ -5,7 +6,7 @@ export async function POST() {
   try {
     const session = await auth();
     if (!session || !session.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Add role column if not exists (handled by DB schema tool usually, but let's be safe)
@@ -18,9 +19,9 @@ export async function POST() {
       WHERE id = ${session.user.id}
     `;
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Admin setup error:", error);
-    return Response.json({ error: "Setup failed" }, { status: 500 });
+    return NextResponse.json({ error: "Setup failed" }, { status: 500 });
   }
 }

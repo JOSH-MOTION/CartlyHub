@@ -8,9 +8,9 @@ import { toast } from "sonner";
 export default function ProductCard({ product, categories = [] }) {
   const { addItem } = useCart();
   const { toggleWishlist, wishlist } = useApp();
-  const defaultVariant = product.variants?.[0];
-  const price = defaultVariant?.price || product.basePrice;
-  const stock = defaultVariant?.stock || product.stock || 0;
+  const firstInStockVariant = product.variants?.find(v => v.stock > 0) || product.variants?.[0];
+  const price = firstInStockVariant?.price || product.basePrice;
+  const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0;
 
   // Get category name
   const getCategoryName = (categoryId) => {
@@ -20,15 +20,15 @@ export default function ProductCard({ product, categories = [] }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    if (!defaultVariant) {
+    if (!firstInStockVariant) {
       toast.error("Product has no available variants");
       return;
     }
-    if (stock <= 0) {
-      toast.error("Product is out of stock");
+    if (totalStock <= 0) {
+      toast.error("Product is completely out of stock");
       return;
     }
-    addItem(product, defaultVariant, 1);
+    addItem(product, firstInStockVariant, 1);
     toast.success(`${product.name} added to cart`);
   };
 
@@ -66,7 +66,7 @@ export default function ProductCard({ product, categories = [] }) {
               Featured
             </span>
           )}
-          {stock <= 5 && stock > 0 && (
+          {totalStock <= 5 && totalStock > 0 && (
             <span className="bg-red-500/90 backdrop-blur-md text-white border border-red-500/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(239,68,68,0.2)]">
               Low Stock
             </span>
@@ -122,22 +122,22 @@ export default function ProductCard({ product, categories = [] }) {
         {/* Price and Action Section */}
         <div className="pt-5 border-t border-gray-50 flex items-center justify-between group-hover:border-transparent transition-colors duration-300">
           <div className="flex flex-col">
-            {stock <= 0 && <span className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-1">Sold Out</span>}
+            {totalStock <= 0 && <span className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-1">Sold Out</span>}
             <div className="flex items-baseline gap-1">
-              <span className={`text-base font-bold ${stock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`text-base font-bold ${totalStock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
                 {process.env.NEXT_PUBLIC_STORE_CURRENCY || '₵'}
               </span>
-              <p className={`text-2xl font-black tracking-tighter ${stock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
+              <p className={`text-2xl font-black tracking-tighter ${totalStock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
                 {Number(price).toLocaleString()}
               </p>
             </div>
           </div>
           
           <button
-            onClick={handleAddToCart}
-            disabled={stock <= 0}
+            onClick={totalStock > 0 ? handleAddToCart : undefined}
+            disabled={totalStock <= 0}
             className={`flex items-center justify-center p-3.5 rounded-xl transition-all duration-300 border ${
-              stock <= 0 
+              totalStock <= 0 
                 ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' 
                 : 'bg-white text-gray-900 border-gray-200 hover:bg-black hover:text-white hover:border-black hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] active:scale-95'
             }`}

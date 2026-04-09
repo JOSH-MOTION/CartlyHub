@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import {
   Package,
   ShoppingCart,
@@ -25,7 +25,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Real product and category queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex space-x-4">
           <button
-            onClick={() => navigate('/admin/products')}
+            onClick={() => router.push('/admin/products')}
             className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
           >
             <Plus className="h-4 w-4" />

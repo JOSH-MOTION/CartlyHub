@@ -1,7 +1,8 @@
+import { NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc, deleteDoc, increment, Timestamp, query, orderBy, getDocs } from 'firebase/firestore';
 
-export async function action({ request }) {
+export async function POST(request) {
   const method = request.method;
 
   try {
@@ -11,7 +12,7 @@ export async function action({ request }) {
 
       // Validate items
       if (!items || items.length === 0) {
-        return Response.json({ error: 'No items in sale' }, { status: 400 });
+        return NextResponse.json({ error: 'No items in sale' }, { status: 400 });
       }
 
       // Check stock availability and deduct inventory
@@ -23,14 +24,14 @@ export async function action({ request }) {
         const productSnap = await getDoc(productRef);
         
         if (!productSnap.exists()) {
-          return Response.json({ error: `Product ${item.productName} not found` }, { status: 404 });
+          return NextResponse.json({ error: `Product ${item.productName} not found` }, { status: 404 });
         }
 
         const productData = productSnap.data();
         const variantIndex = productData.variants?.findIndex(v => v.id === item.variantId);
 
         if (variantIndex === -1) {
-          return Response.json({ error: `Variant not found for ${item.productName}` }, { status: 404 });
+          return NextResponse.json({ error: `Variant not found for ${item.productName}` }, { status: 404 });
         }
 
         const variant = productData.variants[variantIndex];
@@ -58,7 +59,7 @@ export async function action({ request }) {
         
         // Check stock
         if (variant.stock < item.quantity) {
-          return Response.json({ 
+          return NextResponse.json({ 
             error: `Insufficient stock for ${item.productName}. Available: ${variant.stock}, Requested: ${item.quantity}` 
           }, { status: 400 });
         }
@@ -98,7 +99,7 @@ export async function action({ request }) {
 
       const saleRef = await addDoc(collection(db, 'manualSales'), saleData);
 
-      return Response.json({ 
+      return NextResponse.json({ 
         success: true, 
         saleId: saleRef.id,
         message: 'Sale recorded successfully and inventory updated'
@@ -110,7 +111,7 @@ export async function action({ request }) {
       const { saleId } = body;
 
       if (!saleId) {
-        return Response.json({ error: 'Sale ID required' }, { status: 400 });
+        return NextResponse.json({ error: 'Sale ID required' }, { status: 400 });
       }
 
       // 1. Fetch the sale to get items for stock restoration
@@ -118,7 +119,7 @@ export async function action({ request }) {
       const saleSnap = await getDoc(saleRef);
 
       if (!saleSnap.exists()) {
-        return Response.json({ error: 'Sale not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Sale not found' }, { status: 404 });
       }
 
       const saleData = saleSnap.data();
@@ -147,7 +148,7 @@ export async function action({ request }) {
       // 3. Delete the sale record
       await deleteDoc(saleRef);
 
-      return Response.json({ success: true, message: 'Sale deleted and stock restored' });
+      return NextResponse.json({ success: true, message: 'Sale deleted and stock restored' });
     }
 
     if (method === 'PUT') {
@@ -155,7 +156,7 @@ export async function action({ request }) {
       const { saleId, updates } = body;
 
       if (!saleId || !updates) {
-        return Response.json({ error: 'Sale ID and updates required' }, { status: 400 });
+        return NextResponse.json({ error: 'Sale ID and updates required' }, { status: 400 });
       }
 
       const saleRef = doc(db, 'manualSales', saleId);
@@ -179,21 +180,21 @@ export async function action({ request }) {
 
       await updateDoc(saleRef, allowedUpdates);
 
-      return Response.json({ success: true, message: 'Sale updated' });
+      return NextResponse.json({ success: true, message: 'Sale updated' });
     }
 
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (error) {
     console.error(`Manual sale ${method} error:`, error);
-    return Response.json({ 
+    return NextResponse.json({ 
       error: `Failed to ${method.toLowerCase()} sale`,
       message: error.message 
     }, { status: 500 });
   }
 }
 
-export async function loader({ request }) {
+export async function GET(request) {
   try {
     const salesQuery = query(
       collection(db, 'manualSales'),
@@ -208,10 +209,10 @@ export async function loader({ request }) {
       updatedAt: doc.data().updatedAt?.toDate() || new Date(),
     }));
 
-    return Response.json({ success: true, data: sales });
+    return NextResponse.json({ success: true, data: sales });
   } catch (error) {
     console.error('Error fetching manual sales:', error);
-    return Response.json({ 
+    return NextResponse.json({ 
       error: 'Failed to fetch sales',
       message: error.message 
     }, { status: 500 });

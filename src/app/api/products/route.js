@@ -1,6 +1,7 @@
+import { NextResponse } from 'next/server';
 import { productService } from '../../../services/firestore';
 
-export async function loader({ request }) {
+export async function GET(request) {
   try {
     const url = new URL(request.url);
     const featured = url.searchParams.get('featured');
@@ -22,7 +23,7 @@ export async function loader({ request }) {
       products = products.slice(0, parseInt(limit));
     }
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       data: products,
     });
@@ -30,7 +31,7 @@ export async function loader({ request }) {
   } catch (error) {
     console.error('Products API error:', error);
     
-    return Response.json(
+    return NextResponse.json(
       { 
         success: false, 
         error: 'Internal server error',
@@ -41,7 +42,7 @@ export async function loader({ request }) {
   }
 }
 
-export async function action({ request }) {
+export async function POST(request) {
   try {
     // Note: Admin check would go here (checking session role)
     const body = await request.json();
@@ -75,10 +76,10 @@ export async function action({ request }) {
       })),
     });
 
-    return Response.json({ id: productId, success: true });
+    return NextResponse.json({ id: productId, success: true });
   } catch (error) {
     console.error("POST /api/products error:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Failed to create product" },
       { status: 500 },
     );

@@ -62,8 +62,19 @@ export default function CartSidebar({ isOpen, onClose }) {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-gray-900 truncate">{item.product.name}</h4>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                        {item.variant.size && <span>Size: {item.variant.size}</span>}
-                        {item.variant.color && <span>Color: {item.variant.color}</span>}
+                        {item.variant.size && <span className="px-2 py-0.5 bg-gray-200/60 rounded text-xs font-medium">Size: {item.variant.size}</span>}
+                        {(item.variant.color || item.variant.colorName || item.variant.hexColor) && (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-200/60 rounded text-xs font-medium">
+                            Color: 
+                            {item.variant.hexColor && (
+                              <span 
+                                className="w-2.5 h-2.5 rounded-full border border-gray-300 shadow-sm"
+                                style={{ backgroundColor: item.variant.hexColor }}
+                              />
+                            )}
+                            {item.variant.colorName || item.variant.color}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

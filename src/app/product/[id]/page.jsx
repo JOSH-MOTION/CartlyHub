@@ -169,7 +169,7 @@ export default function ProductDetailPage({ params }) {
                 <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-2 md:gap-4">
               {product.images?.map((img, i) => (
                 <button
                   key={i}
@@ -192,7 +192,7 @@ export default function ProductDetailPage({ params }) {
               <span className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-3 block">
                 {product.category_name}
               </span>
-              <h1 className="text-5xl font-black text-black tracking-tighter uppercase leading-tight mb-4">
+              <h1 className="text-3xl md:text-5xl font-black text-black tracking-tighter uppercase leading-tight mb-4">
                 {product.name}
               </h1>
               <div className="flex items-center space-x-4 mb-6">

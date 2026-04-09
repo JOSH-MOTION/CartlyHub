@@ -60,7 +60,7 @@ export default function HomePage() {
           
           {/* Main background image */}
           <img
-            src="https://images.unsplash.com/photo-modern-shopping-mall-interior-with-escalators-and-storefronts-Bn2cAE13daA?w=1600&q=80"
+            src="/mart.jpg"
             className="w-full h-full object-cover opacity-60"
             alt="Hero"
           />
@@ -75,7 +75,7 @@ export default function HomePage() {
                   Spring Collection
                 </span>
               </div>
-              <h1 className="text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter leading-[0.9] mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1] md:leading-[0.9] mb-6">
                 Premium Collection <span className="text-gray-600">2026</span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">

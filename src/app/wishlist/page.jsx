@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router";
+"use client";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Wishlist from "@/components/Wishlist";
 
 export default function WishlistPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-white font-sans">
