@@ -52,18 +52,12 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative h-[85vh] flex items-center overflow-hidden bg-white">
         <div className="absolute inset-0 z-0">
-          {/* Background with abstract shape */}
+          {/* Background with abstract shape and geometric grid */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-green-100 rounded-full transform translate-x-1/2 -translate-y-1/2 opacity-30"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-200 rounded-full transform -translate-x-1/3 translate-y-1/3 opacity-20"></div>
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gray-200 rounded-full transform translate-x-1/2 -translate-y-1/2 opacity-30"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gray-300 rounded-full transform -translate-x-1/3 translate-y-1/3 opacity-20"></div>
           </div>
-          
-          {/* Main background image */}
-          <img
-            src="/mart.jpg"
-            className="w-full h-full object-cover opacity-60"
-            alt="Hero"
-          />
         </div>
         
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -104,14 +98,14 @@ export default function HomePage() {
             <div className="relative">
               <div className="relative bg-gray-50 rounded-2xl p-8 shadow-lg">
                 <img
-                  src="https://images.unsplash.com/photo-1556905055-8f248a345b2?w=800&q=80"
-                  alt="Fashion showcase"
-                  className="w-full h-64 object-cover rounded-xl mb-6"
+                  src="/mart.jpg"
+                  alt="Store Showcase"
+                  className="w-full h-80 object-cover rounded-xl mb-6 shadow-md"
                 />
                 <div className="flex items-center justify-center space-x-4">
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
                 </div>
               </div>
               

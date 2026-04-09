@@ -29,20 +29,16 @@ function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8 font-sans">
-      <div className="w-full max-w-md space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex min-h-screen bg-white font-sans">
+      {/* Left side Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-white">
+        <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
             Welcome back to Carly Hub
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
-            <a
-              href="/account/signup"
-              className="font-medium text-black hover:underline"
-            >
-              create a new account
-            </a>
+            Secure login for customers.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={onSubmit}>
@@ -110,6 +106,31 @@ function SignInPage() {
             <Chrome className="h-5 w-5 mr-2 text-red-500" />
             <span>Google</span>
           </a>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center">
+          <p className="text-gray-500 text-sm mb-4">Don't have an account?</p>
+          <button
+            onClick={() => router.push("/account/signup")}
+            className="w-full py-3 bg-white text-black border border-gray-200 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Sign Up
+          </button>
+        </div>
+      </div>
+      </div>
+      
+      {/* Right side Image Canvas */}
+      <div className="hidden lg:block lg:w-1/2 relative bg-gray-50 overflow-hidden">
+        <img 
+          src="/cartly.png" 
+          alt="Shopping Experience" 
+          className="absolute inset-0 w-full h-full object-cover opacity-90 scale-105 transform hover:scale-100 transition-transform duration-1000"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+        <div className="absolute bottom-12 left-12 right-12 text-white">
+           <h2 className="text-3xl font-black uppercase tracking-widest mb-4">Discover Quality</h2>
+           <p className="text-white/80 leading-relaxed max-w-md">Join our platform to access an exclusive curated catalog of premium fashion items, seamless checkout, and priority customer service.</p>
         </div>
       </div>
     </div>

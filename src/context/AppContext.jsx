@@ -13,7 +13,9 @@ import {
   orderBy, 
   limit, 
   onSnapshot,
-  Timestamp 
+  Timestamp,
+  setDoc,
+  getDoc
 } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
@@ -226,7 +228,7 @@ export const AppProvider = ({ children }) => {
       const user = userCredential.user;
       
       // Create user profile in Firestore
-      await addDoc(collection(db, 'users'), {
+      await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
         name: name,

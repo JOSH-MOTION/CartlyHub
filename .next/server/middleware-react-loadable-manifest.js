@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"app\\\\admin-login\\\\page.jsx -> firebase/auth\":{\"id\":\"app\\\\admin-login\\\\page.jsx -> firebase/auth\",\"files\":[]}}"

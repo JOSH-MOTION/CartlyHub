@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useApp } from "@/context/AppContext";
 import {
   LayoutDashboard,
   Package,
@@ -18,12 +19,36 @@ import {
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, profile, isLoading } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Authorization Check
+  useEffect(() => {
+    if (isLoading) return; // Wait for Firebase to load
+
+    const isPinValidated = typeof window !== "undefined" && sessionStorage.getItem("adminPinAuth") === "true";
+    
+    if (!user || profile?.role !== "ADMIN" || !isPinValidated) {
+      router.push("/admin-login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [user, profile, isLoading, router]);
+
 
   // Close sidebar on route change automatically
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const SidebarItem = ({ icon: Icon, label, route }) => {
     const isActive = pathname === route ||
