@@ -68,6 +68,10 @@ export default function CartPage() {
                         <h3 className="text-xl font-black uppercase tracking-tight mb-2">
                           {item.product.name}
                         </h3>
+                        <div className="flex items-center space-x-4 text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                          {item.variant.size && (
+                            <span>Size: {item.variant.size}</span>
+                          )}
                           {item.variant.color && !item.product.isBulk && (
                             <span>Color: {item.variant.color}</span>
                           )}
