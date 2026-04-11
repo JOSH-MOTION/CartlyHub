@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Save, X, Search, Loader2, DollarSign, Phone, User as UserIcon, Package, Edit, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { getProducts } from "@/utils/firebaseData";
+import { getProducts, getManualSales, createManualSale, updateManualSale, deleteManualSale } from "@/utils/firebaseData";
 
 export default function ManualSalesPage() {
   const queryClient = useQueryClient();
@@ -41,21 +41,13 @@ export default function ManualSalesPage() {
   const { data: pastSales, isLoading: pastSalesLoading } = useQuery({
     queryKey: ["manualSales"],
     queryFn: async () => {
-      const response = await fetch('/api/manual-sales');
-      const result = await response.json();
-      return result.data || [];
+      return await getManualSales();
     },
   });
 
   const deleteSaleMutation = useMutation({
     mutationFn: async (saleId) => {
-      const response = await fetch('/api/manual-sales', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ saleId }),
-      });
-      if (!response.ok) throw new Error('Failed to delete sale');
-      return await response.json();
+      return await deleteManualSale(saleId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["manualSales"]);
@@ -67,13 +59,7 @@ export default function ManualSalesPage() {
 
   const updateSaleMutation = useMutation({
     mutationFn: async ({ saleId, updates }) => {
-      const response = await fetch('/api/manual-sales', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ saleId, updates }),
-      });
-      if (!response.ok) throw new Error('Failed to update sale');
-      return await response.json();
+      return await updateManualSale(saleId, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["manualSales"]);
@@ -105,14 +91,15 @@ export default function ManualSalesPage() {
 
     const newItem = {
       productId: selectedProduct.id,
-      variantId: selectedVariant.id,
+      variantId: selectedVariant.id || null,
+      variantMatchIndex: selectedProduct.variants.indexOf(selectedVariant),
       productName: selectedProduct.name,
       variantInfo: {
         size: selectedVariant.size,
-        color: selectedVariant.color,
+        color: selectedVariant.color || selectedVariant.colorName,
         sku: selectedVariant.sku || '',
         material: selectedVariant.material || '',
-        fullDetails: `${selectedVariant.color || 'Standard'} - ${selectedVariant.size}${selectedVariant.material ? ` - ${selectedVariant.material}` : ''}`,
+        fullDetails: `${selectedVariant.color || selectedVariant.colorName || 'Standard'} - ${selectedVariant.size}${selectedVariant.material ? ` - ${selectedVariant.material}` : ''}`,
         hexColor: selectedVariant.hexColor,
       },
       quantity: quantity,
@@ -147,18 +134,7 @@ export default function ManualSalesPage() {
 
   const recordSaleMutation = useMutation({
     mutationFn: async (saleData) => {
-      const response = await fetch('/api/manual-sales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saleData),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'Failed to record sale');
-      }
-      
-      return response.json();
+      return await createManualSale(saleData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);
@@ -327,13 +303,13 @@ export default function ManualSalesPage() {
                         Select Color & Size
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {selectedProduct.variants?.map((variant) => (
+                        {selectedProduct.variants?.map((variant, vIdx) => (
                           <button
-                            key={variant.id}
+                            key={variant.id || vIdx}
                             type="button"
                             onClick={() => setSelectedVariant(variant)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
-                              selectedVariant?.id === variant.id
+                              selectedVariant === variant
                                 ? "border-black bg-black text-white shadow-lg"
                                 : "border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200"
                             } ${variant.stock <= 0 ? "opacity-30 cursor-not-allowed grayscale" : ""}`}
@@ -353,7 +329,7 @@ export default function ManualSalesPage() {
                                 {variant.color || "Standard"}
                               </p>
                               <p className={`text-[9px] font-black uppercase tracking-wider ${
-                                selectedVariant?.id === variant.id ? "text-white/60" : "text-gray-400"
+                                selectedVariant === variant ? "text-white/60" : "text-gray-400"
                               }`}>
                                 Size: {variant.size} • Stock: {variant.stock}
                               </p>
@@ -496,11 +472,10 @@ export default function ManualSalesPage() {
                 <table className="w-full text-left">
                   <thead className="bg-gray-50/50">
                     <tr>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Items Sold</th>
                       <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Customer</th>
-                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Details</th>
                       <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Amount</th>
-                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Profit</th>
-                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Date</th>
+                      <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Date/Time</th>
                       <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -508,42 +483,52 @@ export default function ManualSalesPage() {
                     {pastSales?.map((sale) => (
                       <tr key={sale.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-8 py-6">
+                           <div className="space-y-2">
+                             {sale.items?.map((item, idx) => (
+                               <div key={idx} className="flex items-center gap-2">
+                                 {item.variantInfo?.hexColor && (
+                                   <div 
+                                     className="w-3 h-3 rounded-full border border-gray-200 shadow-sm flex-shrink-0"
+                                     style={{ backgroundColor: item.variantInfo.hexColor }}
+                                   />
+                                 )}
+                                 <p className="text-xs text-black flex items-center">
+                                   <span className="font-black mr-1">{item.quantity}x</span> {item.productName} 
+                                   <span className="text-gray-400 text-[9px] ml-2 uppercase font-black tracking-widest">
+                                     ({item.variantInfo?.color || 'Std'} - {item.variantInfo?.size})
+                                   </span>
+                                 </p>
+                               </div>
+                             ))}
+                           </div>
+                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+                             Paid via {sale.paymentMethod} {sale.notes ? `• Note: ${sale.notes}` : ''}
+                           </p>
+                        </td>
+                        <td className="px-8 py-6">
                            {editingSaleId === sale.id ? (
                              <input 
                                value={editForm.customerName}
                                onChange={(e) => setEditForm({...editForm, customerName: e.target.value})}
-                               className="bg-gray-50 border-0 outline-none p-1 rounded w-full text-xs font-black uppercase"
+                               className="bg-gray-50 border-0 outline-none p-2 rounded-xl w-full text-xs font-black uppercase mb-1"
                              />
                            ) : (
                              <>
-                               <p className="font-black text-xs uppercase">{sale.customerName}</p>
+                               <p className="font-black text-xs uppercase text-gray-700">{sale.customerName || 'Walk-in'}</p>
                                <p className="text-[9px] font-bold text-gray-400 mt-1">{sale.customerPhone || 'No Phone'}</p>
                              </>
                            )}
                         </td>
                         <td className="px-8 py-6">
-                           {editingSaleId === sale.id ? (
-                              <input 
-                                value={editForm.notes}
-                                onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                                placeholder="Notes..."
-                                className="bg-gray-50 border-0 outline-none p-1 rounded w-full text-[10px]"
-                              />
-                           ) : (
-                             <p className="text-[10px] font-bold text-gray-500 italic">
-                               {sale.items?.length} items • {sale.paymentMethod}
-                             </p>
-                           )}
+                           <p className="font-black text-sm text-black">GH₵{sale.totalAmount?.toLocaleString()}</p>
+                           <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mt-1">Profit: GH₵{sale.totalProfit?.toLocaleString() || '0'}</p>
                         </td>
                         <td className="px-8 py-6">
-                           <p className="font-black text-sm text-gray-400">GH₵{sale.totalAmount?.toLocaleString()}</p>
-                        </td>
-                        <td className="px-8 py-6">
-                           <p className="font-black text-sm text-green-600">GH₵{sale.totalProfit?.toLocaleString() || '0'}</p>
-                        </td>
-                        <td className="px-8 py-6">
-                           <p className="text-[10px] font-bold text-gray-400">
+                           <p className="text-[10px] font-bold text-gray-800">
                              {new Date(sale.createdAt).toLocaleDateString()}
+                           </p>
+                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                             {new Date(sale.createdAt).toLocaleTimeString()}
                            </p>
                         </td>
                         <td className="px-8 py-6 text-right">

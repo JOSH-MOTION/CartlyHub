@@ -1,5 +1,5 @@
 import { categoryService, productService } from '../services/firestore.js';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Direct Firebase data access functions
@@ -251,5 +251,125 @@ export const getManualSales = async () => {
   } catch (error) {
     console.error('Error fetching manual sales:', error);
     return [];
+  }
+};
+
+export const createManualSale = async (saleData) => {
+  try {
+    const { items, ...rest } = saleData;
+    let totalProfit = 0;
+    const itemsWithSnapshots = [];
+
+    // Check stock & deduct
+    for (const item of items) {
+      const productRef = doc(db, 'products', item.productId);
+      const productSnap = await getDoc(productRef);
+      if (!productSnap.exists()) throw new Error(`Product ${item.productName} not found`);
+
+      const productData = productSnap.data();
+      let variantIndex = -1;
+      
+      if (item.variantMatchIndex !== undefined && item.variantMatchIndex !== -1) {
+        variantIndex = item.variantMatchIndex;
+      } else if (item.variantId) {
+        variantIndex = productData.variants?.findIndex(v => v.id === item.variantId);
+      } else {
+        variantIndex = productData.variants?.findIndex(v => v.size === item.variantInfo.size && (v.color === item.variantInfo.color || v.colorName === item.variantInfo.color));
+      }
+
+      if (variantIndex === -1) throw new Error(`Variant not found for ${item.productName}`);
+
+      const variant = productData.variants[variantIndex];
+      const costPrice = Number(productData.costPrice || productData.cost_price || productData.buying_price || productData.buyingPrice || 0);
+      const sellingPrice = Number(item.price || 0);
+      const quantity = Number(item.quantity || 1);
+      const itemProfit = (sellingPrice - costPrice) * quantity;
+
+      if (variant.stock < quantity) throw new Error(`Insufficient stock for ${item.productName}`);
+
+      totalProfit += itemProfit;
+      itemsWithSnapshots.push({ ...item, costPrice, profit: itemProfit });
+
+      const updatedVariants = productData.variants.map((v, idx) => {
+        if (idx === variantIndex) return { ...v, stock: Math.max(0, v.stock - quantity) };
+        return v;
+      });
+
+      await updateDoc(productRef, { variants: updatedVariants, updatedAt: Timestamp.now() });
+    }
+
+    // Deep clean undefined values out of items and rest to prevent Firestore crashes
+    const cleanItems = JSON.parse(JSON.stringify(itemsWithSnapshots));
+    const cleanRest = JSON.parse(JSON.stringify(rest));
+
+    const payload = {
+      ...cleanRest,
+      items: cleanItems,
+      totalProfit,
+      saleType: 'manual',
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+
+    const saleRef = await addDoc(collection(db, 'manualSales'), payload);
+    return { success: true, saleId: saleRef.id };
+  } catch (error) {
+    console.error('Error recording manual sale:', error);
+    throw error;
+  }
+};
+
+export const deleteManualSale = async (saleId) => {
+  try {
+    const saleRef = doc(db, 'manualSales', saleId);
+    const saleSnap = await getDoc(saleRef);
+    if (!saleSnap.exists()) throw new Error('Sale not found');
+
+    const saleData = saleSnap.data();
+
+    // Restore stock
+    for (const item of saleData.items || []) {
+      const productRef = doc(db, 'products', item.productId);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const productData = productSnap.data();
+        const updatedVariants = productData.variants?.map((v, idx) => {
+          let isMatch = false;
+          if (item.variantMatchIndex !== undefined && item.variantMatchIndex !== -1) {
+            isMatch = (idx === item.variantMatchIndex);
+          } else if (item.variantId) {
+            isMatch = (v.id === item.variantId);
+          } else {
+            isMatch = (v.size === item.variantInfo?.size && (v.color === item.variantInfo?.color || v.colorName === item.variantInfo?.color));
+          }
+          
+          if (isMatch) return { ...v, stock: Math.max(0, (Number(v.stock) || 0) + (Number(item.quantity) || 0)) };
+          return v;
+        });
+        await updateDoc(productRef, { variants: updatedVariants, updatedAt: Timestamp.now() });
+      }
+    }
+
+    await deleteDoc(saleRef);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting manual sale:', error);
+    throw error;
+  }
+};
+
+export const updateManualSale = async (saleId, updates) => {
+  try {
+    const saleRef = doc(db, 'manualSales', saleId);
+    // Filter undefined
+    const cleanUpdates = {};
+    Object.keys(updates).forEach(key => updates[key] !== undefined && (cleanUpdates[key] = updates[key]));
+    cleanUpdates.updatedAt = Timestamp.now();
+
+    await updateDoc(saleRef, cleanUpdates);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating manual sale:', error);
+    throw error;
   }
 };
