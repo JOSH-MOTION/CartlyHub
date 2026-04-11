@@ -28,6 +28,7 @@ export default function ProductDetailPage({ params }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [paymentMade, setPaymentMade] = useState(false);
+  const [bulkSelections, setBulkSelections] = useState([]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -35,6 +36,12 @@ export default function ProductDetailPage({ params }) {
       const allProducts = await getProducts();
       const foundProduct = allProducts.find(p => p.id === id);
       if (!foundProduct) throw new Error("Product not found");
+      
+      // Initialize bulk selections if not already set
+      if (foundProduct.isBulk && foundProduct.packSize > 1) {
+        setBulkSelections(Array(foundProduct.packSize).fill(null).map(() => ({ color: "", variant: null })));
+      }
+      
       return foundProduct;
     },
   });
@@ -84,31 +91,44 @@ export default function ProductDetailPage({ params }) {
     setSelectedColor(color === selectedColor ? "" : color);
   };
 
+  const handleBulkColorSelect = (index, color) => {
+    const variant = variants.find(v => (v.color || v.colorName) === color && (!selectedSize || v.size === selectedSize));
+    const newSelections = [...bulkSelections];
+    newSelections[index] = { color, variant };
+    setBulkSelections(newSelections);
+  };
+
   const handleAddToCart = () => {
     if (availableSizes.length > 0 && !selectedSize) {
       toast.error("Please select a size");
       return;
     }
-    if (availableColors.length > 0 && !selectedColor) {
-      toast.error("Please select a color");
-      return;
-    }
-    if (!selectedVariant) {
-      toast.error("This combination is currently unavailable");
-      return;
+    if (product.isBulk && product.packSize > 1) {
+      const incomplete = bulkSelections.some(s => !s.color);
+      if (incomplete) {
+        toast.error(`Please select all ${product.packSize} colors for your pack`);
+        return;
+      }
+    } else {
+      if (availableColors.length > 0 && !selectedColor) {
+        toast.error("Please select a color");
+        return;
+      }
+      if (!selectedVariant) {
+        toast.error("This combination is currently unavailable");
+        return;
+      }
+      if (selectedVariant.stock <= 0) {
+        toast.error("This item is currently out of stock");
+        return;
+      }
+      if (quantity > selectedVariant.stock) {
+        toast.error(`Only ${selectedVariant.stock} items left in stock`);
+        return;
+      }
     }
 
-    if (selectedVariant.stock <= 0) {
-      toast.error("This item is currently out of stock");
-      return;
-    }
-
-    if (quantity > selectedVariant.stock) {
-      toast.error(`Only ${selectedVariant.stock} items left in stock`);
-      return;
-    }
-
-    addItem(product, selectedVariant, quantity);
+    addItem(product, selectedVariant, quantity, bulkSelections);
     toast.success(`${product.name} added to bag`);
   };
 
@@ -246,7 +266,7 @@ export default function ProductDetailPage({ params }) {
               )}
 
               {/* Color Selector */}
-              {allColors.length > 0 && (
+              {allColors.length > 0 && !product.isBulk && (
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-gray-900 mb-4">
                     Select Color
@@ -279,6 +299,55 @@ export default function ProductDetailPage({ params }) {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Bulk Color Selectors */}
+              {product.isBulk && product.packSize > 1 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-gray-900">
+                      Customize Your Pack ({product.packSize} Items)
+                    </label>
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Mix & Match Allowed</span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {bulkSelections.map((selection, idx) => (
+                      <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 block">Item #{idx + 1} Color</span>
+                        <div className="flex flex-wrap gap-2">
+                          {allColors.map((color) => {
+                            const isAvailable = availableColors.includes(color);
+                            const variantMatch = variants.find(v => (v.color || v.colorName) === color);
+                            const hexColor = variantMatch?.hexColor;
+                            
+                            return (
+                              <button
+                                key={color}
+                                onClick={() => handleBulkColorSelect(idx, color)}
+                                disabled={!isAvailable}
+                                className={`px-3 h-10 flex items-center justify-center rounded-lg text-xs font-black transition-all border-2 
+                                  ${selection.color === color 
+                                    ? "bg-black text-white border-black" 
+                                    : isAvailable 
+                                      ? "bg-white text-black border-gray-100 hover:border-black" 
+                                      : "bg-gray-100 text-gray-300 border-gray-50 cursor-not-allowed"}`}
+                              >
+                                {hexColor && (
+                                   <span 
+                                     className="w-2.5 h-2.5 rounded-full mr-1.5 border border-gray-200" 
+                                     style={{ backgroundColor: hexColor }}
+                                   />
+                                )}
+                                {color}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

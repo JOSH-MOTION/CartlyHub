@@ -5,11 +5,13 @@ const useCart = create(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (product, variant, quantity = 1) => {
+      addItem: (product, variant, quantity = 1, selections = []) => {
         const items = get().items;
         const existingItemIndex = items.findIndex(
           (item) =>
-            item.product.id === product.id && item.variant.id === variant.id,
+            item.product.id === product.id && 
+            item.variant.id === variant.id &&
+            JSON.stringify(item.selections) === JSON.stringify(selections),
         );
 
         if (existingItemIndex > -1) {
@@ -17,21 +19,25 @@ const useCart = create(
           newItems[existingItemIndex].quantity += quantity;
           set({ items: newItems });
         } else {
-          set({ items: [...items, { product, variant, quantity }] });
+          set({ items: [...items, { product, variant, quantity, selections }] });
         }
       },
-      removeItem: (productId, variantId) => {
+      removeItem: (productId, variantId, selections = []) => {
         set({
           items: get().items.filter(
             (item) =>
-              !(item.product.id === productId && item.variant.id === variantId),
+              !(item.product.id === productId && 
+                item.variant.id === variantId &&
+                JSON.stringify(item.selections) === JSON.stringify(selections)),
           ),
         });
       },
-      updateQuantity: (productId, variantId, quantity) => {
+      updateQuantity: (productId, variantId, quantity, selections = []) => {
         if (quantity < 1) return;
         const newItems = get().items.map((item) =>
-          item.product.id === productId && item.variant.id === variantId
+          item.product.id === productId && 
+          item.variant.id === variantId &&
+          JSON.stringify(item.selections) === JSON.stringify(selections)
             ? { ...item, quantity }
             : item,
         );

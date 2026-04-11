@@ -40,6 +40,8 @@ export default function AdminProductsPage() {
     basePrice: "",
     costPrice: "",
     isFeatured: false,
+    isBulk: false,
+    packSize: 1,
     images: [],
     variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
   });
@@ -428,6 +430,52 @@ export default function AdminProductsPage() {
             </div>
           </section>
 
+          {/* Bulk & Pack Settings Section */}
+          <section className="space-y-6">
+            <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
+              Bulk & Pack Settings
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-transparent">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Is this a Bulk/Pack Item?
+                  </h4>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">Enable if selling items as a set (e.g. 3-pack)</p>
+                </div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6 rounded-lg bg-white/10 accent-black"
+                    checked={form.isBulk}
+                    onChange={(e) =>
+                      setForm({ ...form, isBulk: e.target.checked })
+                    }
+                  />
+                </label>
+              </div>
+              
+              {form.isBulk && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    Items Per Pack (Pack Size)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                    value={form.packSize}
+                    onChange={(e) =>
+                      setForm({ ...form, packSize: Number(e.target.value) })
+                    }
+                    placeholder="E.g. 3"
+                  />
+                  <p className="text-[10px] text-gray-400 font-bold uppercase italic">Customers will be asked to select colors for each item.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Pricing Section */}
           <section className="space-y-6">
             <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
@@ -609,6 +657,8 @@ export default function AdminProductsPage() {
                             basePrice: p.basePrice,
                             costPrice: p.costPrice || "",
                             isFeatured: p.isFeatured,
+                            isBulk: p.isBulk || false,
+                            packSize: p.packSize || 1,
                             images: p.images || [],
                             variants: p.variants?.map(v => ({
                               size: v.size || "",

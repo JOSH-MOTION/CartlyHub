@@ -48,7 +48,7 @@ export default function CartPage() {
             <div className="lg:col-span-8 space-y-8">
               {items.map((item) => (
                 <div
-                  key={`${item.product.id}-${item.variant.id}`}
+                  key={`${item.product.id}-${item.variant.id}-${JSON.stringify(item.selections)}`}
                   className="bg-white border border-gray-100 rounded-3xl p-8 flex space-x-6 hover:shadow-lg transition-all"
                 >
                   <div className="h-32 w-28 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
@@ -68,18 +68,26 @@ export default function CartPage() {
                         <h3 className="text-xl font-black uppercase tracking-tight mb-2">
                           {item.product.name}
                         </h3>
-                        <div className="flex items-center space-x-4 text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                          {item.variant.size && (
-                            <span>Size: {item.variant.size}</span>
-                          )}
-                          {item.variant.color && (
+                          {item.variant.color && !item.product.isBulk && (
                             <span>Color: {item.variant.color}</span>
                           )}
                         </div>
+                        {item.selections && item.selections.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                             {item.selections.map((s, idx) => (
+                               <div key={idx} className="flex items-center space-x-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                                 {s.variant?.hexColor && (
+                                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.variant.hexColor }}></div>
+                                 )}
+                                 <span className="text-[9px] font-black uppercase text-gray-500">{s.color}</span>
+                               </div>
+                             ))}
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() =>
-                          removeItem(item.product.id, item.variant.id)
+                          removeItem(item.product.id, item.variant.id, item.selections)
                         }
                         className="p-2 text-gray-300 hover:text-red-500 transition-colors"
                       >
@@ -95,6 +103,7 @@ export default function CartPage() {
                               item.product.id,
                               item.variant.id,
                               item.quantity - 1,
+                              item.selections
                             )
                           }
                           className="hover:text-black text-gray-400"
@@ -110,6 +119,7 @@ export default function CartPage() {
                               item.product.id,
                               item.variant.id,
                               item.quantity + 1,
+                              item.selections
                             )
                           }
                           className="hover:text-black text-gray-400"

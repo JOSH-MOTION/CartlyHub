@@ -66,6 +66,11 @@ export default function ProductCard({ product, categories = [] }) {
               Featured
             </span>
           )}
+          {product.isBulk && product.packSize > 1 && (
+            <span className="bg-emerald-500/90 backdrop-blur-md text-white border border-emerald-500/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(16,185,129,0.2)]">
+              Pack of {product.packSize}
+            </span>
+          )}
           {totalStock <= 5 && totalStock > 0 && (
             <span className="bg-red-500/90 backdrop-blur-md text-white border border-red-500/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(239,68,68,0.2)]">
               Low Stock

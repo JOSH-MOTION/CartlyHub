@@ -33,7 +33,9 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
     document.body.appendChild(script);
     
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -46,7 +48,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: form.email,
-      amount: finalTotal * 100, // Paystack expects amount in pesewas (kobo)
+      amount: Math.round(finalTotal * 100), // Paystack expects amount in pesewas (kobo)
       currency: 'GHS',
       ref: 'ORD-' + Math.floor((Math.random() * 1000000000) + 1),
       metadata: {
@@ -123,15 +125,33 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
           const productData = productDoc.data();
           const variants = productData.variants || [];
           
-          // Find the specific variant and update its stock
-          const updatedVariants = variants.map(variant => {
-            if (variant.id === item.variant.id) {
-              const currentStock = variant.stock || 0;
-              const newStock = Math.max(0, currentStock - item.quantity);
-              return { ...variant, stock: newStock };
+          let updatedVariants = [...variants];
+
+          if (item.product.isBulk && item.selections && item.selections.length > 0) {
+            // Deduct for each selection in the pack
+            for (const selection of item.selections) {
+              if (selection.variant) {
+                updatedVariants = updatedVariants.map(v => {
+                  if (v.id === selection.variant.id || (v.size === item.variant?.size && (v.color === selection.color || v.colorName === selection.color))) {
+                    const currentStock = v.stock || 0;
+                    const newStock = Math.max(0, currentStock - item.quantity);
+                    return { ...v, stock: newStock };
+                  }
+                  return v;
+                });
+              }
             }
-            return variant;
-          });
+          } else {
+            // Find the specific variant and update its stock
+            updatedVariants = variants.map(variant => {
+              if (variant.id === item.variant.id) {
+                const currentStock = variant.stock || 0;
+                const newStock = Math.max(0, currentStock - item.quantity);
+                return { ...variant, stock: newStock };
+              }
+              return variant;
+            });
+          }
           
           // Update the product with new stock levels
           await updateDoc(productRef, { variants: updatedVariants });
@@ -147,11 +167,14 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
     try {
       const orderData = {
         items: cart.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
+          productId: item.product?.id || item.productId,
+          variantId: item.variant?.id || item.variantId,
           quantity: item.quantity,
           price: item.variant?.price || item.product?.basePrice,
           productName: item.product?.name,
+          isBulk: item.product?.isBulk || false,
+          packSize: item.product?.packSize || 1,
+          selections: item.selections || [],
           variantInfo: {
             size: item.variant?.size,
             color: item.variant?.colorName || item.variant?.color || item.variant?.hexColor || null,
@@ -196,8 +219,16 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
       const product = item.product;
       const variant = item.variant;
       const sizeLine = variant?.size ? `\n📏 Size: ${variant.size}` : '';
-      const colorText = variant?.colorName || variant?.color || variant?.hexColor;
-      const colorLine = colorText ? `\n🎨 Color: ${colorText}` : '';
+      
+      let colorLine = '';
+      if (product.isBulk && item.selections && item.selections.length > 0) {
+        const colors = item.selections.map(s => s.color).filter(Boolean).join(', ');
+        colorLine = `\n🎨 Pack Colors: ${colors}`;
+      } else {
+        const colorText = variant?.colorName || variant?.color || variant?.hexColor;
+        colorLine = colorText ? `\n🎨 Color: ${colorText}` : '';
+      }
+      
       return `🛍 ${product?.name}${sizeLine}${colorLine}\n📦 Qty: ${item.quantity}`;
     }).join('\n\n');
 
@@ -362,32 +393,51 @@ Please confirm delivery time. Thank you! 🙏`;
                 const variant = item.variant;
                 const displayImage = variant?.images?.[0] || product?.images[0];
                 return (
-                  <div key={idx} className="flex justify-between items-center group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-16 bg-stone-200 rounded-xl overflow-hidden shrink-0">
-                        <img src={displayImage} className="w-full h-full object-cover" alt={product?.name} />
+                  <div key={idx} className="flex flex-col gap-4 group border-b border-stone-100 pb-4 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-16 bg-stone-200 rounded-xl overflow-hidden shrink-0">
+                          <img src={displayImage} className="w-full h-full object-cover" alt={product?.name} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-stone-900 line-clamp-1">{product?.name}</p>
+                          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                            <span>Qty: {item.quantity}</span>
+                            <span className="text-stone-200 px-0.5">•</span>
+                            <span>{variant?.size || 'OS'}</span>
+                            {variant?.color && !product?.isBulk && (
+                              <>
+                                <span className="text-stone-200 px-0.5">•</span>
+                                <span className="flex items-center gap-1">
+                                  {variant?.hexColor && (
+                                    <span className="w-2 h-2 rounded-full border border-stone-300" style={{ backgroundColor: variant.hexColor }} />
+                                  )}
+                                  {variant?.colorName || variant?.color || 'Color'}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-stone-900 line-clamp-1">{product?.name}</p>
-                        <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                          <span>Qty: {item.quantity}</span>
-                          <span className="text-stone-200 px-0.5">•</span>
-                          <span>{variant?.size || 'OS'}</span>
-                          {(variant?.color || variant?.colorName || variant?.hexColor) && (
-                            <>
-                              <span className="text-stone-200 px-0.5">•</span>
-                              <span className="flex items-center gap-1">
-                                {variant?.hexColor && (
-                                  <span className="w-2 h-2 rounded-full border border-stone-300" style={{ backgroundColor: variant.hexColor }} />
-                                )}
-                                {variant?.colorName || variant?.color || 'Color'}
-                              </span>
-                            </>
-                          )}
-                        </p>
-                      </div>
+                      <span className="font-bold text-stone-900 text-sm">GH₵ {((variant?.price || product?.basePrice || 0) * item.quantity).toLocaleString()}</span>
                     </div>
-                    <span className="font-bold text-stone-900 text-sm">GH₵ {((variant?.price || product?.basePrice || 0) * item.quantity).toLocaleString()}</span>
+                    
+                    {/* Selections for Bulk Items */}
+                    {product?.isBulk && item.selections && item.selections.length > 0 && (
+                      <div className="pl-16">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 mb-2">Pack Configuration:</p>
+                        <div className="flex flex-wrap gap-2">
+                           {item.selections.map((s, sIdx) => (
+                             <div key={sIdx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-stone-100 shadow-sm">
+                               {s.variant?.hexColor && (
+                                 <div className="w-2 h-2 rounded-full border border-stone-200" style={{ backgroundColor: s.variant.hexColor }}></div>
+                               )}
+                               <span className="text-[8px] font-bold uppercase text-stone-600">{s.color}</span>
+                             </div>
+                           ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
