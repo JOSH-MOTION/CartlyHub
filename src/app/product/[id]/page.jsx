@@ -13,11 +13,14 @@ import {
   Minus,
   Plus,
   MessageCircle,
+  MapPin,
+  Store,
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
-import { getProducts } from "@/utils/firebaseData";
+import { getProducts, getProductReviews, submitReview } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ProductDetailPage({ params }) {
   const { id } = params;
@@ -29,6 +32,9 @@ export default function ProductDetailPage({ params }) {
   const [activeImage, setActiveImage] = useState(0);
   const [paymentMade, setPaymentMade] = useState(false);
   const [bulkSelections, setBulkSelections] = useState([]);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: "", name: "" });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -44,6 +50,11 @@ export default function ProductDetailPage({ params }) {
       
       return foundProduct;
     },
+  });
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ["reviews", id],
+    queryFn: () => getProductReviews(id),
   });
 
   if (isLoading)
@@ -165,6 +176,32 @@ export default function ProductDetailPage({ params }) {
     );
   };
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!newReview.name || !newReview.comment) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    setIsSubmittingReview(true);
+    try {
+      await submitReview({
+        productId: id,
+        sellerName: product.sellerName || "Carly Hub Admin",
+        rating: newReview.rating,
+        comment: newReview.comment,
+        name: newReview.name,
+      });
+      setNewReview({ rating: 5, comment: "", name: "" });
+      queryClient.invalidateQueries(["reviews", id]);
+      queryClient.invalidateQueries(["product", id]);
+      toast.success("Review submitted! Thank you.");
+    } catch (error) {
+      toast.error("Failed to submit review");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans">
       <Navbar />
@@ -218,11 +255,14 @@ export default function ProductDetailPage({ params }) {
               <div className="flex items-center space-x-4 mb-6">
                 <div className="flex text-yellow-400">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="h-4 w-4 fill-current" />
+                    <Star 
+                      key={s} 
+                      className={`h-4 w-4 ${s <= (product.averageRating || 5) ? 'fill-current' : 'text-gray-200'}`} 
+                    />
                   ))}
                 </div>
                 <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
-                  (24 Reviews)
+                  ({product.reviewCount || reviews.length || 0} Reviews)
                 </span>
               </div>
               <p className="text-3xl font-black text-black tracking-tight">
@@ -356,7 +396,7 @@ export default function ProductDetailPage({ params }) {
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-gray-900 mb-4 flex items-center justify-between">
                   <span>Quantity</span>
-                  {selectedVariant && (
+                  {((allColors.length > 0 ? !!selectedColor : true) && (allSizes.length > 0 ? !!selectedSize : true)) && selectedVariant && (
                     <span className={`text-[10px] ${selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {selectedVariant.stock > 0 ? `${selectedVariant.stock} available` : 'Out of Stock'}
                     </span>
@@ -425,51 +465,202 @@ export default function ProductDetailPage({ params }) {
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Trust Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-10 border-t border-gray-100">
-                <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest mb-1">
-                      Fast Delivery
-                    </h4>
-                    <p className="text-xs text-gray-500 font-medium">
-                      Free delivery on orders over ₵150k.
-                    </p>
-                  </div>
+            {/* Seller & Location Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-10 border-t border-gray-100">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <MapPin className="h-5 w-5 text-emerald-500" />
                 </div>
-                <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <ShieldCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest mb-1">
-                      Secure Check
-                    </h4>
-                    <p className="text-xs text-gray-500 font-medium">
-                      Encrypted Paystack payments.
-                    </p>
-                  </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">
+                    Precise Location
+                  </h4>
+                  <p className="text-xs text-gray-500 font-bold uppercase">
+                    {product.region}{product.location ? `: ${product.location}` : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <Store className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">
+                    Verified Seller
+                  </h4>
+                  <a 
+                    href={`/seller/${encodeURIComponent(product.sellerName || "Carly Hub Admin")}`}
+                    className="text-xs text-blue-600 font-black uppercase tracking-widest hover:text-black transition-colors"
+                  >
+                    {product.sellerName || "Carly Hub Admin"}
+                  </a>
                 </div>
               </div>
             </div>
 
-            {/* Description */}
-            <div className="mt-16 pt-16 border-t border-gray-100">
-              <h3 className="text-xl font-black uppercase tracking-tighter mb-6">
-                Product Insight
-              </h3>
-              <div className="prose prose-sm text-gray-600 font-medium leading-relaxed max-w-none">
-                {product.description ||
-                  "No description available for this premium piece."}
+            {/* Trust Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-10 border-t border-gray-100">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">
+                    Fast Delivery
+                  </h4>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Free delivery on orders over ₵150k.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">
+                    Secure Check
+                  </h4>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Encrypted Paystack payments.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
+
+        {/* Description */}
+        <div className="mt-12 lg:mt-16 pt-12 lg:pt-16 border-t border-gray-100">
+            <h3 className="text-xl font-black uppercase tracking-tighter mb-6">
+              Product Insight
+            </h3>
+            <div className="prose prose-sm text-gray-600 font-medium leading-relaxed max-w-none">
+              {product.description ||
+                "No description available for this premium piece."}
+            </div>
+          </div>
+
+          {/* Customer Reviews Section */}
+          <div className="mt-12 lg:mt-16 pt-12 lg:pt-16 border-t border-gray-100 pb-24">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
+                  Customer Talk
+                </h3>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                  Based on {reviews.length} reviews
+                </p>
+              </div>
+              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                <div className="text-3xl font-black">
+                  {(product.averageRating || 0).toFixed(1)}
+                </div>
+                <div className="flex text-yellow-500">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star key={s} className={`h-4 w-4 ${s <= (product.averageRating || 0) ? 'fill-current' : 'text-gray-200'}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+              {/* Review List */}
+              <div className="lg:col-span-2 space-y-10">
+                {reviews.length === 0 ? (
+                  <div className="bg-gray-50/50 rounded-[2.5rem] p-16 text-center border-2 border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                      <MessageCircle className="h-8 w-8 text-gray-300" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">No reviews yet. Be the first to share your experience!</p>
+                  </div>
+                ) : (
+                  reviews.map((r) => (
+                    <div key={r.id} className="group border-b border-gray-100 pb-10 last:border-0">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white text-xs font-black">
+                            {r.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="font-black uppercase text-sm tracking-tight mb-0.5">{r.name}</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              {r.createdAt.toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 text-yellow-400">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'fill-current' : 'text-gray-100'}`} />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 font-medium leading-relaxed pl-14">
+                        {r.comment}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Write Review Form - Refined Card */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-[2.5rem] p-8 lg:p-10 h-fit lg:sticky lg:top-32 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
+                  <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 flex items-center">
+                    <span className="w-8 h-[2px] bg-black mr-4"></span>
+                    Leave a Review
+                  </h4>
+                  <form onSubmit={handleReviewSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Rating</label>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setNewReview({ ...newReview, rating: s })}
+                            className={`p-2 rounded-lg transition-all ${newReview.rating >= s ? 'text-yellow-500 bg-yellow-50 shadow-sm' : 'text-gray-300 hover:text-gray-400 bg-white'}`}
+                          >
+                            <Star className={`h-6 w-6 ${newReview.rating >= s ? 'fill-current' : ''}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
+                      <input
+                        type="text"
+                        value={newReview.name}
+                        onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
+                        className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm"
+                        placeholder="E.g. Kofi Mensah"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Comment</label>
+                      <textarea
+                        value={newReview.comment}
+                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                        className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm min-h-[120px] resize-none"
+                        placeholder="Tell us what you think..."
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReview}
+                      className="w-full bg-black text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all disabled:opacity-50"
+                    >
+                      {isSubmittingReview ? "Submitting..." : "Post Review"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+

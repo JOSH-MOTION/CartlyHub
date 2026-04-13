@@ -4,12 +4,34 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
-import { ArrowRight, ShoppingBag, Truck, ShieldCheck, Zap, Filter, Grid3x3, List } from "lucide-react";
+import FilterSidebar from "../components/FilterSidebar";
+import { ArrowRight, ShoppingBag, Truck, ShieldCheck, Zap, Filter, Grid3x3, List, SlidersHorizontal, X as CloseIcon } from "lucide-react";
 import { getProducts, getCategories } from "../utils/firebaseData";
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedRegion, setSelectedRegion] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const GHANA_REGIONS = [
+    "Greater Accra",
+    "Ashanti",
+    "Central",
+    "Eastern",
+    "Western",
+    "Northern",
+    "Volta",
+    "Upper East",
+    "Upper West",
+    "Bono",
+    "Bono East",
+    "Ahafo",
+    "Savannah",
+    "North East",
+    "Oti",
+    "Western North"
+  ];
   
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
@@ -35,13 +57,16 @@ export default function HomePage() {
     },
   });
 
-  // Filter products based on selected category
-  const filteredProducts = selectedCategory === "all" 
-    ? allProducts 
-    : allProducts.filter(product => {
-        const category = categories.find(cat => cat.id === product.categoryId);
-        return category?.name?.toLowerCase() === selectedCategory.toLowerCase();
-      });
+  // Filter products based on selected category AND region
+  const filteredProducts = allProducts.filter(product => {
+    const categoryMatch = selectedCategory === "all" || 
+      categories.find(cat => cat.id === product.categoryId)?.name?.toLowerCase() === selectedCategory.toLowerCase();
+    
+    const regionMatch = selectedRegion === "all" || 
+      product.region === selectedRegion;
+      
+    return categoryMatch && regionMatch;
+  });
 
   const displayProducts = filteredProducts.slice(0, 12); // Show more products on front page
 
@@ -122,97 +147,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">
-              Shop by Category
-            </span>
-            <h2 className="text-4xl font-black text-black tracking-tighter uppercase mb-8">
-              Popular Categories
-            </h2>
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap justify-center gap-3 mb-16">
-            <button
-              onClick={() => setSelectedCategory("all")}
-              className={`px-6 py-3 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${
-                selectedCategory === "all"
-                  ? "bg-black text-white shadow-lg"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              All Products
-            </button>
-            {categories.slice(0, 6).map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.name)}
-                className={`px-6 py-3 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${
-                  selectedCategory === category.name
-                    ? "bg-black text-white shadow-lg"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Featured Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            {categories.slice(0, 6).map((category) => (
-              <a
-                key={category.id}
-                href={`/products?category=${category.name}`}
-                className="group relative h-[280px] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 bg-white border border-gray-100 transform hover:scale-105"
-              >
-                {/* Category Image Background */}
-                {category.image ? (
-                  <div className="absolute inset-0">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover:from-black/80 group-hover:via-black/40 transition-all duration-500"></div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-500"></div>
-                )}
-                
-                {/* Hover Overlay Effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-600/20 via-transparent to-blue-600/20 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                
-                <div className="relative h-full p-8 flex flex-col justify-between text-white">
-                  <div className="transform transition-all duration-500 group-hover:translate-y-2">
-                    <h3 className="text-xl font-bold text-white mb-2 drop-shadow-lg transition-all duration-500 group-hover:text-2xl group-hover:text-yellow-300">
-                      {category.name}
-                    </h3>
-                    <p className="text-white/90 text-sm drop-shadow-lg transition-all duration-500 group-hover:text-white group-hover:mb-4">
-                      {category.description || "Explore our collection"}
-                    </p>
-                  </div>
-                  <div className="flex items-center text-white font-bold text-sm transition-all duration-500 group-hover:text-yellow-300 group-hover:translate-x-2">
-                    <span className="transition-all duration-500 group-hover:mr-2">Explore</span>
-                    <ArrowRight className="h-4 w-4 transition-all duration-500 group-hover:translate-x-2 group-hover:scale-125" />
-                  </div>
-                </div>
-                
-                {/* Shimmer Effect on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-1000"></div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Products Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
             <div>
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2 block">
                 Featured Products
@@ -225,11 +163,19 @@ export default function HomePage() {
               </p>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center bg-white rounded-2xl border border-gray-200 p-1">
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className="flex items-center justify-center space-x-3 bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all shadow-xl shadow-black/10 group"
+              >
+                <SlidersHorizontal className="h-4 w-4 transform group-hover:rotate-180 transition-transform duration-500" />
+                <span>Filters</span>
+              </button>
+
+              <div className="flex items-center bg-white rounded-2xl border border-gray-200 p-1 h-[52px]">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-xl transition-colors ${
+                  className={`p-2 px-3 rounded-xl transition-colors ${
                     viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
@@ -237,7 +183,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-xl transition-colors ${
+                  className={`p-2 px-3 rounded-xl transition-colors ${
                     viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
@@ -247,13 +193,47 @@ export default function HomePage() {
               
               <a
                 href="/products"
-                className="inline-flex items-center px-6 py-3 bg-black text-white font-bold uppercase tracking-widest text-sm rounded-2xl hover:bg-gray-800 transition-all"
+                className="inline-flex items-center px-8 py-4 bg-white text-black border-2 border-black font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-50 transition-all h-[52px]"
               >
-                View All ({filteredProducts.length})
+                Explore All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </a>
             </div>
           </div>
+
+          {/* Active Filter Badges */}
+          {(selectedCategory !== "all" || selectedRegion !== "all") && (
+            <div className="flex flex-wrap items-center gap-2 mb-12 animate-in fade-in slide-in-from-left-4 duration-500">
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">Filtering by:</span>
+              
+              {selectedCategory !== "all" && (
+                <button 
+                  onClick={() => setSelectedCategory("all")}
+                  className="flex items-center space-x-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                >
+                  <span>Category: {selectedCategory}</span>
+                  <CloseIcon className="h-3 w-3" />
+                </button>
+              )}
+              
+              {selectedRegion !== "all" && (
+                <button 
+                  onClick={() => setSelectedRegion("all")}
+                  className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 hover:bg-blue-100 transition-colors"
+                >
+                  <span>Region: {selectedRegion}</span>
+                  <CloseIcon className="h-3 w-3" />
+                </button>
+              )}
+
+              <button 
+                onClick={() => { setSelectedCategory("all"); setSelectedRegion("all"); }}
+                className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 underline decoration-2 underline-offset-4 ml-2"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
 
           {/* Products Grid/List */}
           {productsLoading ? (
@@ -298,6 +278,70 @@ export default function HomePage() {
               </a>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Categories Section - Moved below products */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+            <div className="text-left">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">
+                Browse Marketplace
+              </span>
+              <h2 className="text-4xl font-black text-black tracking-tighter uppercase">
+                Popular Categories
+              </h2>
+              <p className="text-gray-500 mt-2 font-medium">Explore curated strictly for your lifestyle</p>
+            </div>
+            
+            <a
+              href="/products"
+              className="text-xs font-black uppercase tracking-widest text-gray-900 border-b-2 border-black pb-1 hover:text-emerald-600 hover:border-emerald-600 transition-all"
+            >
+              See all collections
+            </a>
+          </div>
+
+          {/* Featured Categories Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {categories.slice(0, 6).map((category) => (
+              <a
+                key={category.id}
+                href={`/products?category=${category.name}`}
+                className="group relative h-[300px] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 bg-white border border-gray-100 transform hover:scale-[1.02]"
+              >
+                {/* Category Image Background */}
+                {category.image ? (
+                  <div className="absolute inset-0">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/90 transition-all duration-500"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
+                )}
+                
+                <div className="relative h-full p-10 flex flex-col justify-end text-white">
+                  <div className="transform transition-all duration-500 group-hover:-translate-y-2">
+                    <h3 className="text-2xl font-black text-white mb-2 drop-shadow-lg leading-tight uppercase tracking-tighter">
+                      {category.name}
+                    </h3>
+                    <p className="text-white/80 text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-500 max-w-xs">
+                      {category.description || "Discover premium quality items in this collection"}
+                    </p>
+                  </div>
+                  <div className="mt-6 flex items-center text-yellow-400 font-black text-[10px] uppercase tracking-[0.3em] transition-all duration-500 opacity-0 group-hover:opacity-100">
+                    <span>Explore Now</span>
+                    <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-2 transition-transform" />
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -440,6 +484,17 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Filter Sidebar */}
+      <FilterSidebar 
+        isOpen={isFilterOpen} 
+        onClose={() => setIsFilterOpen(false)}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedRegion={selectedRegion}
+        setSelectedRegion={setSelectedRegion}
+      />
     </div>
   );
 }

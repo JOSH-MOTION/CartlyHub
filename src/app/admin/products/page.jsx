@@ -13,10 +13,11 @@ import {
   Loader2,
   Search,
   Filter,
-  Package,
-  AlertTriangle,
   TrendingUp,
   TrendingDown,
+  MapPin,
+  User,
+  Store,
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
@@ -44,7 +45,29 @@ export default function AdminProductsPage() {
     packSize: 1,
     images: [],
     variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+    region: "",
+    location: "",
+    sellerName: "Carly Hub Admin",
   });
+
+  const GHANA_REGIONS = [
+    "Greater Accra",
+    "Ashanti",
+    "Central",
+    "Eastern",
+    "Western",
+    "Northern",
+    "Volta",
+    "Upper East",
+    "Upper West",
+    "Bono",
+    "Bono East",
+    "Ahafo",
+    "Savannah",
+    "North East",
+    "Oti",
+    "Western North"
+  ];
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["admin", "products"],
@@ -86,6 +109,9 @@ export default function AdminProductsPage() {
         isFeatured: false,
         images: [],
         variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+        region: "",
+        location: "",
+        sellerName: "Carly Hub Admin",
       });
     },
   });
@@ -255,6 +281,58 @@ export default function AdminProductsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Marketplace & Location Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Region (Filtering) *
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
+                    value={form.region}
+                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                  >
+                    <option value="">Select Region</option>
+                    {GHANA_REGIONS.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Precise Location / Coordinates
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    placeholder="E.g. East Legon, Near Shell"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Seller Name / Store
+                </label>
+                <div className="relative">
+                  <Store className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                    value={form.sellerName}
+                    onChange={(e) => setForm({ ...form, sellerName: e.target.value })}
+                    placeholder="E.g. Carly Hub Admin"
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -668,6 +746,9 @@ export default function AdminProductsPage() {
                               sku: v.sku || "",
                               hexColor: v.hexColor || ""
                             })) || [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+                            region: p.region || "",
+                            location: p.location || "",
+                            sellerName: p.sellerName || "Carly Hub Admin",
                           });
                           setIsAdding(true);
                         }}

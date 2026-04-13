@@ -113,6 +113,15 @@ export const productService = {
       };
     }).filter(p => p.isActive !== false);
   },
+
+  async updateStats(id, rating, count) {
+    const productRef = doc(db, 'products', id);
+    await updateDoc(productRef, {
+      averageRating: rating,
+      reviewCount: count,
+      updatedAt: serverTimestamp(),
+    });
+  }
 };
 
 // Category Services
@@ -249,4 +258,61 @@ export const promotionService = {
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
   },
+};
+
+// Review Services
+export const reviewService = {
+  async create(review) {
+    const reviewData = {
+      ...review,
+      createdAt: serverTimestamp(),
+    };
+    
+    // 1. Add the review
+    const docRef = await addDoc(collection(db, 'reviews'), reviewData);
+    
+    // 2. Fetch all reviews for this product to recalculate total stats
+    const q = query(collection(db, 'reviews'), where('productId', '==', review.productId));
+    const snapshot = await getDocs(q);
+    const reviews = snapshot.docs.map(doc => doc.data());
+    
+    const count = reviews.length;
+    const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+    const average = totalRating / count;
+    
+    // 3. Update the product document with new stats for fast listing
+    await productService.updateStats(review.productId, average, count);
+    
+    return docRef.id;
+  },
+
+  async getByProduct(productId) {
+    const q = query(
+      collection(db, 'reviews'),
+      where('productId', '==', productId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+    }));
+  },
+
+  async getBySeller(sellerName) {
+    const q = query(
+      collection(db, 'reviews'),
+      where('sellerName', '==', sellerName),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+    }));
+  }
 };

@@ -1,4 +1,4 @@
-import { categoryService, productService } from '../services/firestore.js';
+import { categoryService, productService, reviewService } from '../services/firestore.js';
 import { collection, query, orderBy, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -371,5 +371,33 @@ export const updateManualSale = async (saleId, updates) => {
   } catch (error) {
     console.error('Error updating manual sale:', error);
     throw error;
+  }
+};
+
+// Review Helpers
+export const getProductReviews = async (productId) => {
+  try {
+    return await reviewService.getByProduct(productId);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return [];
+  }
+};
+
+export const submitReview = async (reviewData) => {
+  try {
+    return await reviewService.create(reviewData);
+  } catch (error) {
+    console.error('Error submitting review:', error);
+    throw error;
+  }
+};
+
+export const getSellerReviews = async (sellerName) => {
+  try {
+    return await reviewService.getBySeller(sellerName);
+  } catch (error) {
+    console.error('Error fetching seller reviews:', error);
+    return [];
   }
 };

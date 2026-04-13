@@ -1,31 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package,
   ShoppingCart,
   TrendingUp,
+  TrendingDown,
   DollarSign,
   Plus,
-  Loader2
+  Loader2,
+  Star,
+  MessageCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-} from "recharts";
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import ExpenseModal from "../../components/ExpenseModal";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  LineChart, 
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from "recharts";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+
 
   // Real product and category queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -77,6 +88,41 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useQuery({
+    queryKey: ["expenses"],
+    queryFn: async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'expenses'));
+        return querySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          amount: Number(doc.data().amount || 0)
+        }));
+      } catch (error) {
+        console.error("Error fetching expenses:", error);
+        return [];
+      }
+    },
+  });
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ["admin-reviews"],
+    queryFn: async () => {
+      try {
+        const q = query(collection(db, "reviews"), orderBy("createdAt", "desc"), limit(50));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
+      } catch (error) {
+        console.error("Error fetching admin reviews:", error);
+        return [];
+      }
+    },
+  });
+
   // Calculate live stats
   const onlineRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
   const manualRevenue = manualSales.reduce((sum, sale) => sum + (Number(sale.totalAmount) || 0), 0);
@@ -85,8 +131,29 @@ export default function AdminDashboard() {
   const manualProfit = manualSales.reduce((sum, sale) => sum + (Number(sale.totalProfit) || 0), 0);
   
   const totalRevenue = onlineRevenue + manualRevenue;
-  const totalProfit = onlineProfit + manualProfit;
+  const totalGrossProfit = onlineProfit + manualProfit;
   const totalOrders = orders.length + manualSales.length;
+  const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+  const actualNetBalance = totalGrossProfit - totalExpenses;
+
+  // Marketplace Reputation
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : "NA";
+
+  // Pie chart data for expenses
+  const expenseBreakdown = expenses.reduce((acc, exp) => {
+    const category = exp.category || 'other';
+    acc[category] = (acc[category] || 0) + exp.amount;
+    return acc;
+  }, {});
+
+  const pieData = Object.entries(expenseBreakdown).map(([name, value]) => ({
+    name: name.toUpperCase(),
+    value: value
+  })).sort((a, b) => b.value - a.value);
+
+  const COLORS = ['#000000', '#4B5563', '#9CA3AF', '#D1D5DB', '#E5E7EB', '#F3F4F6'];
 
   // Aggregate sales data for charts
   const getMonthlyData = () => {
@@ -129,15 +196,18 @@ export default function AdminDashboard() {
 
   const stats = {
     totalRevenue: totalRevenue,
-    totalProfit: totalProfit, 
+    totalProfit: totalGrossProfit, 
+    totalExpenses: totalExpenses,
+    actualNetBalance: actualNetBalance,
     totalOrders: totalOrders,
     totalInventory: products.length,
     onlineCount: orders.length,
     manualCount: manualSales.length,
     salesData: chartData,
+    pieData: pieData
   };
 
-  const isLoading = productsLoading || categoriesLoading || ordersLoading;
+  const isLoading = productsLoading || categoriesLoading || ordersLoading || expensesLoading;
 
   if (isLoading) {
     return (
@@ -160,6 +230,13 @@ export default function AdminDashboard() {
         </div>
         <div className="flex space-x-4">
           <button
+            onClick={() => setIsExpenseModalOpen(true)}
+            className="flex items-center space-x-2 bg-white text-black border-2 border-black px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all"
+          >
+            <DollarSign className="h-4 w-4" />
+            <span>Log Expense</span>
+          </button>
+          <button
             onClick={() => router.push('/admin/products')}
             className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
           >
@@ -179,20 +256,32 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Revenue</p>
-              <h3 className="text-3xl font-black text-black tracking-tighter">GH₵{stats.totalRevenue.toLocaleString()}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Gross Revenue</p>
+              <h3 className="text-3xl font-black text-black tracking-tighter">GH₵{stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 
           <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-gray-50 rounded-xl text-black">
+              <div className="p-3 bg-red-50 rounded-xl text-red-600">
+                <TrendingDown className="h-6 w-6" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Business Expenses</p>
+              <h3 className="text-3xl font-black text-red-600 tracking-tighter">GH₵{stats.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-green-50 rounded-xl text-green-600">
                 <DollarSign className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Net Profit Est.</p>
-              <h3 className="text-3xl font-black text-black tracking-tighter">GH₵{stats.totalProfit.toLocaleString()}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Actual Net Balance</p>
+              <h3 className="text-3xl font-black text-green-600 tracking-tighter">GH₵{stats.actualNetBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 
@@ -210,13 +299,13 @@ export default function AdminDashboard() {
 
           <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-gray-50 rounded-xl text-black">
-                <Package className="h-6 w-6" />
+              <div className="p-3 bg-yellow-50 rounded-xl text-yellow-600">
+                <Star className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Inventory</p>
-              <h3 className="text-3xl font-black text-black tracking-tighter">{stats.totalInventory} SKUs</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Marketplace Rating</p>
+              <h3 className="text-3xl font-black text-black tracking-tighter">{avgRating} / 5.0</h3>
             </div>
           </div>
         </div>
@@ -259,7 +348,81 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Expense Breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 h-[400px]">
+             <h4 className="text-xs font-black uppercase tracking-widest mb-8">
+              Expense Allocation
+            </h4>
+            <ResponsiveContainer width="100%" height="80%">
+              {stats.pieData.length > 0 ? (
+                <PieChart>
+                  <Pie
+                    data={stats.pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {stats.pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => [`GH₵${value.toLocaleString()}`, "Amount"]}
+                    contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400 text-xs font-bold uppercase tracking-widest">
+                  No expenses recorded
+                </div>
+              )}
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 h-[400px]">
+            <h4 className="text-xs font-black uppercase tracking-widest mb-8 flex justify-between items-center">
+              Marketplace Feedback
+              <span className="text-[10px] text-gray-400">Latest {reviews.length} entries</span>
+            </h4>
+            <div className="space-y-4 h-[280px] overflow-y-auto pr-4">
+              {reviews.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs font-bold uppercase tracking-widest gap-4">
+                  <MessageCircle className="h-8 w-8 opacity-20" />
+                  No reviews yet
+                </div>
+              ) : (
+                reviews.slice(0, 5).map((rev) => (
+                  <div key={rev.id} className="p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-sm font-black text-black tracking-tight">{rev.name}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">on {rev.sellerName}</p>
+                      </div>
+                      <div className="flex items-center space-x-1 text-yellow-500">
+                        <Star className="h-3 w-3 fill-current" />
+                        <span className="text-xs font-black">{rev.rating}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium line-clamp-2 italic">"{rev.comment}"</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <ExpenseModal 
+        isOpen={isExpenseModalOpen} 
+        onClose={() => setIsExpenseModalOpen(false)} 
+        onSuccess={refetchExpenses}
+      />
     </div>
   );
 }
