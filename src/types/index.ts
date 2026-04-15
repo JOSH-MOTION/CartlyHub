@@ -25,8 +25,13 @@ export interface Product {
   images: string[];
   variants: ProductVariant[];
   isFeatured?: boolean;
+  isRental?: boolean;
   isActive: boolean;
   tags: string[];
+  sellerName?: string;
+  sellerPhone?: string;
+  region?: string;
+  location?: string;
   seo: {
     title?: string;
     description?: string;

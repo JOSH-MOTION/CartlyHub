@@ -15,6 +15,7 @@ import {
   MessageCircle,
   MapPin,
   Store,
+  Phone,
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
@@ -423,46 +424,75 @@ export default function ProductDetailPage({ params }) {
 
               {/* Actions */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                <button
-                  onClick={handleAddToCart}
-                  className="flex items-center justify-center space-x-3 bg-black text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all transform hover:-translate-y-1 shadow-lg shadow-black/10"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  <span>Add to Bag</span>
-                </button>
-                
-                {!paymentMade ? (
-                  <button
-                    onClick={handlePayment}
-                    className="flex items-center justify-center space-x-3 bg-blue-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-blue-500/10"
-                  >
-                    <Check className="h-5 w-5" />
-                    <span>Proceed to Payment</span>
-                  </button>
-                ) : (
-                  <div className="space-y-4">
-                    <button
-                      onClick={handleWhatsAppOrder}
-                      className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/10"
-                    >
-                      <MessageCircle className="h-5 w-5" />
-                      <span>WhatsApp Order</span>
-                    </button>
-                    
+                {product.isRental ? (
+                  <>
                     <button
                       onClick={() => {
-                        const text = `Hi Carly Hub, I want to ask about delivery pricing for:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}`;
-                        window.open(
-                          `https://wa.me/233123456789?text=${encodeURIComponent(text)}`,
-                          "_blank",
-                        );
+                        const text = `Hi ${product.sellerName || "Carly Hub"}, I want to inquire about renting:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nURL: ${window.location.href}`;
+                        const phone = product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
                       }}
-                      className="flex items-center justify-center space-x-3 bg-orange-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-orange-500/10"
+                      className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/20"
                     >
-                      <Truck className="h-5 w-5" />
-                      <span>Ask Delivery Price</span>
+                      <MessageCircle className="h-5 w-5" />
+                      <span>WhatsApp to Rent</span>
                     </button>
-                  </div>
+
+                    <button
+                      onClick={() => {
+                        const phone = product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
+                        window.open(`tel:${phone}`, "_self");
+                      }}
+                      className="flex items-center justify-center space-x-3 bg-orange-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-orange-500/20"
+                    >
+                      <Phone className="h-5 w-5" />
+                      <span>Call Renter directly</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleAddToCart}
+                      className="flex items-center justify-center space-x-3 bg-black text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all transform hover:-translate-y-1 shadow-lg shadow-black/10"
+                    >
+                      <ShoppingCart className="h-5 w-5" />
+                      <span>Add to Bag</span>
+                    </button>
+                    
+                    {!paymentMade ? (
+                      <button
+                        onClick={handlePayment}
+                        className="flex items-center justify-center space-x-3 bg-blue-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-blue-500/10"
+                      >
+                        <Check className="h-5 w-5" />
+                        <span>Proceed to Payment</span>
+                      </button>
+                    ) : (
+                      <div className="space-y-4">
+                        <button
+                          onClick={handleWhatsAppOrder}
+                          className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/10"
+                        >
+                          <MessageCircle className="h-5 w-5" />
+                          <span>WhatsApp Order</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            const text = `Hi Carly Hub, I want to ask about delivery pricing for:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}`;
+                            window.open(
+                              `https://wa.me/233123456789?text=${encodeURIComponent(text)}`,
+                              "_blank",
+                            );
+                          }}
+                          className="flex items-center justify-center space-x-3 bg-orange-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-orange-500/10"
+                        >
+                          <Truck className="h-5 w-5" />
+                          <span>Ask Delivery Price</span>
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

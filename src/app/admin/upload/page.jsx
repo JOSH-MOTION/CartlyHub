@@ -16,7 +16,8 @@ export default function ProductUpload() {
     isActive: true,
     tags: '',
     images: [],
-    variants: []
+    variants: [],
+    isRental: false
   });
 
   const handleImageUpload = async (files) => {
@@ -95,7 +96,8 @@ export default function ProductUpload() {
         isActive: true,
         tags: '',
         images: [],
-        variants: []
+        variants: [],
+        isRental: false
       });
       
     } catch (error) {
@@ -222,6 +224,19 @@ export default function ProductUpload() {
                 />
                 <label htmlFor="featured" className="ml-2 text-sm font-medium text-gray-700">
                   Featured Product
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="rental"
+                  checked={formData.isRental}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isRental: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="rental" className="ml-2 text-sm font-medium text-gray-700">
+                  Rental Item
                 </label>
               </div>
               

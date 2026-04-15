@@ -41,6 +41,7 @@ export default function AdminProductsPage() {
     basePrice: "",
     costPrice: "",
     isFeatured: false,
+    isRental: false,
     isBulk: false,
     packSize: 1,
     images: [],
@@ -48,6 +49,7 @@ export default function AdminProductsPage() {
     region: "",
     location: "",
     sellerName: "Carly Hub Admin",
+    sellerPhone: "",
   });
 
   const GHANA_REGIONS = [
@@ -107,11 +109,13 @@ export default function AdminProductsPage() {
         basePrice: "",
         costPrice: "",
         isFeatured: false,
+        isRental: false,
         images: [],
         variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
         region: "",
         location: "",
         sellerName: "Carly Hub Admin",
+        sellerPhone: "",
       });
     },
   });
@@ -331,6 +335,21 @@ export default function AdminProductsPage() {
                     value={form.sellerName}
                     onChange={(e) => setForm({ ...form, sellerName: e.target.value })}
                     placeholder="E.g. Carly Hub Admin"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Seller Phone
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                    value={form.sellerPhone}
+                    onChange={(e) => setForm({ ...form, sellerPhone: e.target.value })}
+                    placeholder="E.g. 0241234567"
                   />
                 </div>
               </div>
@@ -611,6 +630,20 @@ export default function AdminProductsPage() {
                   }
                 />
               </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">
+                  Rental Item
+                </span>
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 rounded-lg bg-white/10 accent-orange-500"
+                  checked={form.isRental}
+                  onChange={(e) =>
+                    setForm({ ...form, isRental: e.target.checked })
+                  }
+                />
+              </label>
             </div>
           </section>
 
@@ -735,6 +768,7 @@ export default function AdminProductsPage() {
                             basePrice: p.basePrice,
                             costPrice: p.costPrice || "",
                             isFeatured: p.isFeatured,
+                            isRental: p.isRental || false,
                             isBulk: p.isBulk || false,
                             packSize: p.packSize || 1,
                             images: p.images || [],
@@ -749,6 +783,7 @@ export default function AdminProductsPage() {
                             region: p.region || "",
                             location: p.location || "",
                             sellerName: p.sellerName || "Carly Hub Admin",
+                            sellerPhone: p.sellerPhone || "",
                           });
                           setIsAdding(true);
                         }}

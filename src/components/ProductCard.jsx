@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Heart, Star, MapPin, Store } from "lucide-react";
+import { ShoppingCart, Heart, Star, MapPin, Store, MessageCircle } from "lucide-react";
 import useCart from '../store/useCart';
 import { useApp } from '../context/AppContext';
 import { toast } from "sonner";
@@ -60,8 +60,13 @@ export default function ProductCard({ product, categories = [] }) {
         
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {product.isFeatured && (
-            <span className="bg-white/80 backdrop-blur-md text-gray-900 border border-white/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)]">
+            <span className="bg-white/80 backdrop-blur-md text-gray-900 border border-white/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)] mb-2">
               Featured
+            </span>
+          )}
+          {product.isRental && (
+            <span className="bg-orange-500/90 backdrop-blur-md text-white border border-orange-500/20 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-[0_4px_10px_rgba(249,115,22,0.2)] mb-2 inline-block">
+              Rental
             </span>
           )}
           {product.isBulk && product.packSize > 1 && (
@@ -159,17 +164,26 @@ export default function ProductCard({ product, categories = [] }) {
             </div>
           </div>
           
-          <button
-            onClick={totalStock > 0 ? handleAddToCart : undefined}
-            disabled={totalStock <= 0}
-            className={`flex items-center justify-center p-3.5 rounded-xl transition-all duration-300 border ${
-              totalStock <= 0 
-                ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' 
-                : 'bg-white text-gray-900 border-gray-200 hover:bg-black hover:text-white hover:border-black hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] active:scale-95'
-            }`}
-          >
-            <ShoppingCart className="h-5 w-5" />
-          </button>
+          {product.isRental ? (
+            <button
+              onClick={() => window.location.href = `/product/${product.id}`}
+              className="flex items-center justify-center p-3.5 rounded-xl transition-all duration-300 border bg-white text-gray-900 border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] active:scale-95"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              onClick={totalStock > 0 ? handleAddToCart : undefined}
+              disabled={totalStock <= 0}
+              className={`flex items-center justify-center p-3.5 rounded-xl transition-all duration-300 border ${
+                totalStock <= 0 
+                  ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' 
+                  : 'bg-white text-gray-900 border-gray-200 hover:bg-black hover:text-white hover:border-black hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] active:scale-95'
+              }`}
+            >
+              <ShoppingCart className="h-5 w-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>
