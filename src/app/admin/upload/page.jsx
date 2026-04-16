@@ -11,6 +11,7 @@ export default function ProductUpload() {
     name: '',
     description: '',
     categoryId: '',
+    subcategoryId: '',
     basePrice: 0,
     isFeatured: false,
     isActive: true,
@@ -19,6 +20,9 @@ export default function ProductUpload() {
     variants: [],
     isRental: false
   });
+
+  const mainCategories = categories?.filter(c => !c.parentId) || [];
+  const getSubCategories = (parentId) => categories?.filter(c => c.parentId === parentId) || [];
 
   const handleImageUpload = async (files) => {
     try {
@@ -91,6 +95,7 @@ export default function ProductUpload() {
         name: '',
         description: '',
         categoryId: '',
+        subcategoryId: '',
         basePrice: 0,
         isFeatured: false,
         isActive: true,
@@ -173,17 +178,37 @@ export default function ProductUpload() {
                 <select
                   required
                   value={formData.categoryId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value, subcategoryId: '' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Category</option>
-                  {categories.map(category => (
+                  {mainCategories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {formData.categoryId && getSubCategories(formData.categoryId).length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subcategory (Optional)
+                  </label>
+                  <select
+                    value={formData.subcategoryId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, subcategoryId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Subcategory</option>
+                    {getSubCategories(formData.categoryId).map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="mt-6">

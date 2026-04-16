@@ -38,6 +38,7 @@ export default function AdminProductsPage() {
     name: "",
     description: "",
     categoryId: "",
+    subcategoryId: "",
     basePrice: "",
     costPrice: "",
     isFeatured: false,
@@ -85,10 +86,18 @@ export default function AdminProductsPage() {
     },
   });
 
+  const mainCategories = categories?.filter(c => !c.parentId) || [];
+  const getSubCategories = (parentId) => categories?.filter(c => c.parentId === parentId) || [];
+
   // Create category mapping for display
-  const getCategoryName = (categoryId) => {
+  const getCategoryName = (categoryId, subcategoryId) => {
     const category = categories?.find(cat => cat.id === categoryId);
-    return category ? category.name : categoryId;
+    const subcategory = categories?.find(cat => cat.id === subcategoryId);
+    const catName = category ? category.name : categoryId;
+    if (subcategory) {
+      return `${catName} > ${subcategory.name}`;
+    }
+    return catName;
   };
 
   const createProductMutation = useMutation({
@@ -106,6 +115,7 @@ export default function AdminProductsPage() {
         name: "",
         description: "",
         categoryId: "",
+        subcategoryId: "",
         basePrice: "",
         costPrice: "",
         isFeatured: false,
@@ -275,17 +285,39 @@ export default function AdminProductsPage() {
                   className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
                   value={form.categoryId}
                   onChange={(e) =>
-                    setForm({ ...form, categoryId: e.target.value })
+                    setForm({ ...form, categoryId: e.target.value, subcategoryId: "" })
                   }
                 >
                   <option value="">Select Category</option>
-                  {categories?.map((c) => (
+                  {mainCategories?.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {form.categoryId && getSubCategories(form.categoryId).length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    Subcategory (Optional)
+                  </label>
+                  <select
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
+                    value={form.subcategoryId}
+                    onChange={(e) =>
+                      setForm({ ...form, subcategoryId: e.target.value })
+                    }
+                  >
+                    <option value="">Select Subcategory</option>
+                    {getSubCategories(form.categoryId).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Marketplace & Location Section */}
@@ -724,7 +756,7 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-gray-500 uppercase tracking-widest">
-                      {getCategoryName(p.categoryId)}
+                      {getCategoryName(p.categoryId, p.subcategoryId)}
                     </td>
                     <td className="px-8 py-6">
                       <div className="space-y-2">
@@ -765,6 +797,7 @@ export default function AdminProductsPage() {
                             name: p.name,
                             description: p.description,
                             categoryId: p.categoryId,
+                            subcategoryId: p.subcategoryId || "",
                             basePrice: p.basePrice,
                             costPrice: p.costPrice || "",
                             isFeatured: p.isFeatured,
