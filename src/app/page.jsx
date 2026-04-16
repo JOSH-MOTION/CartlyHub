@@ -60,7 +60,8 @@ export default function HomePage() {
   // Filter products based on selected category AND region
   const filteredProducts = allProducts.filter(product => {
     const categoryMatch = selectedCategory === "all" || 
-      categories.find(cat => cat.id === product.categoryId)?.name?.toLowerCase() === selectedCategory.toLowerCase();
+      product.categoryId === selectedCategory || 
+      categories.find(cat => cat.id === product.categoryId)?.parentId === selectedCategory;
     
     const regionMatch = selectedRegion === "all" || 
       product.region === selectedRegion;
@@ -211,7 +212,7 @@ export default function HomePage() {
                   onClick={() => setSelectedCategory("all")}
                   className="flex items-center space-x-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-100 transition-colors"
                 >
-                  <span>Category: {selectedCategory}</span>
+                  <span>Category: {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}</span>
                   <CloseIcon className="h-3 w-3" />
                 </button>
               )}

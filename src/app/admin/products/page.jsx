@@ -46,7 +46,7 @@ export default function AdminProductsPage() {
     isBulk: false,
     packSize: 1,
     images: [],
-    variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+    variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
     region: "",
     location: "",
     sellerName: "Carly Hub Admin",
@@ -121,7 +121,7 @@ export default function AdminProductsPage() {
         isFeatured: false,
         isRental: false,
         images: [],
-        variants: [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+        variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
         region: "",
         location: "",
         sellerName: "Carly Hub Admin",
@@ -216,22 +216,23 @@ export default function AdminProductsPage() {
     setForm({
       ...form,
       variants: [
+        { vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" },
         ...form.variants,
-        { size: "", color: "", stock: 0, price: "", sku: "" },
       ],
     });
   };
 
-  const updateVariant = (index, field, value) => {
+  const updateVariant = (vId, field, value) => {
     setForm((prev) => {
-      const newVariants = [...prev.variants];
-      newVariants[index] = { ...newVariants[index], [field]: value };
+      const newVariants = prev.variants.map(v => 
+        v.vId === vId ? { ...v, [field]: value } : v
+      );
       return { ...prev, variants: newVariants };
     });
   };
 
-  const removeVariant = (index) => {
-    setForm({ ...form, variants: form.variants.filter((_, i) => i !== index) });
+  const removeVariant = (vId) => {
+    setForm({ ...form, variants: form.variants.filter((v) => v.vId !== vId) });
   };
 
   return (
@@ -460,17 +461,24 @@ export default function AdminProductsPage() {
               </button>
             </div>
             <div className="space-y-4">
-              {form.variants.map((v, i) => (
+              {[...form.variants].sort((a, b) => {
+                const colorA = (a.color || "").toLowerCase();
+                const colorB = (b.color || "").toLowerCase();
+                // Keep empty color names (newly added) at the top
+                if (!colorA && colorB) return -1;
+                if (colorA && !colorB) return 1;
+                return colorA.localeCompare(colorB);
+              }).map((v, i) => (
                 <div
-                  key={i}
+                  key={v.vId}
                   className="bg-gray-50 rounded-2xl p-6 space-y-4"
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
-                      Variant {i + 1}
+                      Variant {v.color ? v.color : (i + 1)}
                     </h3>
                     <button
-                      onClick={() => removeVariant(i)}
+                      onClick={() => removeVariant(v.vId)}
                       className="text-gray-300 hover:text-red-500"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -486,7 +494,7 @@ export default function AdminProductsPage() {
                         placeholder="e.g., M, L, XL"
                         className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
                         value={v.size}
-                        onChange={(e) => updateVariant(i, "size", e.target.value)}
+                        onChange={(e) => updateVariant(v.vId, "size", e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -499,7 +507,7 @@ export default function AdminProductsPage() {
                         className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
                         value={v.stock}
                         onChange={(e) =>
-                          updateVariant(i, "stock", Number(e.target.value))
+                          updateVariant(v.vId, "stock", Number(e.target.value))
                         }
                       />
                     </div>
@@ -513,7 +521,7 @@ export default function AdminProductsPage() {
                         className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
                         value={v.price}
                         onChange={(e) =>
-                          updateVariant(i, "price", Number(e.target.value))
+                          updateVariant(v.vId, "price", Number(e.target.value))
                         }
                       />
                     </div>
@@ -526,7 +534,7 @@ export default function AdminProductsPage() {
                         className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
                         value={v.sku}
                         onChange={(e) =>
-                          updateVariant(i, "sku", e.target.value)
+                          updateVariant(v.vId, "sku", e.target.value)
                         }
                       />
                     </div>
@@ -541,7 +549,7 @@ export default function AdminProductsPage() {
                         placeholder="e.g., Navy Blue"
                         className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
                         value={v.colorName || v.color || ""}
-                        onChange={(e) => updateVariant(i, "color", e.target.value)}
+                        onChange={(e) => updateVariant(v.vId, "color", e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -550,7 +558,7 @@ export default function AdminProductsPage() {
                       </label>
                       <ColorPicker
                         value={v.hexColor}
-                        onChange={(hexColor) => updateVariant(i, "hexColor", hexColor)}
+                        onChange={(hexColor) => updateVariant(v.vId, "hexColor", hexColor)}
                       />
                     </div>
                   </div>
@@ -805,14 +813,15 @@ export default function AdminProductsPage() {
                             isBulk: p.isBulk || false,
                             packSize: p.packSize || 1,
                             images: p.images || [],
-                            variants: p.variants?.map(v => ({
+                            variants: p.variants?.map((v, idx) => ({
+                              vId: v.vId || (Date.now() + idx).toString(),
                               size: v.size || "",
                               color: v.colorName || v.color || "",
                               stock: v.stock || 0,
                               price: v.price || "",
                               sku: v.sku || "",
                               hexColor: v.hexColor || ""
-                            })) || [{ size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+                            })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
                             region: p.region || "",
                             location: p.location || "",
                             sellerName: p.sellerName || "Carly Hub Admin",

@@ -57,7 +57,11 @@ export const getProducts = async (options = {}) => {
     }
     
     if (category) {
-      products = products.filter(product => product.categoryId === category);
+      if (Array.isArray(category)) {
+        products = products.filter(product => category.includes(product.categoryId));
+      } else {
+        products = products.filter(product => product.categoryId === category);
+      }
     }
     
     if (limit) {

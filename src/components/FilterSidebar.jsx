@@ -13,24 +13,12 @@ export default function FilterSidebar({
   setSelectedRegion 
 }) {
   const [expandedSection, setExpandedSection] = useState(null); // 'category' or 'region'
-  
+  const [expandedCats, setExpandedCats] = useState(new Set());
+
   const GHANA_REGIONS = [
-    "Greater Accra",
-    "Ashanti",
-    "Central",
-    "Eastern",
-    "Western",
-    "Northern",
-    "Volta",
-    "Upper East",
-    "Upper West",
-    "Bono",
-    "Bono East",
-    "Ahafo",
-    "Savannah",
-    "North East",
-    "Oti",
-    "Western North"
+    "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
+    "Northern", "Volta", "Upper East", "Upper West", "Bono", 
+    "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"
   ];
 
   if (!isOpen) return null;
@@ -43,6 +31,16 @@ export default function FilterSidebar({
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
+
+  const toggleCatExpand = (id) => {
+    const newSet = new Set(expandedCats);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedCats(newSet);
+  };
+
+  const mainCategories = categories.filter(c => !c.parentId);
+  const getSubcategories = (parentId) => categories.filter(c => c.parentId === parentId);
 
   return (
     <>
@@ -91,9 +89,9 @@ export default function FilterSidebar({
               </button>
               
               {expandedSection === 'category' && (
-                <div className="p-4 grid grid-cols-1 gap-2 animate-in slide-in-from-top-4 duration-300">
+                <div className="p-4 flex flex-col gap-2 animate-in slide-in-from-top-4 duration-300">
                   <button
-                    onClick={() => { setSelectedCategory("all"); toggleSection('category'); }}
+                    onClick={() => { setSelectedCategory("all"); }}
                     className={`flex items-center justify-between px-5 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${
                       selectedCategory === "all"
                         ? "bg-gray-100 text-black shadow-sm"
@@ -103,20 +101,59 @@ export default function FilterSidebar({
                     <span>All Products</span>
                     {selectedCategory === "all" && <Check className="h-4 w-4 text-emerald-500" />}
                   </button>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => { setSelectedCategory(cat.name); toggleSection('category'); }}
-                      className={`flex items-center justify-between px-5 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${
-                        selectedCategory === cat.name
-                          ? "bg-gray-100 text-black shadow-sm"
-                          : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
-                      }`}
-                    >
-                      <span>{cat.name}</span>
-                      {selectedCategory === cat.name && <Check className="h-4 w-4 text-emerald-500" />}
-                    </button>
-                  ))}
+                  
+                  {mainCategories.map((cat) => {
+                    const subCats = getSubcategories(cat.id);
+                    const isExpanded = expandedCats.has(cat.id);
+                    const isSelected = selectedCategory === cat.name || selectedCategory === cat.id;
+
+                    return (
+                      <div key={cat.id} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { 
+                              setSelectedCategory(cat.id); // Switching to use ID for better matching
+                            }}
+                            className={`flex-1 flex items-center justify-between px-5 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${
+                              selectedCategory === cat.id
+                                ? "bg-gray-100 text-black shadow-sm"
+                                : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
+                            }`}
+                          >
+                            <span>{cat.name}</span>
+                            {selectedCategory === cat.id && <Check className="h-4 w-4 text-emerald-500" />}
+                          </button>
+                          {subCats.length > 0 && (
+                            <button 
+                              onClick={() => toggleCatExpand(cat.id)}
+                              className={`p-4 rounded-2xl border border-gray-100 transition-all ${isExpanded ? "bg-black text-white" : "bg-white text-gray-400 hover:bg-gray-50"}`}
+                            >
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </button>
+                          )}
+                        </div>
+                        
+                        {isExpanded && subCats.length > 0 && (
+                          <div className="ml-4 pl-4 border-l-2 border-gray-100 flex flex-col gap-1 mt-1 animate-in slide-in-from-left-2 duration-300">
+                            {subCats.map(sub => (
+                              <button
+                                key={sub.id}
+                                onClick={() => setSelectedCategory(sub.id)}
+                                className={`flex items-center justify-between px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                  selectedCategory === sub.id
+                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                    : "bg-white text-gray-400 hover:bg-gray-50 border border-transparent"
+                                }`}
+                              >
+                                <span>{sub.name}</span>
+                                {selectedCategory === sub.id && <Check className="h-3 w-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
