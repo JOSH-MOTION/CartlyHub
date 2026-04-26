@@ -178,6 +178,15 @@ export default function AdminProductsPage() {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const hasLargeFiles = files.some(file => file.size > MAX_FILE_SIZE);
+    
+    if (hasLargeFiles) {
+      toast.error("Image too large. Please upload files smaller than 2MB.");
+      e.target.value = null;
+      return;
+    }
+
     setIsUploading(true);
 
     try {

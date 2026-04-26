@@ -10,13 +10,14 @@ import {
   X,
   LogOut,
   LayoutDashboard,
+  Store,
 } from "lucide-react";
 import { useApp } from '../context/AppContext';
 import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
-  const { user, signOut, wishlist } = useApp();
+  const { user, profile, sellerProfile, signOut, wishlist } = useApp();
   const { items } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -108,6 +109,22 @@ export default function Navbar() {
                       <User className="h-4 w-4" />
                     </div>
                   </a>
+                  {sellerProfile ? (
+                    <a
+                      href="/seller"
+                      className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-gray-100 rounded-full hover:bg-black hover:text-white transition-all flex items-center space-x-1"
+                    >
+                      <LayoutDashboard className="h-3 w-3" />
+                      <span>Seller Portal</span>
+                    </a>
+                  ) : (
+                    <a
+                      href="/seller/onboarding"
+                      className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-black text-white rounded-full hover:bg-gray-800 transition-all"
+                    >
+                      Sell on CarlyHub
+                    </a>
+                  )}
                   <button
                     onClick={signOut}
                     className="text-sm font-bold uppercase hover:underline"
@@ -176,6 +193,17 @@ export default function Navbar() {
                   <User className="h-4 w-4" />
                   <span>My Orders</span>
                 </a>
+                {sellerProfile ? (
+                  <a href="/seller" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Seller Portal</span>
+                  </a>
+                ) : (
+                  <a href="/seller/onboarding" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
+                    <Store className="h-4 w-4" />
+                    <span>Sell on CarlyHub</span>
+                  </a>
+                )}
                 <button onClick={signOut} className="flex items-center space-x-2 text-sm font-bold uppercase text-red-500 text-left">
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>

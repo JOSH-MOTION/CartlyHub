@@ -29,7 +29,7 @@ export const getCategories = async () => {
 
 export const getProducts = async (options = {}) => {
   try {
-    const { featured, category, limit } = options;
+    const { featured, category, limit, sellerId } = options;
     
     // Get all products without isActive filter
     const productsQuery = query(
@@ -62,6 +62,10 @@ export const getProducts = async (options = {}) => {
       } else {
         products = products.filter(product => product.categoryId === category);
       }
+    }
+    
+    if (sellerId) {
+      products = products.filter(product => product.sellerId === sellerId);
     }
     
     if (limit) {
@@ -164,6 +168,32 @@ export const getOrders = async () => {
     });
   } catch (error) {
     console.error('Error fetching orders:', error);
+    return [];
+  }
+};
+
+export const getUserOrders = async (uid) => {
+  try {
+    const ordersQuery = query(
+      collection(db, 'orders'), 
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(ordersQuery);
+    
+    const allOrders = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
+      };
+    });
+    
+    // Filter by userId or customerId
+    return allOrders.filter(order => order.userId === uid || order.customerId === uid);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
     return [];
   }
 };
@@ -375,6 +405,36 @@ export const updateManualSale = async (saleId, updates) => {
   } catch (error) {
     console.error('Error updating manual sale:', error);
     throw error;
+  }
+};
+
+// Seller Helpers
+export const getSeller = async (sellerId) => {
+  try {
+    const sellerRef = doc(db, 'sellers', sellerId);
+    const sellerSnap = await getDoc(sellerRef);
+    if (sellerSnap.exists()) {
+      return { id: sellerSnap.id, ...sellerSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching seller:', error);
+    return null;
+  }
+};
+
+export const getSellerProducts = async (sellerId) => {
+  return await getProducts({ sellerId });
+};
+
+export const getAllSellers = async () => {
+  try {
+    const sellersQuery = query(collection(db, 'sellers'), orderBy('storeName'));
+    const querySnapshot = await getDocs(sellersQuery);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error fetching all sellers:', error);
+    return [];
   }
 };
 

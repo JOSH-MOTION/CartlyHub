@@ -34,6 +34,7 @@ export const AppProvider = ({ children }) => {
   // User & Auth State
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [sellerProfile, setSellerProfile] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,12 +94,29 @@ export const AppProvider = ({ children }) => {
               updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : (typeof userData.updatedAt === 'string' ? new Date(userData.updatedAt) : new Date()),
             });
           }
+          
+          // Load seller profile if exists
+          try {
+            const sellerRef = doc(db, 'sellers', firebaseUser.uid);
+            const sellerSnap = await getDoc(sellerRef);
+            if (sellerSnap.exists()) {
+              const sellerData = sellerSnap.data();
+              setSellerProfile({
+                ...sellerData,
+                createdAt: sellerData.createdAt?.toDate ? sellerData.createdAt.toDate() : new Date(),
+                updatedAt: sellerData.updatedAt?.toDate ? sellerData.updatedAt.toDate() : new Date(),
+              });
+            }
+          } catch (error) {
+            console.error('Error loading seller profile:', error);
+          }
         } catch (error) {
           console.error('Error loading user profile:', error);
         }
       } else {
         setUser(null);
         setProfile(null);
+        setSellerProfile(null);
       }
       
       setIsLoading(false);
@@ -254,10 +272,39 @@ export const AppProvider = ({ children }) => {
     setIsAuthOpen(open);
   };
 
+  const activateSeller = async (storeData) => {
+    if (!user) throw new Error('Must be logged in to activate seller profile');
+    
+    try {
+      const sellerData = {
+        uid: user.id,
+        ...storeData,
+        isVerified: false,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+      
+      await setDoc(doc(db, 'sellers', user.id), sellerData);
+      setSellerProfile(sellerData);
+      
+      // Update user role to seller
+      await updateDoc(doc(db, 'users', user.id), {
+        role: 'seller',
+        updatedAt: Timestamp.now()
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error activating seller profile:', error);
+      throw error;
+    }
+  };
+
   const contextValue = {
     // User & Auth
     user,
     profile,
+    sellerProfile,
     isAuthOpen,
     isLoading,
     
@@ -287,6 +334,7 @@ export const AppProvider = ({ children }) => {
     signUp,
     signOut: signOutUser,
     setAuthOpen,
+    activateSeller,
     
     addToCart,
     removeFromCart,

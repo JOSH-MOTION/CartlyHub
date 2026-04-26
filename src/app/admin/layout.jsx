@@ -13,7 +13,8 @@ import {
   Folder,
   Receipt,
   Menu,
-  X
+  X,
+  Store
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -107,6 +108,7 @@ export default function AdminLayout({ children }) {
           <SidebarItem icon={ShoppingCart} label="Orders" route="/admin/orders" />
           <SidebarItem icon={Receipt} label="Manual Sales" route="/admin/manual-sales" />
           <SidebarItem icon={Users} label="Customers" route="/admin/customers" />
+          <SidebarItem icon={Store} label="Sellers" route="/admin/sellers" />
           <SidebarItem icon={DollarSign} label="Financials" route="/admin/financials" />
         </nav>
 

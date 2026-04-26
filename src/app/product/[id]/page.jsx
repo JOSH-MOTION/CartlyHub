@@ -16,6 +16,7 @@ import {
   MapPin,
   Store,
   Phone,
+  ShieldCheck,
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
@@ -56,6 +57,16 @@ export default function ProductDetailPage({ params }) {
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["reviews", id],
     queryFn: () => getProductReviews(id),
+  });
+
+  const { data: sellerInfo } = useQuery({
+    queryKey: ["seller", product?.sellerId],
+    queryFn: async () => {
+      if (!product?.sellerId) return null;
+      const { getSeller } = await import("@/utils/firebaseData");
+      return await getSeller(product.sellerId);
+    },
+    enabled: !!product?.sellerId,
   });
 
   if (isLoading)
@@ -517,8 +528,9 @@ export default function ProductDetailPage({ params }) {
                   <Store className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">
-                    Verified Seller
+                  <h4 className="text-xs font-black uppercase tracking-widest mb-1 flex items-center">
+                    <span>{sellerInfo?.isVerified ? "Verified Seller" : "Marketplace Seller"}</span>
+                    {sellerInfo?.isVerified && <ShieldCheck className="h-3 w-3 ml-1 text-blue-500 fill-blue-500/10" />}
                   </h4>
                   <a 
                     href={`/seller/${encodeURIComponent(product.sellerName || "Carly Hub Admin")}`}
