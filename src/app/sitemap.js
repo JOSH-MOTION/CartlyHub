@@ -1,7 +1,7 @@
 import { getProducts, getCategories } from '../utils/firebaseData';
 
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhub.surge.sh";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
 
   // Static routes
   const staticRoutes = [
@@ -63,7 +63,7 @@ export default async function sitemap() {
     const categories = await getCategories();
     categoryRoutes = categories.map((category) => ({
       url: `${baseUrl}/products?category=${category.id}`,
-      lastModified: category.updatedAt?.toDate() || new Date(),
+      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
     }));
