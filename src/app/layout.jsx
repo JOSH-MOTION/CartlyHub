@@ -1,16 +1,16 @@
 import Providers from "@/components/Providers";
 import "./global.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhub.surge.sh";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartly-hub.vercel.app";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "cartly Hub | Ghana's Online Marketplace",
+    default: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
     template: "%s | cartly Hub",
   },
   description:
-    "Ghana's trusted online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones, and more — with fast delivery and secure payments nationwide.",
+    "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
   keywords: [
     "online shopping Ghana", "buy and sell Ghana", "Ghana marketplace",
     "Accra online store", "electronics Ghana", "phones Ghana",
@@ -23,17 +23,17 @@ export const metadata = {
     canonical: siteUrl,
   },
   openGraph: {
-    title: "cartly Hub | Ghana's Online Marketplace",
+    title: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
     description:
-      "Ghana's trusted online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones, and more — with fast delivery and secure payments nationwide.",
+      "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
     url: siteUrl,
     siteName: "cartly Hub",
     images: [
       {
-        url: "/cartly-og.png",
+        url: `${siteUrl}/cartly-og.png`,
         width: 1200,
         height: 630,
-        alt: "cartly Hub - Ghana's Online Marketplace",
+        alt: "cartly Hub - Ghana's Premium Online Shopping Marketplace",
       },
     ],
     locale: "en_GH",
@@ -41,10 +41,10 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "cartly Hub | Ghana's Online Marketplace",
+    title: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
     description:
-      "Ghana's trusted online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones, and more — with fast delivery and secure payments nationwide.",
-    images: ["/cartly-og.png"],
+      "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
+    images: [`${siteUrl}/cartly-og.png`],
     creator: "@cartlyhub",
   },
   robots: {
