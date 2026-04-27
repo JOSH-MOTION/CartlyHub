@@ -14,7 +14,7 @@ export const metadata = {
     siteName: "cartly Hub",
     images: [
       {
-        url: "/cartly.png", // We'll create this
+        url: "/cartly-og.png",
         width: 1200,
         height: 630,
         alt: "cartly Hub - Premium Fashion Marketplace",
@@ -27,7 +27,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "cartly Hub | Premium Fashion in Ghana",
     description: "Premium fashion marketplace delivering quality across Ghana. Shop exclusive collections with fast delivery and secure payments.",
-    images: ["/cartly.png"],
+    images: ["/cartly-og.png"],
     creator: "@cartlyhub",
   },
   robots: {
@@ -52,8 +52,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/cartly.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/cartly.png" />
+        <link rel="icon" href="/logo-bg.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo-bg.png" />
         <meta name="theme-color" content="#000000" />
         <script src="https://kit.fontawesome.com/2c15cc0cc7.js" crossOrigin="anonymous" async></script>
       </head>

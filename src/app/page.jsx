@@ -76,7 +76,7 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-[85vh] flex items-center overflow-hidden bg-white">
+      <section className="relative min-h-[85vh] py-24 lg:py-0 flex items-center overflow-hidden bg-white">
         <div className="absolute inset-0 z-0">
           {/* Background with abstract shape and geometric grid */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -135,14 +135,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Decorative elements */}
-              <div className="absolute -bottom-4 -right-4 w-20 h-20">
-                <img
-                  src="https://images.unsplash.com/photo-1524863234450-c61b952b2e0?w=400&q=80"
-                  alt="Accessory decoration"
-                  className="w-full h-full object-cover rounded-lg opacity-80"
-                />
-              </div>
+
             </div>
           </div>
         </div>
@@ -236,7 +229,7 @@ export default function HomePage() {
 
           {/* Products Grid/List */}
           {productsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-gray-200 aspect-[4/5] rounded-3xl"></div>
@@ -248,7 +241,7 @@ export default function HomePage() {
           ) : (
             <div className={
               viewMode === "grid"
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+                ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8"
                 : "space-y-6"
             }>
               {displayProducts.map((product) => (

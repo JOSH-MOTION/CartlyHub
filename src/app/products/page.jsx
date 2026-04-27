@@ -163,7 +163,7 @@ export default function ProductsPage() {
 
         {/* Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div key={i} className="animate-pulse space-y-4">
                 <div className="bg-gray-200 aspect-[4/5] rounded-2xl"></div>
@@ -174,7 +174,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
               {products?.map((product) => (
                 <ProductCard key={product.id} product={product} categories={categories} />
               ))}

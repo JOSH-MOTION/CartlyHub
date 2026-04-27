@@ -1,26 +1,13 @@
 import { categoryService, productService, reviewService } from '../services/firestore.js';
 import { collection, query, orderBy, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, Timestamp, where, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getFlattenedCategories } from './categories';
 
 // Direct Firebase data access functions
 export const getCategories = async () => {
   try {
-    // Get all categories without isActive filter
-    const categoriesQuery = query(
-      collection(db, 'categories'), 
-      orderBy('name')
-    );
-    const querySnapshot = await getDocs(categoriesQuery);
-    
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        ...data,
-        id: doc.id,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
-        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
-      };
-    });
+    // Return the hardcoded app categories structure
+    return getFlattenedCategories();
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];

@@ -86,7 +86,7 @@ const Wishlist = ({ navigate, addToCart }) => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-8 gap-y-8 sm:gap-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             {wishlistProducts.map(product => (
               <div key={product.id} className="relative group">
                 <ProductCard 

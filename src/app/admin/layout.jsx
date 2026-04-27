@@ -102,7 +102,6 @@ export default function AdminLayout({ children }) {
 
         <nav className="flex-grow overflow-y-auto">
           <SidebarItem icon={LayoutDashboard} label="Overview" route="/admin" />
-          <SidebarItem icon={Folder} label="Categories" route="/admin/categories" />
           <SidebarItem icon={Package} label="Inventory" route="/admin/products" />
           <SidebarItem icon={ShoppingCart} label="Orders" route="/admin/orders" />
           <SidebarItem icon={Receipt} label="Manual Sales" route="/admin/manual-sales" />
