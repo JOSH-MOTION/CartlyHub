@@ -43,7 +43,7 @@ export default function Navbar() {
               href="/"
               className="text-2xl font-black tracking-tighter text-black uppercase"
             >
-              Carly<span className="text-gray-500">Hub</span>
+              cartly<span className="text-gray-500">Hub</span>
             </a>
           </div>
 
@@ -87,7 +87,7 @@ export default function Navbar() {
                 )}
               </a>
             </div>
-            
+
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
@@ -100,13 +100,17 @@ export default function Navbar() {
               )}
             </button>
             <div className="h-6 w-[1px] bg-gray-200 mx-2 hidden md:block"></div>
-            
+
             <div className="hidden md:flex items-center space-x-4">
               {user ? (
                 <>
-                  <a href="/account/orders" className="block">
-                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 hover:bg-gray-200 transition-colors">
-                      <User className="h-4 w-4" />
+                  <a href="/account/profile" className="block" title="View Profile">
+                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 hover:bg-gray-200 transition-colors overflow-hidden">
+                      {user.photoURL || profile?.photoURL ? (
+                        <img src={user.photoURL || profile.photoURL} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
                     </div>
                   </a>
                   {sellerProfile ? (
@@ -122,7 +126,7 @@ export default function Navbar() {
                       href="/seller/onboarding"
                       className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-black text-white rounded-full hover:bg-gray-800 transition-all"
                     >
-                      Sell on CarlyHub
+                      Sell on cartlyHub
                     </a>
                   )}
                   <button
@@ -160,8 +164,8 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="pb-4 border-b border-gray-100 flex items-center bg-gray-50 rounded-xl px-4 py-2">
-             <Search className="h-4 w-4 text-gray-400 mr-2" />
-             <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full text-sm" />
+            <Search className="h-4 w-4 text-gray-400 mr-2" />
+            <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full text-sm" />
           </div>
           <a
             href="/products"
@@ -181,7 +185,7 @@ export default function Navbar() {
           >
             Shoes
           </a>
-          
+
           <div className="pt-4 border-t border-gray-100 flex flex-col space-y-4">
             <a href="/wishlist" className="flex items-center space-x-2 text-sm font-bold uppercase">
               <Heart className="h-4 w-4" />
@@ -189,8 +193,12 @@ export default function Navbar() {
             </a>
             {user ? (
               <>
-                <a href="/account/orders" className="flex items-center space-x-2 text-sm font-bold uppercase">
+                <a href="/account/profile" className="flex items-center space-x-2 text-sm font-bold uppercase">
                   <User className="h-4 w-4" />
+                  <span>My Profile</span>
+                </a>
+                <a href="/account/orders" className="flex items-center space-x-2 text-sm font-bold uppercase">
+                  <ShoppingCart className="h-4 w-4" />
                   <span>My Orders</span>
                 </a>
                 {sellerProfile ? (
@@ -201,7 +209,7 @@ export default function Navbar() {
                 ) : (
                   <a href="/seller/onboarding" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
                     <Store className="h-4 w-4" />
-                    <span>Sell on CarlyHub</span>
+                    <span>Sell on cartlyHub</span>
                   </a>
                 )}
                 <button onClick={signOut} className="flex items-center space-x-2 text-sm font-bold uppercase text-red-500 text-left">
@@ -217,7 +225,7 @@ export default function Navbar() {
           </div>
         </div>
       )}
-      
+
       {/* Cart Sidebar */}
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>

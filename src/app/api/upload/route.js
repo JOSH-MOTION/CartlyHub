@@ -17,7 +17,7 @@ async function uploadToCloudinary({
     if (url) {
       // For URL uploads, upload from URL
       const result = await cloudinary.uploader.upload(url, {
-        folder: 'carlyhub/products',
+        folder: 'cartlyhub/products',
         resource_type: 'auto'
       });
       return {
@@ -29,7 +29,7 @@ async function uploadToCloudinary({
     if (base64) {
       // For base64 uploads
       const result = await cloudinary.uploader.upload(base64, {
-        folder: 'carlyhub/products',
+        folder: 'cartlyhub/products',
         resource_type: 'auto'
       });
       return {
@@ -42,7 +42,7 @@ async function uploadToCloudinary({
       // For buffer uploads, create a data URL first
       const base64String = `data:image/jpeg;base64,${buffer.toString('base64')}`;
       const result = await cloudinary.uploader.upload(base64String, {
-        folder: 'carlyhub/products',
+        folder: 'cartlyhub/products',
         resource_type: 'auto'
       });
       return {

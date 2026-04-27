@@ -9,7 +9,7 @@ const useCart = create(
         const items = get().items;
         const existingItemIndex = items.findIndex(
           (item) =>
-            item.product.id === product.id && 
+            item.product.id === product.id &&
             item.variant.id === variant.id &&
             JSON.stringify(item.selections) === JSON.stringify(selections),
         );
@@ -26,7 +26,7 @@ const useCart = create(
         set({
           items: get().items.filter(
             (item) =>
-              !(item.product.id === productId && 
+              !(item.product.id === productId &&
                 item.variant.id === variantId &&
                 JSON.stringify(item.selections) === JSON.stringify(selections)),
           ),
@@ -35,9 +35,9 @@ const useCart = create(
       updateQuantity: (productId, variantId, quantity, selections = []) => {
         if (quantity < 1) return;
         const newItems = get().items.map((item) =>
-          item.product.id === productId && 
-          item.variant.id === variantId &&
-          JSON.stringify(item.selections) === JSON.stringify(selections)
+          item.product.id === productId &&
+            item.variant.id === variantId &&
+            JSON.stringify(item.selections) === JSON.stringify(selections)
             ? { ...item, quantity }
             : item,
         );
@@ -52,7 +52,7 @@ const useCart = create(
       },
     }),
     {
-      name: "carly-hub-cart",
+      name: "cartly-hub-cart",
     },
   ),
 );

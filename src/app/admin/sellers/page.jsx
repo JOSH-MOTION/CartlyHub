@@ -2,12 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllSellers } from "@/utils/firebaseData";
-import { 
-  Store, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Mail, 
-  Phone, 
+import {
+  Store,
+  ShieldCheck,
+  ShieldAlert,
+  Mail,
+  Phone,
   Calendar,
   Loader2,
   CheckCircle2,
@@ -26,16 +26,45 @@ export default function AdminSellersPage() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
+    mutationFn: async ({ id, status, email, name, storeName }) => {
       const sellerRef = doc(db, "sellers", id);
       await updateDoc(sellerRef, {
         isVerified: status,
         updatedAt: Timestamp.now(),
       });
+      return { status, email, name, storeName };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries(["admin", "sellers"]);
       toast.success("Seller status updated");
+
+      if (data.status && data.email) {
+        try {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: data.email,
+              subject: 'Welcome to cartlyHub - Your Store is Verified!',
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h1 style="color: #000;">Welcome to cartlyHub, ${data.name || 'Partner'}!</h1>
+                  <p>Great news! Your store <strong>${data.storeName}</strong> has been successfully verified by our administrative team.</p>
+                  <p>You can now log in to your seller dashboard to start adding your premium products and reaching thousands of customers.</p>
+                  <br/>
+                  <a href="https://cartlyhub.com/seller" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
+                  <br/><br/>
+                  <p>Best regards,<br/>The cartlyHub Team</p>
+                </div>
+              `
+            })
+          });
+          toast.success("Welcome email sent to seller");
+        } catch (err) {
+          console.error("Failed to send welcome email:", err);
+          toast.error("Status updated, but failed to send email");
+        }
+      }
     },
     onError: () => {
       toast.error("Failed to update seller status");
@@ -107,13 +136,18 @@ export default function AdminSellersPage() {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <button
-                      onClick={() => verifyMutation.mutate({ id: seller.id, status: !seller.isVerified })}
+                      onClick={() => verifyMutation.mutate({
+                        id: seller.id,
+                        status: !seller.isVerified,
+                        email: seller.contactEmail,
+                        name: seller.ownerName || seller.storeName,
+                        storeName: seller.storeName
+                      })}
                       disabled={verifyMutation.isLoading}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        seller.isVerified 
-                          ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white" 
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${seller.isVerified
+                          ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
                           : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
-                      }`}
+                        }`}
                     >
                       {seller.isVerified ? "Revoke" : "Verify Store"}
                     </button>

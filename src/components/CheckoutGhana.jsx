@@ -56,7 +56,7 @@ const CheckoutGhana = ({ cart, total: subtotal, userProfile, onComplete, onCance
     setLoading(true);
     try {
       const currentUserId = userProfile?.uid || 'guest';
-      
+
       const orderData = {
         items: cart,
         subtotal: subtotal,
@@ -73,9 +73,9 @@ const CheckoutGhana = ({ cart, total: subtotal, userProfile, onComplete, onCance
 
       // Here you would save to Firebase or your backend
       // For now, we'll just simulate the process
-      
+
       const orderId = `ORD${Date.now()}`;
-      
+
       // Construct WhatsApp Message
       const itemsList = cart.map(item => {
         const product = liveProducts.find(p => p.id === item.productId);
@@ -84,7 +84,7 @@ const CheckoutGhana = ({ cart, total: subtotal, userProfile, onComplete, onCance
         return `🛍 Item: ${product?.name || 'Unknown Item'}${sizeLine}\n📦 Quantity: ${item.quantity}`;
       }).join('\n\n');
 
-      const message = `Hello Carly Hub 👋
+      const message = `Hello cartly Hub 👋
 
 My name is ${form.name}
 
@@ -103,10 +103,10 @@ Thank you.
 
       const encodedMessage = encodeURIComponent(message);
       const url = `https://wa.me/${MOMO_CONFIG.whatsapp}?text=${encodedMessage}`;
-      
+
       setWhatsappUrl(url);
       setStep(3);
-      
+
       // Attempt automatic redirect (might be blocked, but we have button as backup)
       setTimeout(() => {
         window.location.href = url;
@@ -127,9 +127,9 @@ Thank you.
       </div>
       <h2 className="text-5xl font-serif font-bold text-stone-900 mb-4">Medaase! (Thank You)</h2>
       <p className="text-stone-500 mb-8 text-lg">We've received your order. We are redirecting you to WhatsApp to confirm your delivery details...</p>
-      
+
       <div className="space-y-4 mb-12">
-        <a 
+        <a
           href={whatsappUrl || `https://wa.me/${MOMO_CONFIG.whatsapp}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -151,43 +151,43 @@ Thank you.
       <button onClick={onCancel} className="group flex items-center gap-3 text-stone-400 hover:text-stone-900 mb-12 font-bold text-[10px] uppercase tracking-[0.3em] transition-all">
         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Bag
       </button>
-      
+
       <div className="grid lg:grid-cols-12 gap-16 lg:gap-24">
         <div className="lg:col-span-7 space-y-12">
           <div className="flex items-center gap-8">
-             <div className="flex items-center gap-4">
-               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 1 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>1</div>
-               <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 1 ? 'text-stone-900' : 'text-stone-400'}`}>Delivery</span>
-             </div>
-             <div className="w-16 h-px bg-stone-100" />
-             <div className="flex items-center gap-4">
-               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>2</div>
-               <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 2 ? 'text-stone-900' : 'text-stone-400'}`}>Payment</span>
-             </div>
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 1 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>1</div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 1 ? 'text-stone-900' : 'text-stone-400'}`}>Delivery</span>
+            </div>
+            <div className="w-16 h-px bg-stone-100" />
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>2</div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 2 ? 'text-stone-900' : 'text-stone-400'}`}>Payment</span>
+            </div>
           </div>
 
           {step === 1 ? (
             <div className="space-y-8 animate-in slide-in-from-left duration-500">
               <h2 className="text-4xl font-serif font-bold text-stone-900">Where should we deliver?</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input icon={<User size={18}/>} label="Receiver Name" value={form.name} onChange={(v) => setForm({...form, name: v})} placeholder="Kofi Mensah" />
-                <Input icon={<Phone size={18}/>} label="Phone Number" type="tel" value={form.phone} onChange={(v) => setForm({...form, phone: v})} placeholder="0XX XXX XXXX" />
+                <Input icon={<User size={18} />} label="Receiver Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Kofi Mensah" />
+                <Input icon={<Phone size={18} />} label="Phone Number" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="0XX XXX XXXX" />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block">City / Neighborhood</label>
-                <LocationSearch 
-                  value={form.city} 
-                  onChange={(val) => setForm({...form, city: val})} 
+                <LocationSearch
+                  value={form.city}
+                  onChange={(val) => setForm({ ...form, city: val })}
                   placeholder="Enter your location in Ghana..."
                 />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block">Street & Landmarks</label>
-                <textarea 
-                  className="w-full p-6 border-2 border-stone-50 rounded-3xl outline-none focus:border-stone-900 focus:bg-white transition-all min-h-[140px] text-sm font-bold text-stone-900 bg-stone-50/50" 
-                  placeholder="e.g. Near Sapieman Junction, House No. 12" 
-                  value={form.detailedAddress} 
-                  onChange={e => setForm({...form, detailedAddress: e.target.value})}
+                <textarea
+                  className="w-full p-6 border-2 border-stone-50 rounded-3xl outline-none focus:border-stone-900 focus:bg-white transition-all min-h-[140px] text-sm font-bold text-stone-900 bg-stone-50/50"
+                  placeholder="e.g. Near Sapieman Junction, House No. 12"
+                  value={form.detailedAddress}
+                  onChange={e => setForm({ ...form, detailedAddress: e.target.value })}
                 />
               </div>
 
@@ -201,9 +201,9 @@ Thank you.
                 </p>
               </div>
 
-              <button 
-                disabled={!form.name || !form.phone || !form.city || !form.detailedAddress} 
-                onClick={() => setStep(2)} 
+              <button
+                disabled={!form.name || !form.phone || !form.city || !form.detailedAddress}
+                onClick={() => setStep(2)}
                 className="w-full bg-stone-900 text-white py-6 rounded-3xl font-bold hover:bg-stone-800 disabled:bg-stone-100 disabled:text-stone-300 transition-all shadow-2xl shadow-stone-900/10"
               >
                 Proceed to Secure Payment
@@ -212,7 +212,7 @@ Thank you.
           ) : (
             <div className="space-y-10 animate-in slide-in-from-right duration-500">
               <h2 className="text-4xl font-serif font-bold text-stone-900">Secure Payment</h2>
-              
+
               <div className="bg-stone-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden">
                 <div className="relative z-10">
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500 mb-6">Payment Method: MTN / Vodafone / AirtelTigo</p>
@@ -236,20 +236,20 @@ Thank you.
 
               <div className="space-y-4">
                 <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block">MoMo Transaction ID / Reference</label>
-                <input 
-                  autoFocus 
-                  className="w-full p-6 border-2 border-stone-100 rounded-3xl outline-none focus:border-stone-900 transition-all text-2xl font-mono font-bold text-stone-900 bg-white shadow-inner" 
-                  placeholder="ID87236592" 
-                  value={form.momoId} 
-                  onChange={e => setForm({...form, momoId: e.target.value})}
+                <input
+                  autoFocus
+                  className="w-full p-6 border-2 border-stone-100 rounded-3xl outline-none focus:border-stone-900 transition-all text-2xl font-mono font-bold text-stone-900 bg-white shadow-inner"
+                  placeholder="ID87236592"
+                  value={form.momoId}
+                  onChange={e => setForm({ ...form, momoId: e.target.value })}
                 />
               </div>
 
               <div className="flex flex-col md:flex-row gap-6">
                 <button onClick={() => setStep(1)} className="px-10 py-6 border-2 border-stone-100 rounded-3xl font-bold text-stone-600 hover:bg-stone-50 transition-all">Edit Delivery</button>
-                <button 
-                  disabled={loading || !form.momoId} 
-                  onClick={() => handleFinish()} 
+                <button
+                  disabled={loading || !form.momoId}
+                  onClick={() => handleFinish()}
                   className="flex-grow bg-stone-900 text-white py-6 rounded-3xl font-bold flex items-center justify-center gap-4 hover:bg-stone-800 transition-all shadow-2xl shadow-stone-900/10"
                 >
                   {loading ? <Loader2 className="animate-spin" size={24} /> : 'Confirm Order & Pay'}
@@ -262,7 +262,7 @@ Thank you.
         <div className="lg:col-span-5">
           <div className="bg-stone-50 p-10 rounded-[3rem] border border-stone-100/60 sticky top-28">
             <h3 className="text-2xl font-serif font-bold text-stone-900 mb-10">Summary</h3>
-            
+
             <div className="space-y-6 mb-10">
               {cart.map((item, idx) => {
                 const product = currentProducts.find(p => p.id === item.productId);
@@ -289,9 +289,9 @@ Thank you.
               <div className="flex gap-3">
                 <div className="relative flex-grow">
                   <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="Promo Code" 
+                  <input
+                    type="text"
+                    placeholder="Promo Code"
                     value={promoCode}
                     onChange={e => setPromoCode(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl outline-none focus:border-stone-900 transition-all text-xs font-bold uppercase tracking-widest"
@@ -302,7 +302,7 @@ Thank you.
               {activePromo && (
                 <div className="flex items-center justify-between bg-orange-50 p-4 rounded-xl border border-orange-100">
                   <span className="text-[10px] font-bold text-orange-700 uppercase tracking-widest">PROMO: {activePromo.code}</span>
-                  <button onClick={() => { setActivePromo(null); setPromoCode(''); }} className="text-orange-300 hover:text-orange-700 transition-colors"><X size={14}/></button>
+                  <button onClick={() => { setActivePromo(null); setPromoCode(''); }} className="text-orange-300 hover:text-orange-700 transition-colors"><X size={14} /></button>
                 </div>
               )}
             </div>
@@ -335,9 +335,9 @@ const Input = ({ label, value, onChange, placeholder, type = 'text', icon }) => 
     <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block transition-colors group-focus-within:text-stone-900">{label}</label>
     <div className="relative">
       {icon && <div className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-stone-900 transition-colors">{icon}</div>}
-      <input 
-        type={type} 
-        value={value} 
+      <input
+        type={type}
+        value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className={`w-full ${icon ? 'pl-16' : 'px-6'} py-6 border-2 border-stone-50 bg-stone-50/50 focus:bg-white rounded-3xl outline-none focus:border-stone-900 transition-all text-sm font-bold text-stone-900 placeholder:text-stone-200 shadow-sm`}

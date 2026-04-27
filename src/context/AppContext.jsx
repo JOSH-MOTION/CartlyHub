@@ -1,23 +1,23 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
   onSnapshot,
   Timestamp,
   setDoc,
   getDoc
 } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
 
 const AppContext = createContext(undefined);
@@ -49,7 +49,7 @@ export const AppProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [wishlist, setWishlist] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('carly-hub-wishlist');
+      const saved = localStorage.getItem('cartly-hub-wishlist');
       try {
         return saved ? JSON.parse(saved) : [];
       } catch (e) {
@@ -69,19 +69,20 @@ export const AppProvider = ({ children }) => {
   const cartTotal = cart.reduce((total, item) => total + (item.variant?.price || item.product?.basePrice || 0) * item.quantity, 0);
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
-  
+
   // Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
-      
+
       if (firebaseUser) {
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email,
           name: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
         });
-        
+
         // Load user profile from Firestore
         try {
           const userRef = doc(db, 'users', firebaseUser.uid);
@@ -94,7 +95,7 @@ export const AppProvider = ({ children }) => {
               updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : (typeof userData.updatedAt === 'string' ? new Date(userData.updatedAt) : new Date()),
             });
           }
-          
+
           // Load seller profile if exists
           try {
             const sellerRef = doc(db, 'sellers', firebaseUser.uid);
@@ -118,7 +119,7 @@ export const AppProvider = ({ children }) => {
         setProfile(null);
         setSellerProfile(null);
       }
-      
+
       setIsLoading(false);
     });
 
@@ -175,7 +176,7 @@ export const AppProvider = ({ children }) => {
     if (!variant) return;
 
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => 
+      const existingItem = prevCart.find(item =>
         item.productId === productId && item.variantId === variantId
       );
 
@@ -219,13 +220,13 @@ export const AppProvider = ({ children }) => {
   // Wishlist Actions
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('carly-hub-wishlist', JSON.stringify(wishlist));
+      localStorage.setItem('cartly-hub-wishlist', JSON.stringify(wishlist));
     }
   }, [wishlist]);
 
   const toggleWishlist = (productId) => {
-    setWishlist(prev => 
-      prev.includes(productId) 
+    setWishlist(prev =>
+      prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
@@ -244,7 +245,7 @@ export const AppProvider = ({ children }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       // Create user profile in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
@@ -255,6 +256,34 @@ export const AppProvider = ({ children }) => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      // Check if user exists in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Create user profile in Firestore
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          photoURL: user.photoURL || '',
+          role: 'customer',
+          isActive: true,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }
     } catch (error) {
       throw error;
     }
@@ -274,7 +303,7 @@ export const AppProvider = ({ children }) => {
 
   const activateSeller = async (storeData) => {
     if (!user) throw new Error('Must be logged in to activate seller profile');
-    
+
     try {
       const sellerData = {
         uid: user.id,
@@ -283,16 +312,16 @@ export const AppProvider = ({ children }) => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
-      
+
       await setDoc(doc(db, 'sellers', user.id), sellerData);
       setSellerProfile(sellerData);
-      
+
       // Update user role to seller
       await updateDoc(doc(db, 'users', user.id), {
         role: 'seller',
         updatedAt: Timestamp.now()
       });
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error activating seller profile:', error);
@@ -307,41 +336,42 @@ export const AppProvider = ({ children }) => {
     sellerProfile,
     isAuthOpen,
     isLoading,
-    
+
     // Data
     products,
     categories,
     promotions,
     settings,
-    
+
     // Cart
     cart,
     cartTotal,
     totalItems,
     isCartOpen,
-    
+
     // Admin
     inventoryProducts,
     expenses,
     manualSales,
     orders,
-    
+
     // Wishlist
     wishlist,
-    
+
     // Actions
     signIn,
     signUp,
+    signInWithGoogle,
     signOut: signOutUser,
     setAuthOpen,
     activateSeller,
-    
+
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     setCartOpen,
-    
+
     toggleWishlist,
   };
 

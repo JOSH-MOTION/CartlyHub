@@ -32,7 +32,7 @@ export default function HomePage() {
     "Oti",
     "Western North"
   ];
-  
+
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -59,13 +59,13 @@ export default function HomePage() {
 
   // Filter products based on selected category AND region
   const filteredProducts = allProducts.filter(product => {
-    const categoryMatch = selectedCategory === "all" || 
-      product.categoryId === selectedCategory || 
+    const categoryMatch = selectedCategory === "all" ||
+      product.categoryId === selectedCategory ||
       categories.find(cat => cat.id === product.categoryId)?.parentId === selectedCategory;
-    
-    const regionMatch = selectedRegion === "all" || 
+
+    const regionMatch = selectedRegion === "all" ||
       product.region === selectedRegion;
-      
+
     return categoryMatch && regionMatch;
   });
 
@@ -85,7 +85,7 @@ export default function HomePage() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-gray-300 rounded-full transform -translate-x-1/3 translate-y-1/3 opacity-20"></div>
           </div>
         </div>
-        
+
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
@@ -101,7 +101,7 @@ export default function HomePage() {
               <p className="text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
                 Discover our exclusive collection with modern designs for your lifestyle
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <a
                   href="/products"
@@ -119,7 +119,7 @@ export default function HomePage() {
                 </a>
               </div>
             </div>
-            
+
             {/* Right Side - Product Showcase */}
             <div className="relative">
               <div className="relative bg-gray-50 rounded-2xl p-8 shadow-lg">
@@ -134,7 +134,7 @@ export default function HomePage() {
                   <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
                 </div>
               </div>
-              
+
               {/* Decorative elements */}
               <div className="absolute -bottom-4 -right-4 w-20 h-20">
                 <img
@@ -163,7 +163,7 @@ export default function HomePage() {
                 Showing {displayProducts.length} of {filteredProducts.length} products
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => setIsFilterOpen(true)}
@@ -176,22 +176,20 @@ export default function HomePage() {
               <div className="flex items-center bg-white rounded-2xl border border-gray-200 p-1 h-[52px]">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 px-3 rounded-xl transition-colors ${
-                    viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
-                  }`}
+                  className={`p-2 px-3 rounded-xl transition-colors ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
+                    }`}
                 >
                   <Grid3x3 className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 px-3 rounded-xl transition-colors ${
-                    viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
-                  }`}
+                  className={`p-2 px-3 rounded-xl transition-colors ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600"
+                    }`}
                 >
                   <List className="h-5 w-5" />
                 </button>
               </div>
-              
+
               <a
                 href="/products"
                 className="inline-flex items-center px-8 py-4 bg-white text-black border-2 border-black font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-50 transition-all h-[52px]"
@@ -206,9 +204,9 @@ export default function HomePage() {
           {(selectedCategory !== "all" || selectedRegion !== "all") && (
             <div className="flex flex-wrap items-center gap-2 mb-12 animate-in fade-in slide-in-from-left-4 duration-500">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">Filtering by:</span>
-              
+
               {selectedCategory !== "all" && (
-                <button 
+                <button
                   onClick={() => setSelectedCategory("all")}
                   className="flex items-center space-x-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-100 transition-colors"
                 >
@@ -216,9 +214,9 @@ export default function HomePage() {
                   <CloseIcon className="h-3 w-3" />
                 </button>
               )}
-              
+
               {selectedRegion !== "all" && (
-                <button 
+                <button
                   onClick={() => setSelectedRegion("all")}
                   className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 hover:bg-blue-100 transition-colors"
                 >
@@ -227,7 +225,7 @@ export default function HomePage() {
                 </button>
               )}
 
-              <button 
+              <button
                 onClick={() => { setSelectedCategory("all"); setSelectedRegion("all"); }}
                 className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 underline decoration-2 underline-offset-4 ml-2"
               >
@@ -249,7 +247,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className={
-              viewMode === "grid" 
+              viewMode === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
                 : "space-y-6"
             }>
@@ -257,9 +255,9 @@ export default function HomePage() {
                 <div key={product.id} className={
                   viewMode === "grid" ? "" : "bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all"
                 }>
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
+                  <ProductCard
+                    key={product.id}
+                    product={product}
                     categories={categories}
                   />
                 </div>
@@ -295,7 +293,7 @@ export default function HomePage() {
               </h2>
               <p className="text-gray-500 mt-2 font-medium">Explore curated strictly for your lifestyle</p>
             </div>
-            
+
             <a
               href="/products"
               className="text-xs font-black uppercase tracking-widest text-gray-900 border-b-2 border-black pb-1 hover:text-emerald-600 hover:border-emerald-600 transition-all"
@@ -325,7 +323,7 @@ export default function HomePage() {
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
                 )}
-                
+
                 <div className="relative h-full p-10 flex flex-col justify-end text-white">
                   <div className="transform transition-all duration-500 group-hover:-translate-y-2">
                     <h3 className="text-2xl font-black text-white mb-2 drop-shadow-lg leading-tight uppercase tracking-tighter">
@@ -377,13 +375,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="mb-8">
             <h2 className="text-4xl font-black text-white tracking-tighter uppercase mb-4 leading-tight">
-              Join Carly Hub <br /> Inner Circle
+              Join cartly Hub <br /> Inner Circle
             </h2>
             <p className="text-gray-400 mb-10 font-medium text-lg">
               Get exclusive access to new drops, special discounts, and fashion tips tailored for Ghana
             </p>
           </div>
-          
+
           <form className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
             <input
               type="email"
@@ -406,13 +404,13 @@ export default function HomePage() {
                 href="/"
                 className="text-2xl font-black text-black tracking-tighter uppercase"
               >
-                Carly<span className="text-gray-500">Hub</span>
+                cartly<span className="text-gray-500">Hub</span>
               </a>
               <p className="text-gray-600 font-medium leading-relaxed mt-4">
                 Premium fashion marketplace delivering quality across Ghana
               </p>
             </div>
-            
+
             <div>
               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Shop</h4>
               <ul className="space-y-4 text-sm font-bold text-gray-600">
@@ -438,7 +436,7 @@ export default function HomePage() {
                 </li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Account</h4>
               <ul className="space-y-4 text-sm font-bold text-gray-600">
@@ -464,20 +462,20 @@ export default function HomePage() {
                 </li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Contact</h4>
               <ul className="space-y-3 text-sm font-bold text-gray-600">
-                <li>Email: support@carlyhub.com.gh</li>
+                <li>Email: support@cartlyhub.com.gh</li>
                 <li>WhatsApp: +233 242 403 450</li>
                 <li>Location: Accra, Ghana</li>
               </ul>
             </div>
           </div>
-          
+
           <div className="mt-16 pt-8 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400 font-black uppercase tracking-widest">
-              © 2026 Carly Hub. All Rights Reserved.
+              © 2026 cartly Hub. All Rights Reserved.
             </p>
             <p className="text-xs text-gray-500 mt-2">
               Delivering quality fashion across Ghana
@@ -487,8 +485,8 @@ export default function HomePage() {
       </footer>
 
       {/* Filter Sidebar */}
-      <FilterSidebar 
-        isOpen={isFilterOpen} 
+      <FilterSidebar
+        isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         categories={categories}
         selectedCategory={selectedCategory}

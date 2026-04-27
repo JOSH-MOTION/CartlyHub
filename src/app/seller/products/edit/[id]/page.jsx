@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -16,16 +16,17 @@ import {
   Info
 } from "lucide-react";
 import { toast } from "sonner";
-import { getCategories, createProduct } from "@/utils/firebaseData";
+import { getCategories, updateProduct, getProductById } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
 import ColorPicker from "@/components/ColorPicker";
 import CustomSelect from "@/components/CustomSelect";
 
-export default function SellerAddProductPage() {
+export default function SellerEditProductPage({ params }) {
   const router = useRouter();
   const { sellerProfile } = useApp();
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
+  const productId = params.id;
 
   const [form, setForm] = useState({
     name: "",
@@ -47,6 +48,48 @@ export default function SellerAddProductPage() {
     sellerEmail: sellerProfile?.contactEmail,
   });
 
+  const { data: productData, isLoading: isProductLoading } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: () => getProductById(productId),
+    enabled: !!productId,
+  });
+
+  useEffect(() => {
+    if (productData) {
+      // Determine if it has meaningful variants
+      const hasMeaningfulVariants = productData.variants?.some(v => v.size || v.color || v.colorName || v.hexColor) || false;
+      const totalStock = productData.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0;
+
+      setForm({
+        name: productData.name || "",
+        description: productData.description || "",
+        categoryId: productData.categoryId || "",
+        subcategoryId: productData.subcategoryId || "",
+        costPrice: productData.costPrice || "",
+        basePrice: productData.basePrice || "",
+        isFeatured: productData.isFeatured || false,
+        hasVariants: hasMeaningfulVariants,
+        totalStock: totalStock,
+        images: productData.images || [],
+        variants: productData.variants?.map((v, idx) => ({
+          vId: v.vId || (Date.now() + idx).toString(),
+          size: v.size || "",
+          color: v.colorName || v.color || "",
+          stock: v.stock || 0,
+          price: v.price || "",
+          sku: v.sku || "",
+          hexColor: v.hexColor || ""
+        })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+        region: productData.region || "",
+        location: productData.location || "",
+        sellerId: productData.sellerId,
+        sellerName: productData.sellerName,
+        sellerPhone: productData.sellerPhone,
+        sellerEmail: productData.sellerEmail,
+      });
+    }
+  }, [productData]);
+
   const GHANA_REGIONS = [
     "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
     "Northern", "Volta", "Upper East", "Upper West", "Bono", 
@@ -61,15 +104,16 @@ export default function SellerAddProductPage() {
   const mainCategories = categories?.filter(c => !c.parentId) || [];
   const getSubCategories = (parentId) => categories?.filter(c => c.parentId === parentId) || [];
 
-  const createProductMutation = useMutation({
-    mutationFn: (data) => createProduct(data),
+  const updateProductMutation = useMutation({
+    mutationFn: (data) => updateProduct(productId, data),
     onSuccess: () => {
       queryClient.invalidateQueries(["seller", "products", sellerProfile?.uid]);
-      toast.success("Product created successfully");
+      queryClient.invalidateQueries(["product", productId]);
+      toast.success("Product updated successfully");
       router.push("/seller/products");
     },
     onError: () => {
-      toast.error("Failed to create product");
+      toast.error("Failed to update product");
     },
   });
 
@@ -141,8 +185,16 @@ export default function SellerAddProductPage() {
       }];
     }
     
-    createProductMutation.mutate(payload);
+    updateProductMutation.mutate(payload);
   };
+
+  if (isProductLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-10 w-10 animate-spin text-black" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 max-w-5xl">
@@ -159,7 +211,7 @@ export default function SellerAddProductPage() {
               Inventory Management
             </span>
             <h1 className="text-4xl font-black tracking-tighter uppercase">
-              Add New Product
+              Edit Product
             </h1>
           </div>
         </div>
@@ -388,10 +440,10 @@ export default function SellerAddProductPage() {
 
             <button
               onClick={submitProduct}
-              disabled={createProductMutation.isLoading}
+              disabled={updateProductMutation.isLoading}
               className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20 flex items-center justify-center space-x-3 disabled:opacity-50"
             >
-              {createProductMutation.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Create Product</span><CheckCircle2 className="h-5 w-5" /></>}
+              {updateProductMutation.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Update Product</span><CheckCircle2 className="h-5 w-5" /></>}
             </button>
           </section>
 

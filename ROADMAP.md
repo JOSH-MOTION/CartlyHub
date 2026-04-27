@@ -1,6 +1,6 @@
-# CarlyHub Platform Roadmap
+# cartlyHub Platform Roadmap
 
-This document outlines the planned future enhancements and architectural evolutions for the CarlyHub marketplace.
+This document outlines the planned future enhancements and architectural evolutions for the cartlyHub marketplace.
 
 ## Upcoming Phases
 

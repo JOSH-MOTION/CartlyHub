@@ -164,7 +164,7 @@ export default function ProductCard({ product, categories = [] }) {
             </div>
           </div>
           
-          {product.isRental ? (
+          {(product.isRental || !!product.sellerId) ? (
             <button
               onClick={() => window.location.href = `/product/${product.id}`}
               className="flex items-center justify-center p-3.5 rounded-xl transition-all duration-300 border bg-white text-gray-900 border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] active:scale-95"

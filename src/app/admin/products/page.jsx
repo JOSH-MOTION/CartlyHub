@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
-import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from "@/utils/firebaseData";
+import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getAllSellers } from "@/utils/firebaseData";
 import ColorPicker from "@/components/ColorPicker";
+import CustomSelect from "@/components/CustomSelect";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function AdminProductsPage() {
     variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
     region: "",
     location: "",
-    sellerName: "Carly Hub Admin",
+    sellerName: "cartly Hub Admin",
     sellerPhone: "",
   });
 
@@ -120,11 +121,13 @@ export default function AdminProductsPage() {
         costPrice: "",
         isFeatured: false,
         isRental: false,
+        hasVariants: false,
+        totalStock: 0,
         images: [],
         variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
         region: "",
         location: "",
-        sellerName: "Carly Hub Admin",
+        sellerName: "cartly Hub Admin",
         sellerPhone: "",
       });
     },
@@ -180,7 +183,7 @@ export default function AdminProductsPage() {
 
     const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
     const hasLargeFiles = files.some(file => file.size > MAX_FILE_SIZE);
-    
+
     if (hasLargeFiles) {
       toast.error("Image too large. Please upload files smaller than 2MB.");
       e.target.value = null;
@@ -233,7 +236,7 @@ export default function AdminProductsPage() {
 
   const updateVariant = (vId, field, value) => {
     setForm((prev) => {
-      const newVariants = prev.variants.map(v => 
+      const newVariants = prev.variants.map(v =>
         v.vId === vId ? { ...v, [field]: value } : v
       );
       return { ...prev, variants: newVariants };
@@ -288,44 +291,26 @@ export default function AdminProductsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Category *
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <span>Category *</span>
                 </label>
-                <select
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
+                <CustomSelect
                   value={form.categoryId}
-                  onChange={(e) =>
-                    setForm({ ...form, categoryId: e.target.value, subcategoryId: "" })
-                  }
-                >
-                  <option value="">Select Category</option>
-                  {mainCategories?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm({ ...form, categoryId: value, subcategoryId: "" })}
+                  options={mainCategories.map(c => ({ value: c.id, label: c.name }))}
+                  placeholder="Select Category"
+                />
               </div>
 
               {form.categoryId && getSubCategories(form.categoryId).length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                    Subcategory (Optional)
-                  </label>
-                  <select
-                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Subcategory</label>
+                  <CustomSelect
                     value={form.subcategoryId}
-                    onChange={(e) =>
-                      setForm({ ...form, subcategoryId: e.target.value })
-                    }
-                  >
-                    <option value="">Select Subcategory</option>
-                    {getSubCategories(form.categoryId).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setForm({ ...form, subcategoryId: value })}
+                    options={getSubCategories(form.categoryId).map(c => ({ value: c.id, label: c.name }))}
+                    placeholder="Select Subcategory"
+                  />
                 </div>
               )}
             </div>
@@ -333,24 +318,18 @@ export default function AdminProductsPage() {
             {/* Marketplace & Location Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Region (Filtering) *
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <MapPin className="h-3 w-3" />
+                  <span>Region *</span>
                 </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <select
-                    className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none"
-                    value={form.region}
-                    onChange={(e) => setForm({ ...form, region: e.target.value })}
-                  >
-                    <option value="">Select Region</option>
-                    {GHANA_REGIONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect
+                  value={form.region}
+                  onChange={(value) => setForm({ ...form, region: value })}
+                  options={GHANA_REGIONS.map(r => ({ value: r, label: r }))}
+                  placeholder="Select Region"
+                />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                   Precise Location / Coordinates
@@ -376,7 +355,7 @@ export default function AdminProductsPage() {
                     className="w-full pl-11 pr-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
                     value={form.sellerName}
                     onChange={(e) => setForm({ ...form, sellerName: e.target.value })}
-                    placeholder="E.g. Carly Hub Admin"
+                    placeholder="E.g. cartly Hub Admin"
                   />
                 </div>
               </div>
@@ -456,125 +435,163 @@ export default function AdminProductsPage() {
             </div>
           </section>
 
-          {/* Variants Section */}
+          {/* Simple Inventory vs Variants Toggle */}
           <section className="space-y-6">
-            <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-black uppercase tracking-widest">
-                Product Variants
-              </h2>
-              <button
-                onClick={addVariant}
-                className="text-xs font-black uppercase tracking-widest px-4 py-2 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all"
-              >
-                Add Variant
-              </button>
+            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-transparent">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                  Product Options
+                </h4>
+                <p className="text-[10px] text-gray-500 font-bold uppercase">
+                  Does this product come in different sizes, colors, or options?
+                </p>
+              </div>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 rounded-lg bg-white/10 accent-black"
+                  checked={form.hasVariants}
+                  onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })}
+                />
+              </label>
             </div>
-            <div className="space-y-4">
-              {[...form.variants].sort((a, b) => {
-                const colorA = (a.color || "").toLowerCase();
-                const colorB = (b.color || "").toLowerCase();
-                // Keep empty color names (newly added) at the top
-                if (!colorA && colorB) return -1;
-                if (colorA && !colorB) return 1;
-                return colorA.localeCompare(colorB);
-              }).map((v, i) => (
-                <div
-                  key={v.vId}
-                  className="bg-gray-50 rounded-2xl p-6 space-y-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
-                      Variant {v.color ? v.color : (i + 1)}
-                    </h3>
-                    <button
-                      onClick={() => removeVariant(v.vId)}
-                      className="text-gray-300 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Size
-                      </label>
-                      <input
-                        placeholder="e.g., M, L, XL"
-                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.size}
-                        onChange={(e) => updateVariant(v.vId, "size", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Stock Quantity
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.stock}
-                        onChange={(e) =>
-                          updateVariant(v.vId, "stock", Number(e.target.value))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Price
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.price}
-                        onChange={(e) =>
-                          updateVariant(v.vId, "price", Number(e.target.value))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        SKU
-                      </label>
-                      <input
-                        placeholder="e.g., TSHIRT-RED-M"
-                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.sku}
-                        onChange={(e) =>
-                          updateVariant(v.vId, "sku", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Color Name
-                      </label>
-                      <input
-                        placeholder="e.g., Navy Blue"
-                        className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                        value={v.colorName || v.color || ""}
-                        onChange={(e) => updateVariant(v.vId, "color", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Color HEX
-                      </label>
-                      <ColorPicker
-                        value={v.hexColor}
-                        onChange={(hexColor) => updateVariant(v.vId, "hexColor", hexColor)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {!form.hasVariants && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Stock Quantity *</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.totalStock}
+                  onChange={(e) => setForm({ ...form, totalStock: Number(e.target.value) })}
+                  placeholder="0"
+                />
+              </div>
+            )}
           </section>
+
+          {/* Variants Section */}
+          {form.hasVariants && (
+            <section className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                <h2 className="text-xl font-black uppercase tracking-widest">
+                  Product Variants
+                </h2>
+                <button
+                  onClick={addVariant}
+                  className="text-xs font-black uppercase tracking-widest px-4 py-2 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all"
+                >
+                  Add Variant
+                </button>
+              </div>
+              <div className="space-y-4">
+                {[...form.variants].sort((a, b) => {
+                  const colorA = (a.color || "").toLowerCase();
+                  const colorB = (b.color || "").toLowerCase();
+                  // Keep empty color names (newly added) at the top
+                  if (!colorA && colorB) return -1;
+                  if (colorA && !colorB) return 1;
+                  return colorA.localeCompare(colorB);
+                }).map((v, i) => (
+                  <div
+                    key={v.vId}
+                    className="bg-gray-50 rounded-2xl p-6 space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-600">
+                        Variant {v.color ? v.color : (i + 1)}
+                      </h3>
+                      <button
+                        onClick={() => removeVariant(v.vId)}
+                        className="text-gray-300 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Size
+                        </label>
+                        <input
+                          placeholder="e.g., M, L, XL"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.size}
+                          onChange={(e) => updateVariant(v.vId, "size", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Stock Quantity
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.stock}
+                          onChange={(e) =>
+                            updateVariant(v.vId, "stock", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Price
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.price}
+                          onChange={(e) =>
+                            updateVariant(v.vId, "price", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          SKU
+                        </label>
+                        <input
+                          placeholder="e.g., TSHIRT-RED-M"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.sku}
+                          onChange={(e) =>
+                            updateVariant(v.vId, "sku", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Color Name
+                        </label>
+                        <input
+                          placeholder="e.g., Navy Blue"
+                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                          value={v.colorName || v.color || ""}
+                          onChange={(e) => updateVariant(v.vId, "color", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Color HEX
+                        </label>
+                        <ColorPicker
+                          value={v.hexColor}
+                          onChange={(hexColor) => updateVariant(v.vId, "hexColor", hexColor)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Bulk & Pack Settings Section */}
           <section className="space-y-6">
@@ -600,7 +617,7 @@ export default function AdminProductsPage() {
                   />
                 </label>
               </div>
-              
+
               {form.isBulk && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -699,16 +716,28 @@ export default function AdminProductsPage() {
           {/* Submit Button */}
           <button
             onClick={() => {
+              if (!validateProduct(form)) {
+                return;
+              }
+
+              let payload = { ...form };
+              if (!form.hasVariants) {
+                payload.variants = [{
+                  vId: Date.now().toString(),
+                  size: "",
+                  color: "",
+                  colorName: "",
+                  stock: Number(form.totalStock) || 0,
+                  price: Number(form.basePrice) || 0,
+                  sku: "",
+                  hexColor: ""
+                }];
+              }
+
               if (editingId) {
-                if (!validateProduct(form)) {
-                  return;
-                }
-                updateProductMutation.mutate({ id: editingId, data: form });
+                updateProductMutation.mutate({ id: editingId, data: payload });
               } else {
-                if (!validateProduct(form)) {
-                  return;
-                }
-                createProductMutation.mutate(form);
+                createProductMutation.mutate(payload);
               }
             }}
             disabled={
@@ -820,6 +849,8 @@ export default function AdminProductsPage() {
                             isFeatured: p.isFeatured,
                             isRental: p.isRental || false,
                             isBulk: p.isBulk || false,
+                            hasVariants: p.variants ? p.variants.some(v => v.size || v.color || v.hexColor) : false,
+                            totalStock: p.variants ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 0,
                             packSize: p.packSize || 1,
                             images: p.images || [],
                             variants: p.variants?.map((v, idx) => ({
@@ -833,7 +864,7 @@ export default function AdminProductsPage() {
                             })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
                             region: p.region || "",
                             location: p.location || "",
-                            sellerName: p.sellerName || "Carly Hub Admin",
+                            sellerName: p.sellerName || "cartly Hub Admin",
                             sellerPhone: p.sellerPhone || "",
                           });
                           setIsAdding(true);

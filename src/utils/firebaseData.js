@@ -1,5 +1,5 @@
 import { categoryService, productService, reviewService } from '../services/firestore.js';
-import { collection, query, orderBy, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, Timestamp, where, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Direct Firebase data access functions
@@ -96,6 +96,20 @@ export const createProduct = async (productData) => {
   } catch (error) {
     console.error('Error creating product:', error);
     throw error;
+  }
+};
+
+export const getProductById = async (productId) => {
+  try {
+    const docRef = doc(db, 'products', productId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching product by ID:', error);
+    return null;
   }
 };
 
@@ -435,6 +449,24 @@ export const getAllSellers = async () => {
   } catch (error) {
     console.error('Error fetching all sellers:', error);
     return [];
+  }
+};
+
+export const incrementStoreViews = async (sellerName) => {
+  try {
+    const sellersQuery = query(collection(db, 'sellers'), where('storeName', '==', sellerName));
+    const snapshot = await getDocs(sellersQuery);
+    if (!snapshot.empty) {
+      const sellerDoc = snapshot.docs[0];
+      await updateDoc(doc(db, 'sellers', sellerDoc.id), {
+        storeViews: increment(1)
+      });
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error incrementing store views:', error);
+    return false;
   }
 };
 

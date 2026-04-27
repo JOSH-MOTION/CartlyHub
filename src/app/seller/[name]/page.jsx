@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -13,7 +13,7 @@ import {
   Package,
   Star,
 } from "lucide-react";
-import { getProducts, getCategories, getSellerReviews } from "@/utils/firebaseData";
+import { getProducts, getCategories, getSellerReviews, incrementStoreViews } from "@/utils/firebaseData";
 import Link from "next/link";
 
 export default function SellerStorePage({ params }) {
@@ -21,22 +21,26 @@ export default function SellerStorePage({ params }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
 
+  useEffect(() => {
+    incrementStoreViews(sellerName);
+  }, [sellerName]);
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", "seller", sellerName, category, search],
     queryFn: async () => {
       let allProducts = await getProducts(category ? { category } : {});
-      
+
       // Filter by seller
-      let sellerProducts = allProducts.filter(p => (p.sellerName || "Carly Hub Admin") === sellerName);
+      let sellerProducts = allProducts.filter(p => (p.sellerName || "cartly Hub Admin") === sellerName);
 
       // Simple client-side filtering for search
       if (search) {
-        sellerProducts = sellerProducts.filter(product => 
+        sellerProducts = sellerProducts.filter(product =>
           product.name.toLowerCase().includes(search.toLowerCase()) ||
           product.description.toLowerCase().includes(search.toLowerCase())
         );
       }
-      
+
       return sellerProducts;
     },
   });
@@ -54,9 +58,9 @@ export default function SellerStorePage({ params }) {
   });
 
   const sellerLocation = products?.[0]?.region || "Ghana";
-  
-  const averageRating = sellerReviews.length > 0 
-    ? sellerReviews.reduce((sum, r) => sum + r.rating, 0) / sellerReviews.length 
+
+  const averageRating = sellerReviews.length > 0
+    ? sellerReviews.reduce((sum, r) => sum + r.rating, 0) / sellerReviews.length
     : 5.0;
 
   return (
@@ -65,8 +69,8 @@ export default function SellerStorePage({ params }) {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
         {/* Breadcrumb / Back */}
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-8"
         >
           <ArrowLeft className="h-3 w-3 mr-2" />
@@ -89,7 +93,7 @@ export default function SellerStorePage({ params }) {
                   Verified Store
                 </span>
               </div>
-              
+
               <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none">
                 {sellerName}
               </h1>
@@ -110,10 +114,10 @@ export default function SellerStorePage({ params }) {
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Store Rating</span>
               <div className="text-3xl font-black">{averageRating.toFixed(1)}</div>
               <div className="flex text-yellow-400 mt-1">
-                {[1,2,3,4,5].map(s => (
-                  <Star 
-                    key={s} 
-                    className={`h-4 w-4 ${s <= averageRating ? 'fill-current' : 'text-gray-100'}`} 
+                {[1, 2, 3, 4, 5].map(s => (
+                  <Star
+                    key={s}
+                    className={`h-4 w-4 ${s <= averageRating ? 'fill-current' : 'text-gray-100'}`}
                   />
                 ))}
               </div>

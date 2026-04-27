@@ -31,7 +31,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
     script.src = 'https://js.paystack.co/v1/inline.js';
     script.async = true;
     document.body.appendChild(script);
-    
+
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
@@ -65,15 +65,15 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
           }
         ]
       },
-      callback: function(response) {
+      callback: function (response) {
         setPaymentReference(response.reference);
         verifyPayment(response.reference);
       },
-      onClose: function() {
+      onClose: function () {
         alert('Payment window closed');
       }
     });
-    
+
     handler.openIframe();
   };
 
@@ -93,7 +93,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.data.status === 'success') {
         setPaymentVerified(true);
         await deductInventory(cart);
@@ -120,11 +120,11 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
       for (const item of cartItems) {
         const productRef = doc(db, 'products', item.product.id);
         const productDoc = await getDoc(productRef);
-        
+
         if (productDoc.exists()) {
           const productData = productDoc.data();
           const variants = productData.variants || [];
-          
+
           let updatedVariants = [...variants];
 
           if (item.product.isBulk && item.selections && item.selections.length > 0) {
@@ -152,7 +152,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
               return variant;
             });
           }
-          
+
           // Update the product with new stock levels
           await updateDoc(productRef, { variants: updatedVariants });
         }
@@ -219,7 +219,7 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
       const product = item.product;
       const variant = item.variant;
       const sizeLine = variant?.size ? `\n📏 Size: ${variant.size}` : '';
-      
+
       let colorLine = '';
       if (product.isBulk && item.selections && item.selections.length > 0) {
         const colors = item.selections.map(s => s.color).filter(Boolean).join(', ');
@@ -228,11 +228,11 @@ const PaystackCheckout = ({ cart, total: subtotal, userProfile, onComplete, onCa
         const colorText = variant?.colorName || variant?.color || variant?.hexColor;
         colorLine = colorText ? `\n🎨 Color: ${colorText}` : '';
       }
-      
+
       return `🛍 ${product?.name}${sizeLine}${colorLine}\n📦 Qty: ${item.quantity}`;
     }).join('\n\n');
 
-    const message = `Hello Carly Hub 👋
+    const message = `Hello cartly Hub 👋
 
 Payment Confirmed! 💳
 
@@ -250,7 +250,7 @@ Please confirm delivery time. Thank you! 🙏`;
 
     const encodedMessage = encodeURIComponent(message);
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-    
+
     window.open(url, '_blank');
   };
 
@@ -262,9 +262,9 @@ Please confirm delivery time. Thank you! 🙏`;
       <h2 className="text-5xl font-serif font-bold text-stone-900 mb-4">Payment Successful!</h2>
       <p className="text-stone-500 mb-4 text-lg">Your order has been confirmed and paid.</p>
       <p className="text-sm text-stone-400 mb-8">Reference: {paymentReference}</p>
-      
+
       <div className="space-y-4 mb-12">
-        <button 
+        <button
           onClick={handleWhatsAppMessage}
           className="w-full py-6 bg-[#25D366] text-white rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-xl shadow-green-500/20 scale-105"
         >
@@ -282,52 +282,52 @@ Please confirm delivery time. Thank you! 🙏`;
       <button onClick={onCancel} className="group flex items-center gap-3 text-stone-400 hover:text-stone-900 mb-12 font-bold text-[10px] uppercase tracking-[0.3em] transition-all">
         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Cart
       </button>
-      
+
       <div className="grid lg:grid-cols-12 gap-16 lg:gap-24">
         <div className="lg:col-span-7 space-y-12">
           <div className="flex items-center gap-8">
-             <div className="flex items-center gap-4">
-               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 1 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>1</div>
-               <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 1 ? 'text-stone-900' : 'text-stone-400'}`}>Details</span>
-             </div>
-             <div className="w-16 h-px bg-stone-100" />
-             <div className="flex items-center gap-4">
-               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>2</div>
-               <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 2 ? 'text-stone-900' : 'text-stone-400'}`}>Payment</span>
-             </div>
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 1 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>1</div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 1 ? 'text-stone-900' : 'text-stone-400'}`}>Details</span>
+            </div>
+            <div className="w-16 h-px bg-stone-100" />
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>2</div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${step === 2 ? 'text-stone-900' : 'text-stone-400'}`}>Payment</span>
+            </div>
           </div>
 
           {step === 1 ? (
             <div className="space-y-8 animate-in slide-in-from-left duration-500">
               <h2 className="text-4xl font-serif font-bold text-stone-900">Delivery Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input icon={<User size={18}/>} label="Full Name" value={form.name} onChange={(v) => setForm({...form, name: v})} placeholder="Kofi Mensah" />
-                <Input icon={<Phone size={18}/>} label="Phone Number" type="tel" value={form.phone} onChange={(v) => setForm({...form, phone: v})} placeholder="024 XXX XXXX" />
+                <Input icon={<User size={18} />} label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Kofi Mensah" />
+                <Input icon={<Phone size={18} />} label="Phone Number" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="024 XXX XXXX" />
               </div>
               <div className="space-y-3">
-                <Input icon={<Mail size={18}/>} label="Email Address" type="email" value={form.email} onChange={(v) => setForm({...form, email: v})} placeholder="kofi@example.com" />
+                <Input icon={<Mail size={18} />} label="Email Address" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="kofi@example.com" />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block">City / Location</label>
-                <LocationSearch 
-                  value={form.city} 
-                  onChange={(val) => setForm({...form, city: val})} 
+                <LocationSearch
+                  value={form.city}
+                  onChange={(val) => setForm({ ...form, city: val })}
                   placeholder="Enter your location..."
                 />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block">Detailed Address</label>
-                <textarea 
-                  className="w-full p-6 border-2 border-stone-50 rounded-3xl outline-none focus:border-stone-900 focus:bg-white transition-all min-h-[140px] text-sm font-bold text-stone-900 bg-stone-50/50" 
-                  placeholder="House number, street name, landmarks..." 
-                  value={form.detailedAddress} 
-                  onChange={e => setForm({...form, detailedAddress: e.target.value})}
+                <textarea
+                  className="w-full p-6 border-2 border-stone-50 rounded-3xl outline-none focus:border-stone-900 focus:bg-white transition-all min-h-[140px] text-sm font-bold text-stone-900 bg-stone-50/50"
+                  placeholder="House number, street name, landmarks..."
+                  value={form.detailedAddress}
+                  onChange={e => setForm({ ...form, detailedAddress: e.target.value })}
                 />
               </div>
 
-              <button 
-                disabled={!form.name || !form.email || !form.phone || !form.city || !form.detailedAddress} 
-                onClick={() => setStep(2)} 
+              <button
+                disabled={!form.name || !form.email || !form.phone || !form.city || !form.detailedAddress}
+                onClick={() => setStep(2)}
                 className="w-full bg-stone-900 text-white py-6 rounded-3xl font-bold hover:bg-stone-800 disabled:bg-stone-100 disabled:text-stone-300 transition-all shadow-2xl shadow-stone-900/10"
               >
                 Continue to Payment
@@ -336,7 +336,7 @@ Please confirm delivery time. Thank you! 🙏`;
           ) : (
             <div className="space-y-10 animate-in slide-in-from-right duration-500">
               <h2 className="text-4xl font-serif font-bold text-stone-900">Secure Payment</h2>
-              
+
               <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-[2.5rem] p-10 text-white relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-6">
@@ -366,9 +366,9 @@ Please confirm delivery time. Thank you! 🙏`;
 
               <div className="flex flex-col md:flex-row gap-6">
                 <button onClick={() => setStep(1)} className="px-10 py-6 border-2 border-stone-100 rounded-3xl font-bold text-stone-600 hover:bg-stone-50 transition-all">Edit Details</button>
-                <button 
-                  disabled={loading} 
-                  onClick={handlePaystackPayment} 
+                <button
+                  disabled={loading}
+                  onClick={handlePaystackPayment}
                   className="flex-grow bg-green-600 text-white py-6 rounded-3xl font-bold flex items-center justify-center gap-4 hover:bg-green-700 transition-all shadow-2xl shadow-green-600/20"
                 >
                   {loading ? <Loader2 className="animate-spin" size={24} /> : (
@@ -386,7 +386,7 @@ Please confirm delivery time. Thank you! 🙏`;
         <div className="lg:col-span-5">
           <div className="bg-stone-50 p-10 rounded-[3rem] border border-stone-100/60 sticky top-28">
             <h3 className="text-2xl font-serif font-bold text-stone-900 mb-10">Order Summary</h3>
-            
+
             <div className="space-y-6 mb-10">
               {cart.map((item, idx) => {
                 const product = item.product;
@@ -421,20 +421,20 @@ Please confirm delivery time. Thank you! 🙏`;
                       </div>
                       <span className="font-bold text-stone-900 text-sm">GH₵ {((variant?.price || product?.basePrice || 0) * item.quantity).toLocaleString()}</span>
                     </div>
-                    
+
                     {/* Selections for Bulk Items */}
                     {product?.isBulk && item.selections && item.selections.length > 0 && (
                       <div className="pl-16">
                         <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 mb-2">Pack Configuration:</p>
                         <div className="flex flex-wrap gap-2">
-                           {item.selections.map((s, sIdx) => (
-                             <div key={sIdx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-stone-100 shadow-sm">
-                               {s.variant?.hexColor && (
-                                 <div className="w-2 h-2 rounded-full border border-stone-200" style={{ backgroundColor: s.variant.hexColor }}></div>
-                               )}
-                               <span className="text-[8px] font-bold uppercase text-stone-600">{s.color}</span>
-                             </div>
-                           ))}
+                          {item.selections.map((s, sIdx) => (
+                            <div key={sIdx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-stone-100 shadow-sm">
+                              {s.variant?.hexColor && (
+                                <div className="w-2 h-2 rounded-full border border-stone-200" style={{ backgroundColor: s.variant.hexColor }}></div>
+                              )}
+                              <span className="text-[8px] font-bold uppercase text-stone-600">{s.color}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -465,9 +465,9 @@ const Input = ({ label, value, onChange, placeholder, type = 'text', icon }) => 
     <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest block transition-colors group-focus-within:text-stone-900">{label}</label>
     <div className="relative">
       {icon && <div className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-stone-900 transition-colors">{icon}</div>}
-      <input 
-        type={type} 
-        value={value} 
+      <input
+        type={type}
+        value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className={`w-full ${icon ? 'pl-16' : 'px-6'} py-6 border-2 border-stone-50 bg-stone-50/50 focus:bg-white rounded-3xl outline-none focus:border-stone-900 transition-all text-sm font-bold text-stone-900 placeholder:text-stone-200 shadow-sm`}

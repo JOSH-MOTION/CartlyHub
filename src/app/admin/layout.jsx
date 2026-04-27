@@ -29,7 +29,7 @@ export default function AdminLayout({ children }) {
     if (isLoading) return; // Wait for Firebase to load
 
     const isPinValidated = typeof window !== "undefined" && sessionStorage.getItem("adminPinAuth") === "true";
-    
+
     if (!user || profile?.role !== "ADMIN" || !isPinValidated) {
       router.push("/admin-login");
     } else {
@@ -59,8 +59,8 @@ export default function AdminLayout({ children }) {
       <button
         onClick={() => route && router.push(route)}
         className={`w-full flex items-center space-x-4 px-6 py-4 transition-all ${isActive
-            ? "bg-black text-white"
-            : "text-gray-500 hover:bg-gray-50 hover:text-black"
+          ? "bg-black text-white"
+          : "text-gray-500 hover:bg-gray-50 hover:text-black"
           }`}
       >
         <Icon className="h-5 w-5" />
@@ -71,27 +71,26 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="bg-gray-50 flex font-sans w-full min-h-screen relative">
-      
+
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col h-screen transform transition-transform duration-300 md:relative md:translate-x-0 shrink-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col h-screen transform transition-transform duration-300 md:relative md:translate-x-0 shrink-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="p-8 pb-12 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
             className="text-xl font-black tracking-tighter text-black uppercase text-left flex-1"
           >
-            Carly<span className="text-gray-500">Hub</span>
+            cartly<span className="text-gray-500">Hub</span>
             <span className="block text-[8px] tracking-[0.3em] text-gray-400 mt-1">
               Admin Dashboard
             </span>
@@ -132,7 +131,7 @@ export default function AdminLayout({ children }) {
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-50 rounded-lg">
             <Menu className="h-6 w-6" />
           </button>
-          <span className="font-black uppercase tracking-tighter text-sm">Carly<span className="text-gray-500">Hub</span></span>
+          <span className="font-black uppercase tracking-tighter text-sm">cartly<span className="text-gray-500">Hub</span></span>
           <div className="w-10"></div> {/* Placeholder for centering */}
         </div>
 

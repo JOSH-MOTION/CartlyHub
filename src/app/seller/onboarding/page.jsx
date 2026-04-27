@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Store, Phone, Mail, FileText, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { Store, Phone, Mail, FileText, ArrowRight, Loader2, CheckCircle2, User, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 
@@ -12,12 +12,16 @@ export default function SellerOnboardingPage() {
   const { user, sellerProfile, activateSeller, isLoading } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+  const [countryCode, setCountryCode] = useState("+233");
 
   const [form, setForm] = useState({
+    ownerName: user?.name || "",
     storeName: "",
     description: "",
     contactPhone: "",
+    whatsappNumber: "",
     contactEmail: user?.email || "",
+    location: "",
   });
 
   if (isLoading) {
@@ -37,7 +41,7 @@ export default function SellerOnboardingPage() {
             <Store className="h-10 w-10 text-gray-400" />
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tighter">Login Required</h1>
-          <p className="text-gray-500 font-medium">Please log in to your CarlyHub account to start your selling journey.</p>
+          <p className="text-gray-500 font-medium">Please log in to your cartlyHub account to start your selling journey.</p>
           <button
             onClick={() => router.push("/account/signin")}
             className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all"
@@ -72,14 +76,15 @@ export default function SellerOnboardingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.storeName || !form.contactPhone) {
+    if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.whatsappNumber) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await activateSeller(form);
+      const formattedWhatsapp = `${countryCode}${form.whatsappNumber.replace(/^0+/, '')}`;
+      await activateSeller({ ...form, whatsappNumber: formattedWhatsapp });
       toast.success("Store created successfully!");
       setStep(3); // Show success state
     } catch (error) {
@@ -92,14 +97,14 @@ export default function SellerOnboardingPage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
+
       <main className="max-w-4xl mx-auto px-6 pt-32 pb-20">
         <div className="mb-16">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
             Phase 1: Multi-Vendor
           </span>
           <h1 className="text-6xl font-black tracking-tighter uppercase leading-[0.9]">
-            Become a <br/> <span className="text-gray-300">CarlyHub</span> Seller
+            Become a <br /> <span className="text-gray-300">cartlyHub</span> Seller
           </h1>
           <p className="mt-6 text-gray-500 max-w-lg font-medium">
             Join Ghana's premium marketplace. Reach thousands of customers and manage your business with our professional tools.
@@ -146,6 +151,21 @@ export default function SellerOnboardingPage() {
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                    <User className="h-3 w-3" />
+                    <span>Owner's Full Name *</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    placeholder="E.g. John Doe"
+                    value={form.ownerName}
+                    onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
                     <Store className="h-3 w-3" />
                     <span>Store Name *</span>
                   </label>
@@ -156,6 +176,21 @@ export default function SellerOnboardingPage() {
                     placeholder="E.g. Urban Threads Ghana"
                     value={form.storeName}
                     onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                    <MapPin className="h-3 w-3" />
+                    <span>Location *</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    placeholder="E.g. East Legon, Accra"
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
                   />
                 </div>
 
@@ -172,6 +207,35 @@ export default function SellerOnboardingPage() {
                     value={form.contactPhone}
                     onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
                   />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                    <MessageCircle className="h-3 w-3" />
+                    <span>WhatsApp Number *</span>
+                  </label>
+                  <div className="flex gap-3">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="px-4 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all w-[100px] flex-shrink-0"
+                    >
+                      <option value="+233">GH (+233)</option>
+                      <option value="+234">NG (+234)</option>
+                      <option value="+1">US (+1)</option>
+                      <option value="+44">UK (+44)</option>
+                      <option value="+27">ZA (+27)</option>
+                      <option value="+254">KE (+254)</option>
+                    </select>
+                    <input
+                      required
+                      type="tel"
+                      className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                      placeholder="E.g. 241234567"
+                      value={form.whatsappNumber}
+                      onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 

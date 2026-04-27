@@ -16,7 +16,6 @@ import {
   MapPin,
   Store,
   Phone,
-  ShieldCheck,
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
@@ -44,12 +43,12 @@ export default function ProductDetailPage({ params }) {
       const allProducts = await getProducts();
       const foundProduct = allProducts.find(p => p.id === id);
       if (!foundProduct) throw new Error("Product not found");
-      
+
       // Initialize bulk selections if not already set
       if (foundProduct.isBulk && foundProduct.packSize > 1) {
         setBulkSelections(Array(foundProduct.packSize).fill(null).map(() => ({ color: "", variant: null })));
       }
-      
+
       return foundProduct;
     },
   });
@@ -72,7 +71,7 @@ export default function ProductDetailPage({ params }) {
   if (isLoading)
     return (
       <div className="min-h-screen flex items-center justify-center font-sans uppercase font-black tracking-widest">
-        Loading Carly Hub...
+        Loading cartly Hub...
       </div>
     );
   if (!product || product.error)
@@ -83,13 +82,13 @@ export default function ProductDetailPage({ params }) {
     );
 
   const variants = product.variants || [];
-  
+
   // Dynamic filtering based on interdependencies
   const allColors = [...new Set(variants.map((v) => v.color || v.colorName))].filter(Boolean);
   const allSizes = [...new Set(variants.map((v) => v.size))].filter(Boolean);
 
   // Sizes available for the selected color (or all if none selected)
-  const availableSizes = selectedColor 
+  const availableSizes = selectedColor
     ? [...new Set(variants.filter(v => (v.color || v.colorName) === selectedColor).map(v => v.size))].filter(Boolean)
     : allSizes;
 
@@ -172,16 +171,16 @@ export default function ProductDetailPage({ params }) {
       size: selectedSize,
       color: selectedColor
     };
-    
+
     // Store checkout data in localStorage for checkout page to access
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    
+
     // Navigate to checkout page
     window.location.href = '/checkout';
   };
 
   const handleWhatsAppOrder = () => {
-    const text = `Hi Carly Hub, I want to order:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nPrice (₵)${Number(price * quantity).toLocaleString()}\nURL: ${window.location.href}`;
+    const text = `Hi cartly Hub, I want to order:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nPrice (₵)${Number(price * quantity).toLocaleString()}\nURL: ${window.location.href}`;
     window.open(
       `https://wa.me/233123456789?text=${encodeURIComponent(text)}`,
       "_blank",
@@ -198,7 +197,7 @@ export default function ProductDetailPage({ params }) {
     try {
       await submitReview({
         productId: id,
-        sellerName: product.sellerName || "Carly Hub Admin",
+        sellerName: product.sellerName || "cartly Hub Admin",
         rating: newReview.rating,
         comment: newReview.comment,
         name: newReview.name,
@@ -231,7 +230,7 @@ export default function ProductDetailPage({ params }) {
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
               />
-              <button 
+              <button
                 onClick={handleToggleWishlist}
                 className={`absolute top-6 right-6 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 border ${isInWishlist ? 'bg-red-500 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100 hover:text-red-500'}`}
               >
@@ -267,9 +266,9 @@ export default function ProductDetailPage({ params }) {
               <div className="flex items-center space-x-4 mb-6">
                 <div className="flex text-yellow-400">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star 
-                      key={s} 
-                      className={`h-4 w-4 ${s <= (product.averageRating || 5) ? 'fill-current' : 'text-gray-200'}`} 
+                    <Star
+                      key={s}
+                      className={`h-4 w-4 ${s <= (product.averageRating || 5) ? 'fill-current' : 'text-gray-200'}`}
                     />
                   ))}
                 </div>
@@ -303,10 +302,10 @@ export default function ProductDetailPage({ params }) {
                           onClick={() => handleSizeSelect(size)}
                           disabled={!isAvailable}
                           className={`h-12 w-14 flex items-center justify-center rounded-xl font-black transition-all border-2 
-                            ${selectedSize === size 
-                              ? "bg-black text-white border-black" 
-                              : isAvailable 
-                                ? "bg-white text-black border-gray-100 hover:border-black" 
+                            ${selectedSize === size
+                              ? "bg-black text-white border-black"
+                              : isAvailable
+                                ? "bg-white text-black border-gray-100 hover:border-black"
                                 : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed"}`}
                         >
                           {size}
@@ -328,24 +327,24 @@ export default function ProductDetailPage({ params }) {
                       const isAvailable = availableColors.includes(color);
                       const variantMatch = variants.find(v => (v.color || v.colorName) === color);
                       const hexColor = variantMatch?.hexColor;
-                      
+
                       return (
                         <button
                           key={color}
                           onClick={() => handleColorSelect(color)}
                           disabled={!isAvailable}
                           className={`px-4 h-12 flex items-center justify-center rounded-xl font-black transition-all border-2 
-                            ${selectedColor === color 
-                              ? "bg-black text-white border-black shadow-lg" 
-                              : isAvailable 
-                                ? "bg-white text-black border-gray-100 hover:border-black" 
+                            ${selectedColor === color
+                              ? "bg-black text-white border-black shadow-lg"
+                              : isAvailable
+                                ? "bg-white text-black border-gray-100 hover:border-black"
                                 : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed"}`}
                         >
                           {hexColor && (
-                             <span 
-                               className={`w-3 h-3 rounded-full mr-2 border ${isAvailable ? 'border-gray-200' : 'border-gray-100 opacity-30'}`} 
-                               style={{ backgroundColor: hexColor }}
-                             />
+                            <span
+                              className={`w-3 h-3 rounded-full mr-2 border ${isAvailable ? 'border-gray-200' : 'border-gray-100 opacity-30'}`}
+                              style={{ backgroundColor: hexColor }}
+                            />
                           )}
                           {color}
                         </button>
@@ -364,7 +363,7 @@ export default function ProductDetailPage({ params }) {
                     </label>
                     <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Mix & Match Allowed</span>
                   </div>
-                  
+
                   <div className="space-y-4">
                     {bulkSelections.map((selection, idx) => (
                       <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
@@ -374,24 +373,24 @@ export default function ProductDetailPage({ params }) {
                             const isAvailable = availableColors.includes(color);
                             const variantMatch = variants.find(v => (v.color || v.colorName) === color);
                             const hexColor = variantMatch?.hexColor;
-                            
+
                             return (
                               <button
                                 key={color}
                                 onClick={() => handleBulkColorSelect(idx, color)}
                                 disabled={!isAvailable}
                                 className={`px-3 h-10 flex items-center justify-center rounded-lg text-xs font-black transition-all border-2 
-                                  ${selection.color === color 
-                                    ? "bg-black text-white border-black" 
-                                    : isAvailable 
-                                      ? "bg-white text-black border-gray-100 hover:border-black" 
+                                  ${selection.color === color
+                                    ? "bg-black text-white border-black"
+                                    : isAvailable
+                                      ? "bg-white text-black border-gray-100 hover:border-black"
                                       : "bg-gray-100 text-gray-300 border-gray-50 cursor-not-allowed"}`}
                               >
                                 {hexColor && (
-                                   <span 
-                                     className="w-2.5 h-2.5 rounded-full mr-1.5 border border-gray-200" 
-                                     style={{ backgroundColor: hexColor }}
-                                   />
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full mr-1.5 border border-gray-200"
+                                    style={{ backgroundColor: hexColor }}
+                                  />
                                 )}
                                 {color}
                               </button>
@@ -435,29 +434,30 @@ export default function ProductDetailPage({ params }) {
 
               {/* Actions */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                {product.isRental ? (
+                {(product.isRental || !!product.sellerId) ? (
                   <>
                     <button
                       onClick={() => {
-                        const text = `Hi ${product.sellerName || "Carly Hub"}, I want to inquire about renting:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nURL: ${window.location.href}`;
-                        const phone = product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
+                        const actionText = product.isRental ? "renting" : "buying";
+                        const text = `Hi ${sellerInfo?.storeName || product.sellerName || "Seller"}, I want to inquire about ${actionText}:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nURL: ${window.location.href}`;
+                        const phone = sellerInfo?.whatsappNumber || sellerInfo?.contactPhone || product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
                         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
                       }}
                       className="flex items-center justify-center space-x-3 bg-green-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/20"
                     >
                       <MessageCircle className="h-5 w-5" />
-                      <span>WhatsApp to Rent</span>
+                      <span>WhatsApp Seller</span>
                     </button>
 
                     <button
                       onClick={() => {
-                        const phone = product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
+                        const phone = sellerInfo?.contactPhone || product.sellerPhone || process.env.NEXT_PUBLIC_STORE_PHONE || "233123456789";
                         window.open(`tel:${phone}`, "_self");
                       }}
                       className="flex items-center justify-center space-x-3 bg-orange-500 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all transform hover:-translate-y-1 shadow-lg shadow-orange-500/20"
                     >
                       <Phone className="h-5 w-5" />
-                      <span>Call Renter directly</span>
+                      <span>Call Seller directly</span>
                     </button>
                   </>
                 ) : (
@@ -469,7 +469,7 @@ export default function ProductDetailPage({ params }) {
                       <ShoppingCart className="h-5 w-5" />
                       <span>Add to Bag</span>
                     </button>
-                    
+
                     {!paymentMade ? (
                       <button
                         onClick={handlePayment}
@@ -487,10 +487,10 @@ export default function ProductDetailPage({ params }) {
                           <MessageCircle className="h-5 w-5" />
                           <span>WhatsApp Order</span>
                         </button>
-                        
+
                         <button
                           onClick={() => {
-                            const text = `Hi Carly Hub, I want to ask about delivery pricing for:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}`;
+                            const text = `Hi cartly Hub, I want to ask about delivery pricing for:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}`;
                             window.open(
                               `https://wa.me/233123456789?text=${encodeURIComponent(text)}`,
                               "_blank",
@@ -532,11 +532,11 @@ export default function ProductDetailPage({ params }) {
                     <span>{sellerInfo?.isVerified ? "Verified Seller" : "Marketplace Seller"}</span>
                     {sellerInfo?.isVerified && <ShieldCheck className="h-3 w-3 ml-1 text-blue-500 fill-blue-500/10" />}
                   </h4>
-                  <a 
-                    href={`/seller/${encodeURIComponent(product.sellerName || "Carly Hub Admin")}`}
+                  <a
+                    href={`/seller/${encodeURIComponent(product.sellerName || "cartly Hub Admin")}`}
                     className="text-xs text-blue-600 font-black uppercase tracking-widest hover:text-black transition-colors"
                   >
-                    {product.sellerName || "Carly Hub Admin"}
+                    {product.sellerName || "cartly Hub Admin"}
                   </a>
                 </div>
               </div>
@@ -576,133 +576,133 @@ export default function ProductDetailPage({ params }) {
 
         {/* Description */}
         <div className="mt-12 lg:mt-16 pt-12 lg:pt-16 border-t border-gray-100">
-            <h3 className="text-xl font-black uppercase tracking-tighter mb-6">
-              Product Insight
-            </h3>
-            <div className="prose prose-sm text-gray-600 font-medium leading-relaxed max-w-none">
-              {product.description ||
-                "No description available for this premium piece."}
+          <h3 className="text-xl font-black uppercase tracking-tighter mb-6">
+            Product Insight
+          </h3>
+          <div className="prose prose-sm text-gray-600 font-medium leading-relaxed max-w-none">
+            {product.description ||
+              "No description available for this premium piece."}
+          </div>
+        </div>
+
+        {/* Customer Reviews Section */}
+        <div className="mt-12 lg:mt-16 pt-12 lg:pt-16 border-t border-gray-100 pb-24">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+            <div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
+                Customer Talk
+              </h3>
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                Based on {reviews.length} reviews
+              </p>
+            </div>
+            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+              <div className="text-3xl font-black">
+                {(product.averageRating || 0).toFixed(1)}
+              </div>
+              <div className="flex text-yellow-500">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <Star key={s} className={`h-4 w-4 ${s <= (product.averageRating || 0) ? 'fill-current' : 'text-gray-200'}`} />
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Customer Reviews Section */}
-          <div className="mt-12 lg:mt-16 pt-12 lg:pt-16 border-t border-gray-100 pb-24">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
-                  Customer Talk
-                </h3>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                  Based on {reviews.length} reviews
-                </p>
-              </div>
-              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
-                <div className="text-3xl font-black">
-                  {(product.averageRating || 0).toFixed(1)}
-                </div>
-                <div className="flex text-yellow-500">
-                  {[1, 2, 3, 4, 5].map(s => (
-                    <Star key={s} className={`h-4 w-4 ${s <= (product.averageRating || 0) ? 'fill-current' : 'text-gray-200'}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-              {/* Review List */}
-              <div className="lg:col-span-2 space-y-10">
-                {reviews.length === 0 ? (
-                  <div className="bg-gray-50/50 rounded-[2.5rem] p-16 text-center border-2 border-dashed border-gray-200">
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                      <MessageCircle className="h-8 w-8 text-gray-300" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">No reviews yet. Be the first to share your experience!</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+            {/* Review List */}
+            <div className="lg:col-span-2 space-y-10">
+              {reviews.length === 0 ? (
+                <div className="bg-gray-50/50 rounded-[2.5rem] p-16 text-center border-2 border-dashed border-gray-200">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <MessageCircle className="h-8 w-8 text-gray-300" />
                   </div>
-                ) : (
-                  reviews.map((r) => (
-                    <div key={r.id} className="group border-b border-gray-100 pb-10 last:border-0">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white text-xs font-black">
-                            {r.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <h4 className="font-black uppercase text-sm tracking-tight mb-0.5">{r.name}</h4>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                              {r.createdAt.toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </p>
-                          </div>
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">No reviews yet. Be the first to share your experience!</p>
+                </div>
+              ) : (
+                reviews.map((r) => (
+                  <div key={r.id} className="group border-b border-gray-100 pb-10 last:border-0">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white text-xs font-black">
+                          {r.name.charAt(0).toUpperCase()}
                         </div>
-                        <div className="flex gap-0.5 text-yellow-400">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'fill-current' : 'text-gray-100'}`} />
-                          ))}
+                        <div>
+                          <h4 className="font-black uppercase text-sm tracking-tight mb-0.5">{r.name}</h4>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            {r.createdAt.toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 font-medium leading-relaxed pl-14">
-                        {r.comment}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Write Review Form - Refined Card */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-[2.5rem] p-8 lg:p-10 h-fit lg:sticky lg:top-32 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
-                  <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 flex items-center">
-                    <span className="w-8 h-[2px] bg-black mr-4"></span>
-                    Leave a Review
-                  </h4>
-                  <form onSubmit={handleReviewSubmit} className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Rating</label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-0.5 text-yellow-400">
                         {[1, 2, 3, 4, 5].map(s => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => setNewReview({ ...newReview, rating: s })}
-                            className={`p-2 rounded-lg transition-all ${newReview.rating >= s ? 'text-yellow-500 bg-yellow-50 shadow-sm' : 'text-gray-300 hover:text-gray-400 bg-white'}`}
-                          >
-                            <Star className={`h-6 w-6 ${newReview.rating >= s ? 'fill-current' : ''}`} />
-                          </button>
+                          <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'fill-current' : 'text-gray-100'}`} />
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
-                      <input
-                        type="text"
-                        value={newReview.name}
-                        onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
-                        className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm"
-                        placeholder="E.g. Kofi Mensah"
-                      />
+                    <p className="text-sm text-gray-600 font-medium leading-relaxed pl-14">
+                      {r.comment}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Write Review Form - Refined Card */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-[2.5rem] p-8 lg:p-10 h-fit lg:sticky lg:top-32 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
+                <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 flex items-center">
+                  <span className="w-8 h-[2px] bg-black mr-4"></span>
+                  Leave a Review
+                </h4>
+                <form onSubmit={handleReviewSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Rating</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setNewReview({ ...newReview, rating: s })}
+                          className={`p-2 rounded-lg transition-all ${newReview.rating >= s ? 'text-yellow-500 bg-yellow-50 shadow-sm' : 'text-gray-300 hover:text-gray-400 bg-white'}`}
+                        >
+                          <Star className={`h-6 w-6 ${newReview.rating >= s ? 'fill-current' : ''}`} />
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Comment</label>
-                      <textarea
-                        value={newReview.comment}
-                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                        className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm min-h-[120px] resize-none"
-                        placeholder="Tell us what you think..."
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isSubmittingReview}
-                      className="w-full bg-black text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all disabled:opacity-50"
-                    >
-                      {isSubmittingReview ? "Submitting..." : "Post Review"}
-                    </button>
-                  </form>
-                </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
+                    <input
+                      type="text"
+                      value={newReview.name}
+                      onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
+                      className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm"
+                      placeholder="E.g. Kofi Mensah"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Comment</label>
+                    <textarea
+                      value={newReview.comment}
+                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                      className="w-full bg-white border-2 border-transparent focus:border-black rounded-xl p-4 text-sm font-bold outline-none transition-all shadow-sm min-h-[120px] resize-none"
+                      placeholder="Tell us what you think..."
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingReview}
+                    className="w-full bg-black text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all disabled:opacity-50"
+                  >
+                    {isSubmittingReview ? "Submitting..." : "Post Review"}
+                  </button>
+                </form>
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    );
-  }
+        </div>
+      </main>
+    </div>
+  );
+}
 

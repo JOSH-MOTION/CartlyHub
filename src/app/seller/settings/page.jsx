@@ -24,6 +24,7 @@ export default function SellerSettingsPage() {
     storeName: sellerProfile?.storeName || "",
     description: sellerProfile?.description || "",
     contactPhone: sellerProfile?.contactPhone || "",
+    whatsappNumber: sellerProfile?.whatsappNumber || "",
     contactEmail: sellerProfile?.contactEmail || "",
   });
 
@@ -88,16 +89,30 @@ export default function SellerSettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
-                <Mail className="h-3 w-3" />
-                <span>Contact Email</span>
-              </label>
-              <input
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                value={form.contactEmail}
-                onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-              />
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <Phone className="h-3 w-3" />
+                  <span>WhatsApp Number</span>
+                </label>
+                <input
+                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.whatsappNumber}
+                  onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+                  placeholder="e.g. +233241234567"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <Mail className="h-3 w-3" />
+                  <span>Contact Email</span>
+                </label>
+                <input
+                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.contactEmail}
+                  onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

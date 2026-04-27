@@ -39,7 +39,7 @@ export default function SellerDashboard() {
     },
     { 
       name: "Store Views", 
-      value: "Coming Soon", 
+      value: sellerProfile?.storeViews || 0, 
       icon: Users, 
       color: "bg-purple-50 text-purple-600" 
     },
@@ -52,99 +52,99 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <div className="space-y-12 max-w-6xl">
-      <header className="flex justify-between items-end">
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <header className="flex justify-between items-end border-b border-gray-100 pb-4">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1 block">
             Dashboard Overview
           </span>
-          <h1 className="text-4xl font-black tracking-tighter uppercase">
-            Welcome, <span className="text-gray-300">{sellerProfile?.storeName}</span>
+          <h1 className="text-2xl font-black tracking-tight uppercase">
+            Welcome, <span className="text-gray-400">{sellerProfile?.storeName}</span>
           </h1>
         </div>
         <button
           onClick={() => router.push("/seller/products/add")}
-          className="bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.05] transition-all shadow-xl shadow-black/10 flex items-center space-x-3"
+          className="bg-black text-white px-5 py-2.5 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-gray-800 transition-colors flex items-center space-x-2"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4" />
           <span>New Product</span>
         </button>
       </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div key={stat.name} className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-4">
-            <div className={`h-12 w-12 ${stat.color} rounded-2xl flex items-center justify-center`}>
-              <stat.icon className="h-6 w-6" />
+          <div key={stat.name} className="bg-white p-5 rounded-xl border border-gray-100 space-y-3 shadow-sm hover:shadow-md transition-shadow">
+            <div className={`h-10 w-10 ${stat.color} rounded-lg flex items-center justify-center`}>
+              <stat.icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{stat.name}</p>
-              <h3 className="text-2xl font-black tracking-tight">{stat.value}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{stat.name}</p>
+              <h3 className="text-xl font-black tracking-tight mt-1">{stat.value}</h3>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Products */}
-        <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-black uppercase tracking-tight">Recent Products</h2>
-            <a href="/seller/products" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black flex items-center space-x-1">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-sm font-black uppercase tracking-tight">Recent Products</h2>
+            <a href="/seller/products" className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black flex items-center space-x-1">
               <span>View All</span>
               <ChevronRight className="h-3 w-3" />
             </a>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {isLoading ? (
-              <div className="h-20 bg-gray-50 rounded-2xl animate-pulse"></div>
+              <div className="h-16 bg-gray-50 rounded-xl animate-pulse"></div>
             ) : products?.length > 0 ? (
               products.slice(0, 4).map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="h-12 w-12 bg-white rounded-xl overflow-hidden flex-shrink-0">
+                <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
                       <img src={p.images?.[0]} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm uppercase">{p.name}</p>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">₵{p.basePrice}</p>
+                      <p className="font-bold text-xs uppercase">{p.name}</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">₵{p.basePrice}</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => router.push(`/seller/products?id=${p.id}`)}
-                    className="p-2 hover:bg-white rounded-xl transition-colors"
+                    className="p-1.5 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200"
                   >
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </button>
                 </div>
               ))
             ) : (
-              <div className="text-center py-10 bg-gray-50 rounded-2xl">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No products uploaded yet</p>
+              <div className="text-center py-8 bg-gray-50 rounded-xl">
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No products uploaded yet</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Quick Tips */}
-        <div className="bg-black rounded-[2.5rem] p-10 shadow-sm text-white">
-          <h2 className="text-xl font-black uppercase tracking-tight mb-8">Seller Tips</h2>
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <div className="h-8 w-8 bg-white/10 rounded-xl flex items-center justify-center">
-                <Package className="h-4 w-4" />
+        <div className="bg-black rounded-2xl p-6 shadow-sm text-white">
+          <h2 className="text-sm font-black uppercase tracking-tight mb-6 text-gray-200">Seller Tips</h2>
+          <div className="space-y-6">
+            <div className="space-y-1.5">
+              <div className="flex items-center space-x-2">
+                <Package className="h-4 w-4 text-gray-400" />
+                <h4 className="text-[11px] font-bold uppercase tracking-wide">High Quality Images</h4>
               </div>
-              <h4 className="text-sm font-black uppercase tracking-wide">High Quality Images</h4>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">Use bright, clear photos of your products to increase sales by up to 40%.</p>
+              <p className="text-[10px] text-gray-400 leading-relaxed pl-6">Use bright, clear photos of your products to increase sales by up to 40%.</p>
             </div>
-            <div className="space-y-2">
-              <div className="h-8 w-8 bg-white/10 rounded-xl flex items-center justify-center">
-                <ShieldCheck className="h-4 w-4" />
+            <div className="space-y-1.5">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="h-4 w-4 text-gray-400" />
+                <h4 className="text-[11px] font-bold uppercase tracking-wide">Get Verified</h4>
               </div>
-              <h4 className="text-sm font-black uppercase tracking-wide">Get Verified</h4>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">Verified stores build more trust with customers. Contact us to verify your profile.</p>
+              <p className="text-[10px] text-gray-400 leading-relaxed pl-6">Verified stores build more trust with customers. Contact us to verify your profile.</p>
             </div>
           </div>
         </div>
