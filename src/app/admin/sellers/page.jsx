@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllSellers, getProducts } from "@/utils/firebaseData";
 import { useRouter } from "next/navigation";
@@ -11,8 +12,9 @@ import {
   Phone,
   Calendar,
   Loader2,
-  CheckCircle2,
-  XCircle
+  Search,
+  Filter,
+  ChevronRight
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
@@ -21,6 +23,8 @@ import { toast } from "sonner";
 export default function AdminSellersPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all"); // all, verified, pending
 
   const { data: sellers, isLoading: sellersLoading } = useQuery({
     queryKey: ["admin", "sellers"],
@@ -33,6 +37,17 @@ export default function AdminSellersPage() {
   });
 
   const isLoading = sellersLoading || productsLoading;
+
+  const filteredSellers = sellers?.filter(seller => {
+    const matchesSearch = seller.storeName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         seller.contactEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === "all" || 
+                         (filterStatus === "verified" ? seller.isVerified : !seller.isVerified);
+    return matchesSearch && matchesFilter;
+  });
+
+  const pendingCount = sellers?.filter(s => !s.isVerified).length || 0;
+  const verifiedCount = sellers?.filter(s => s.isVerified).length || 0;
 
   const verifyMutation = useMutation({
     mutationFn: async ({ id, status, email, name, storeName }) => {
@@ -95,39 +110,88 @@ export default function AdminSellersPage() {
 
   return (
     <div className="space-y-12">
-      <header>
-        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
-          User Management
-        </span>
-        <h1 className="text-4xl font-black tracking-tighter uppercase">
-          Marketplace Sellers
-        </h1>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+            Network
+          </span>
+          <h1 className="text-4xl font-black tracking-tighter uppercase">
+            Marketplace Sellers
+          </h1>
+        </div>
+        
+        <div className="flex items-center space-x-4 w-full md:w-auto">
+          <div className="bg-white px-6 py-4 rounded-2xl shadow-sm border border-gray-100 flex-1 md:flex-none min-w-[140px]">
+            <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Vendors</p>
+            <p className="text-xl font-black">{sellers?.length || 0}</p>
+          </div>
+          <div className="bg-orange-50 px-6 py-4 rounded-2xl shadow-sm border border-orange-100 flex-1 md:flex-none min-w-[140px]">
+            <p className="text-[8px] font-black uppercase tracking-widest text-orange-600 mb-1">Pending</p>
+            <p className="text-xl font-black text-orange-700">{pendingCount}</p>
+          </div>
+        </div>
       </header>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="relative w-full md:w-96 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
+          <input 
+            type="text"
+            placeholder="Search by store name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all shadow-sm"
+          />
+        </div>
+
+        <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
+          {[
+            { id: 'all', label: `All (${sellers?.length || 0})` },
+            { id: 'pending', label: `Pending (${pendingCount})` },
+            { id: 'verified', label: `Verified (${verifiedCount})` }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterStatus(tab.id)}
+              className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                filterStatus === tab.id 
+                  ? "bg-white text-black shadow-sm" 
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {isLoading ? (
-          <div className="p-20 flex items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-black" />
+          <div className="p-12 space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-gray-50 rounded-2xl animate-pulse" />
+            ))}
           </div>
-        ) : sellers?.length > 0 ? (
+        ) : filteredSellers?.length > 0 ? (
           <>
             {/* Desktop Table View */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Store</th>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-center">Items</th>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Contact</th>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Joined</th>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
-                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Store</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-center">Items</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Contact</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Joined</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {sellers.map((seller) => (
+                  {filteredSellers.map((seller) => (
                     <tr key={seller.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-8 py-6">
+                      <td className="px-6 py-4">
                         <div className="flex items-center space-x-4">
                           <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center">
                             <Store className="h-6 w-6 text-gray-400" />
@@ -138,7 +202,7 @@ export default function AdminSellersPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-center">
+                      <td className="px-6 py-4 text-center">
                         <div 
                           onClick={() => router.push(`/admin/products?sellerId=${seller.id}`)}
                           className="inline-flex flex-col items-center justify-center h-12 w-12 bg-gray-50 rounded-xl hover:bg-black hover:text-white transition-all cursor-pointer border border-gray-100"
@@ -169,10 +233,10 @@ export default function AdminSellersPage() {
                           <span>{seller.isVerified ? "Verified" : "Pending"}</span>
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-right space-x-3">
+                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                         <button
                           onClick={() => router.push(`/admin/products?sellerId=${seller.id}`)}
-                          className="px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-700 transition-all shadow-lg shadow-black/10"
+                          className="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-gray-700 transition-all"
                         >
                           Products
                         </button>
@@ -185,12 +249,12 @@ export default function AdminSellersPage() {
                             storeName: seller.storeName
                           })}
                           disabled={verifyMutation.isLoading}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${seller.isVerified
+                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${seller.isVerified
                               ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-                              : "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-200"
+                              : "bg-green-600 text-white hover:bg-green-700"
                             }`}
                         >
-                          {seller.isVerified ? "Revoke Access" : "Verify & Approve"}
+                          {seller.isVerified ? "Revoke" : "Approve"}
                         </button>
                       </td>
                     </tr>
@@ -201,7 +265,7 @@ export default function AdminSellersPage() {
 
             {/* Mobile Card View */}
             <div className="lg:hidden divide-y divide-gray-100">
-              {sellers.map((seller) => (
+              {filteredSellers.map((seller) => (
                 <div key={seller.id} className="p-6 space-y-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
@@ -268,7 +332,9 @@ export default function AdminSellersPage() {
             <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
               <Store className="h-8 w-8 text-gray-300" />
             </div>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No independent sellers registered yet</p>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
+              {searchTerm || filterStatus !== 'all' ? "No sellers match your criteria" : "No independent sellers registered yet"}
+            </p>
           </div>
         )}
       </div>
