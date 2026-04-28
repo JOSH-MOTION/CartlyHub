@@ -22,7 +22,14 @@ export default function SellerOnboardingPage() {
     whatsappNumber: "",
     contactEmail: user?.email || "",
     location: "",
+    region: "",
   });
+
+  const GHANA_REGIONS = [
+    "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
+    "Northern", "Volta", "Upper East", "Upper West", "Bono", 
+    "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"
+  ];
 
   if (isLoading) {
     return (
@@ -76,8 +83,8 @@ export default function SellerOnboardingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.whatsappNumber) {
-      toast.error("Please fill in all required fields");
+    if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.region || !form.whatsappNumber) {
+      toast.error("Please fill in all required fields (Name, Store, Location, Region, WhatsApp)");
       return;
     }
 
@@ -103,7 +110,7 @@ export default function SellerOnboardingPage() {
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
             Phase 1: Multi-Vendor
           </span>
-          <h1 className="text-6xl font-black tracking-tighter uppercase leading-[0.9]">
+          <h1 className="text-4xl font-black tracking-tighter uppercase leading-[0.9]">
             Become a <br /> <span className="text-gray-300">cartlyHub</span> Seller
           </h1>
           <p className="mt-6 text-gray-500 max-w-lg font-medium">
@@ -113,7 +120,7 @@ export default function SellerOnboardingPage() {
 
         {step === 1 && (
           <div className="grid md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-gray-50 p-10 rounded-[2.5rem] space-y-6">
+            <div className="bg-gray-50 p-8 rounded-3xl space-y-4">
               <div className="h-14 w-14 bg-white rounded-2xl shadow-sm flex items-center justify-center">
                 <Store className="h-6 w-6" />
               </div>
@@ -136,7 +143,7 @@ export default function SellerOnboardingPage() {
               </div>
               <button
                 onClick={() => setStep(2)}
-                className="flex items-center justify-between w-full bg-black text-white p-6 rounded-3xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20"
+                className="flex items-center justify-between w-full bg-black text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20"
               >
                 <span>Setup My Store</span>
                 <ArrowRight className="h-5 w-5" />
@@ -146,8 +153,8 @@ export default function SellerOnboardingPage() {
         )}
 
         {step === 2 && (
-          <form onSubmit={handleSubmit} className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="bg-white border border-gray-100 p-10 rounded-[2.5rem] shadow-sm space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="bg-white border border-gray-100 p-8 rounded-3xl shadow-sm space-y-6">
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
@@ -157,7 +164,7 @@ export default function SellerOnboardingPage() {
                   <input
                     required
                     type="text"
-                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                     placeholder="E.g. John Doe"
                     value={form.ownerName}
                     onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
@@ -172,7 +179,7 @@ export default function SellerOnboardingPage() {
                   <input
                     required
                     type="text"
-                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                     placeholder="E.g. Urban Threads Ghana"
                     value={form.storeName}
                     onChange={(e) => setForm({ ...form, storeName: e.target.value })}
@@ -187,11 +194,29 @@ export default function SellerOnboardingPage() {
                   <input
                     required
                     type="text"
-                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                     placeholder="E.g. East Legon, Accra"
                     value={form.location}
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
                   />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                    <MapPin className="h-3 w-3" />
+                    <span>Region *</span>
+                  </label>
+                  <select
+                    required
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all appearance-none text-sm"
+                    value={form.region}
+                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                  >
+                    <option value="">Select Region</option>
+                    {GHANA_REGIONS.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-3">
@@ -202,7 +227,7 @@ export default function SellerOnboardingPage() {
                   <input
                     required
                     type="tel"
-                    className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                     placeholder="E.g. 0241234567"
                     value={form.contactPhone}
                     onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
@@ -214,23 +239,19 @@ export default function SellerOnboardingPage() {
                     <MessageCircle className="h-3 w-3" />
                     <span>WhatsApp Number *</span>
                   </label>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
-                      className="px-4 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all w-[100px] flex-shrink-0"
+                      className="px-3 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all w-[90px] flex-shrink-0 text-sm"
                     >
                       <option value="+233">GH (+233)</option>
                       <option value="+234">NG (+234)</option>
-                      <option value="+1">US (+1)</option>
-                      <option value="+44">UK (+44)</option>
-                      <option value="+27">ZA (+27)</option>
-                      <option value="+254">KE (+254)</option>
                     </select>
                     <input
                       required
                       type="tel"
-                      className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                      className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                       placeholder="E.g. 241234567"
                       value={form.whatsappNumber}
                       onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
@@ -246,7 +267,7 @@ export default function SellerOnboardingPage() {
                 </label>
                 <input
                   type="email"
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all"
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
                   placeholder="hello@yourstore.com"
                   value={form.contactEmail}
                   onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
@@ -259,7 +280,7 @@ export default function SellerOnboardingPage() {
                   <span>Store Description</span>
                 </label>
                 <textarea
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold transition-all min-h-[120px] resize-none"
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all min-h-[100px] resize-none text-sm"
                   placeholder="Tell customers what makes your products special..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -271,21 +292,21 @@ export default function SellerOnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-100 transition-all"
+                className="px-6 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all"
               >
                 Back
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-black text-white py-5 rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-3"
+                className="flex-1 bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
               >
                 {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
                     <span>Activate Seller Profile</span>
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
@@ -294,26 +315,26 @@ export default function SellerOnboardingPage() {
         )}
 
         {step === 3 && (
-          <div className="text-center space-y-10 animate-in zoom-in duration-500 bg-black text-white p-20 rounded-[3rem] shadow-2xl">
-            <div className="bg-white/10 h-32 w-32 rounded-full flex items-center justify-center mx-auto border-4 border-white/20">
-              <CheckCircle2 className="h-16 w-16 text-white" />
+          <div className="text-center space-y-8 animate-in zoom-in duration-500 bg-black text-white p-12 rounded-[2rem] shadow-2xl">
+            <div className="bg-white/10 h-24 w-24 rounded-full flex items-center justify-center mx-auto border-4 border-white/20">
+              <CheckCircle2 className="h-10 w-10 text-white" />
             </div>
-            <div className="space-y-4">
-              <h2 className="text-5xl font-black uppercase tracking-tighter">Welcome Aboard!</h2>
-              <p className="text-gray-400 font-medium text-lg max-w-md mx-auto">
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black uppercase tracking-tighter">Welcome Aboard!</h2>
+              <p className="text-gray-400 font-medium text-sm max-w-md mx-auto">
                 Your store <span className="text-white font-bold">{form.storeName}</span> is now active. You can start uploading products immediately.
               </p>
             </div>
-            <div className="flex flex-col space-y-4 max-w-sm mx-auto">
+            <div className="flex flex-col space-y-3 max-w-sm mx-auto">
               <button
                 onClick={() => router.push("/seller")}
-                className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-100 transition-all shadow-xl"
+                className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all shadow-xl"
               >
                 Enter Seller Dashboard
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="w-full py-4 text-gray-400 font-black uppercase tracking-widest text-xs hover:text-white transition-all"
+                className="w-full py-3 text-gray-400 font-black uppercase tracking-widest text-[9px] hover:text-white transition-all"
               >
                 Back to Marketplace
               </button>

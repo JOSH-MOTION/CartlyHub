@@ -51,15 +51,15 @@ export default function SellerProductsPage() {
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
             Inventory
           </span>
-          <h1 className="text-4xl font-black tracking-tighter uppercase">
+          <h1 className="text-2xl font-black tracking-tighter uppercase">
             My Products
           </h1>
         </div>
         <button
           onClick={() => router.push("/seller/products/add")}
-          className="bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex items-center space-x-3"
+          className="bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex items-center space-x-2"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4" />
           <span>Add Product</span>
         </button>
       </header>
@@ -71,18 +71,18 @@ export default function SellerProductsPage() {
           <input
             type="text"
             placeholder="Search products..."
-            className="w-full pl-12 pr-6 py-4 bg-white rounded-2xl border border-gray-100 outline-none font-bold text-sm focus:border-black transition-all"
+            className="w-full pl-12 pr-6 py-3 bg-white rounded-xl border border-gray-100 outline-none font-bold text-sm focus:border-black transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="px-6 py-4 bg-white border border-gray-100 rounded-2xl flex items-center space-x-3 text-sm font-bold text-gray-500 hover:text-black transition-all">
+        <button className="px-5 py-3 bg-white border border-gray-100 rounded-xl flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-black transition-all">
           <Filter className="h-4 w-4" />
           <span>Filters</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="p-20 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-black" />
@@ -91,40 +91,40 @@ export default function SellerProductsPage() {
           <table className="w-full text-left">
             <thead className="bg-gray-50/50 border-b border-gray-50">
               <tr>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Price</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Product</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Price</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-14 w-14 bg-gray-100 rounded-2xl overflow-hidden flex-shrink-0">
+                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group text-sm">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                         <img src={p.images?.[0]} className="w-full h-full object-cover" />
                       </div>
                       <div>
-                        <p className="font-black text-sm uppercase tracking-tight">{p.name}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{p.categoryId}</p>
+                        <p className="font-black text-xs uppercase tracking-tight">{p.name}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{p.categoryId}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-6">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${p.isActive !== false ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${p.isActive !== false ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
                       {p.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-8 py-6">
-                    <p className="font-black text-sm">₵{Number(p.basePrice).toLocaleString()}</p>
+                  <td className="px-6 py-4">
+                    <p className="font-black text-xs">₵{Number(p.basePrice).toLocaleString()}</p>
                   </td>
-                  <td className="px-8 py-6 text-right space-x-2">
+                  <td className="px-6 py-4 text-right space-x-1">
                     <button 
                       onClick={() => router.push(`/seller/products/edit/${p.id}`)}
-                      className="p-3 hover:bg-black hover:text-white rounded-xl transition-all text-gray-400"
+                      className="p-2.5 hover:bg-black hover:text-white rounded-lg transition-all text-gray-400"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5" />
                     </button>
                     <button 
                       onClick={() => {
@@ -132,9 +132,9 @@ export default function SellerProductsPage() {
                           deleteProductMutation.mutate(p.id);
                         }
                       }}
-                      className="p-3 hover:bg-red-500 hover:text-white rounded-xl transition-all text-gray-400"
+                      className="p-2.5 hover:bg-red-500 hover:text-white rounded-lg transition-all text-gray-400"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </td>
                 </tr>

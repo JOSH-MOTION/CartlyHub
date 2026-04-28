@@ -57,15 +57,15 @@ export default function SellerLayout({ children }) {
       
       <div className="flex-1 flex pt-20">
         {/* Sidebar */}
-        <aside className="w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col fixed h-full pt-10">
-          <div className="px-8 mb-10">
-            <div className="bg-black p-6 rounded-[2rem] text-white space-y-4">
-              <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                <Store className="h-6 w-6" />
+        <aside className="w-64 bg-white border-r border-gray-100 hidden lg:flex flex-col fixed h-full pt-10">
+          <div className="px-6 mb-8">
+            <div className="bg-black p-4 rounded-[1.5rem] text-white space-y-3">
+              <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
+                <Store className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Seller Mode</p>
-                <h2 className="text-xl font-black truncate">{sellerProfile.storeName}</h2>
+                <h2 className="text-lg font-black truncate">{sellerProfile.storeName}</h2>
               </div>
             </div>
           </div>
@@ -77,38 +77,57 @@ export default function SellerLayout({ children }) {
                 <a
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center justify-between px-6 py-4 rounded-2xl transition-all group ${
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
                     isActive 
                       ? "bg-gray-50 text-black shadow-sm" 
                       : "text-gray-400 hover:bg-gray-50 hover:text-black"
                   }`}
                 >
-                  <div className="flex items-center space-x-4">
-                    <item.icon className={`h-5 w-5 ${isActive ? "text-black" : "text-gray-300 group-hover:text-black"}`} />
-                    <span className="text-xs font-black uppercase tracking-widest">{item.name}</span>
+                  <div className="flex items-center space-x-3">
+                    <item.icon className={`h-4 w-4 ${isActive ? "text-black" : "text-gray-300 group-hover:text-black"}`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{item.name}</span>
                   </div>
-                  {isActive && <ChevronRight className="h-4 w-4" />}
+                  {isActive && <ChevronRight className="h-3 w-3" />}
                 </a>
               );
             })}
           </nav>
 
-          <div className="p-8 border-t border-gray-50">
+          <div className="p-6 border-t border-gray-50">
             <button 
               onClick={signOut}
-              className="flex items-center space-x-4 text-gray-400 hover:text-red-500 transition-colors px-6"
+              className="flex items-center space-x-3 text-gray-400 hover:text-red-500 transition-colors px-4"
             >
-              <LogOut className="h-5 w-5" />
-              <span className="text-xs font-black uppercase tracking-widest">Logout</span>
+              <LogOut className="h-4 w-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Logout</span>
             </button>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-72 p-8 lg:p-12 overflow-y-auto">
+        <main className="flex-1 lg:ml-64 p-6 lg:p-10 overflow-y-auto pb-32 lg:pb-10">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 flex items-center justify-around z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <a
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center space-y-1 transition-all ${
+                isActive ? "text-black" : "text-gray-300"
+              }`}
+            >
+              <item.icon className={`h-6 w-6 ${isActive ? "text-black" : "text-gray-300"}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{item.name}</span>
+            </a>
+          );
+        })}
+      </nav>
     </div>
   );
 }

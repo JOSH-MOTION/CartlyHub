@@ -199,18 +199,18 @@ export default function SellerEditProductPage({ params }) {
   return (
     <div className="space-y-12 max-w-5xl">
       <header className="flex justify-between items-center">
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           <button 
             onClick={() => router.back()}
-            className="h-14 w-14 bg-white border border-gray-100 rounded-2xl flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-sm"
+            className="h-10 w-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-sm"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-1 block">
               Inventory Management
             </span>
-            <h1 className="text-4xl font-black tracking-tighter uppercase">
+            <h1 className="text-2xl font-black tracking-tighter uppercase">
               Edit Product
             </h1>
           </div>
@@ -218,10 +218,10 @@ export default function SellerEditProductPage({ params }) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 space-y-10">
+        <div className="lg:col-span-2 space-y-6">
           {/* Basic Info */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
-            <h2 className="text-xl font-black uppercase tracking-tight pb-4 border-b border-gray-50 flex items-center space-x-3">
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+            <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50 flex items-center space-x-2">
               <Info className="h-5 w-5 text-gray-300" />
               <span>Basic Information</span>
             </h2>
@@ -229,7 +229,7 @@ export default function SellerEditProductPage({ params }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Product Name *</label>
                 <input
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="E.g. Vintage Leather Jacket"
@@ -260,7 +260,7 @@ export default function SellerEditProductPage({ params }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Description</label>
                 <textarea
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold resize-none h-32"
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold resize-none h-24 text-sm"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Describe your product in detail..."
@@ -270,8 +270,8 @@ export default function SellerEditProductPage({ params }) {
           </section>
 
           {/* Media */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
-            <h2 className="text-xl font-black uppercase tracking-tight pb-4 border-b border-gray-50">Product Images</h2>
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+            <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50">Product Images</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {form.images.map((img, i) => (
                 <div key={i} className="aspect-square bg-gray-100 rounded-2xl relative group overflow-hidden border border-gray-200">
@@ -293,8 +293,8 @@ export default function SellerEditProductPage({ params }) {
           </section>
 
           {/* Simple Inventory vs Variants Toggle */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
-            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
               <div>
                 <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">
                   Product Options
@@ -319,7 +319,7 @@ export default function SellerEditProductPage({ params }) {
                 <input
                   type="number"
                   min="0"
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                   value={form.totalStock}
                   onChange={(e) => setForm({ ...form, totalStock: Number(e.target.value) })}
                   placeholder="0"
@@ -379,16 +379,16 @@ export default function SellerEditProductPage({ params }) {
         </div>
 
         {/* Sidebar / Quick Actions */}
-        <div className="space-y-6">
-          <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Publish Details</h3>
+        <div className="space-y-4">
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publish Details</h3>
             
              <div className="space-y-4">
                <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Wholesale / Cost Price (Optional)</label>
                 <input
                   type="number"
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-lg"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                   value={form.costPrice}
                   onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
                   placeholder="0.00"
@@ -399,7 +399,7 @@ export default function SellerEditProductPage({ params }) {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Selling Price (GHS) *</label>
                 <input
                   type="number"
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-black text-xl"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-black text-lg"
                   value={form.basePrice}
                   onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
                   placeholder="0.00"
@@ -413,37 +413,14 @@ export default function SellerEditProductPage({ params }) {
                 </div>
               ) : null}
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
-                  <MapPin className="h-3 w-3" />
-                  <span>Region *</span>
-                </label>
-                <CustomSelect
-                  value={form.region}
-                  onChange={(value) => setForm({ ...form, region: value })}
-                  options={GHANA_REGIONS.map(r => ({ value: r, label: r }))}
-                  placeholder="Select Region"
-                  className="py-4"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Location</label>
-                <input
-                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="E.g. East Legon"
-                />
-              </div>
             </div>
 
             <button
               onClick={submitProduct}
               disabled={updateProductMutation.isLoading}
-              className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20 flex items-center justify-center space-x-3 disabled:opacity-50"
+              className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20 flex items-center justify-center space-x-2 disabled:opacity-50"
             >
-              {updateProductMutation.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Update Product</span><CheckCircle2 className="h-5 w-5" /></>}
+              {updateProductMutation.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>Update Product</span><CheckCircle2 className="h-4 w-4" /></>}
             </button>
           </section>
 
