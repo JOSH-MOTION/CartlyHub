@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllSellers } from "@/utils/firebaseData";
+import { getAllSellers, getProducts } from "@/utils/firebaseData";
+import { useRouter } from "next/navigation";
 import {
   Store,
   ShieldCheck,
@@ -18,12 +19,20 @@ import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import { toast } from "sonner";
 
 export default function AdminSellersPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: sellers, isLoading } = useQuery({
+  const { data: sellers, isLoading: sellersLoading } = useQuery({
     queryKey: ["admin", "sellers"],
     queryFn: getAllSellers,
   });
+
+  const { data: allProducts, isLoading: productsLoading } = useQuery({
+    queryKey: ["admin", "all-products-for-counts"],
+    queryFn: () => getProducts(),
+  });
+
+  const isLoading = sellersLoading || productsLoading;
 
   const verifyMutation = useMutation({
     mutationFn: async ({ id, status, email, name, storeName }) => {
@@ -92,6 +101,7 @@ export default function AdminSellersPage() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Store</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-center">Items</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Contact</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Joined</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
@@ -106,10 +116,19 @@ export default function AdminSellersPage() {
                       <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center">
                         <Store className="h-6 w-6 text-gray-400" />
                       </div>
-                      <div>
-                        <p className="font-black text-sm uppercase tracking-tight">{seller.storeName}</p>
+                      <div className="cursor-pointer group" onClick={() => router.push(`/admin/products?sellerId=${seller.id}`)}>
+                        <p className="font-black text-sm uppercase tracking-tight group-hover:text-blue-600 transition-colors">{seller.storeName}</p>
                         <p className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[200px]">{seller.description || "No description"}</p>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-center">
+                    <div 
+                      onClick={() => router.push(`/admin/products?sellerId=${seller.id}`)}
+                      className="inline-flex flex-col items-center justify-center h-12 w-12 bg-gray-50 rounded-xl hover:bg-black hover:text-white transition-all cursor-pointer border border-gray-100"
+                    >
+                      <span className="text-sm font-black">{allProducts?.filter(p => p.sellerId === seller.id).length || 0}</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Items</span>
                     </div>
                   </td>
                   <td className="px-8 py-6 space-y-1">
@@ -135,22 +154,30 @@ export default function AdminSellersPage() {
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    <button
-                      onClick={() => verifyMutation.mutate({
-                        id: seller.id,
-                        status: !seller.isVerified,
-                        email: seller.contactEmail,
-                        name: seller.ownerName || seller.storeName,
-                        storeName: seller.storeName
-                      })}
-                      disabled={verifyMutation.isLoading}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${seller.isVerified
-                          ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-                          : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
-                        }`}
-                    >
-                      {seller.isVerified ? "Revoke" : "Verify Store"}
-                    </button>
+                    <div className="flex items-center justify-end space-x-3">
+                      <button
+                        onClick={() => router.push(`/admin/products?sellerId=${seller.id}`)}
+                        className="px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-700 transition-all shadow-lg shadow-black/10"
+                      >
+                        Products
+                      </button>
+                      <button
+                        onClick={() => verifyMutation.mutate({
+                          id: seller.id,
+                          status: !seller.isVerified,
+                          email: seller.contactEmail,
+                          name: seller.ownerName || seller.storeName,
+                          storeName: seller.storeName
+                        })}
+                        disabled={verifyMutation.isLoading}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${seller.isVerified
+                            ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
+                            : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
+                          }`}
+                      >
+                        {seller.isVerified ? "Revoke" : "Verify Store"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

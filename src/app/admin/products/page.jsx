@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -27,7 +27,9 @@ import CustomSelect from "@/components/CustomSelect";
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const sellerIdFilter = searchParams.get("sellerId");
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [upload] = useUpload();
@@ -100,6 +102,20 @@ export default function AdminProductsPage() {
     }
     return catName;
   };
+
+  const { data: sellers } = useQuery({
+    queryKey: ["admin", "sellers"],
+    queryFn: getAllSellers,
+  });
+
+  const filteredProducts = products?.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         p.slug?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSeller = !sellerIdFilter || p.sellerId === sellerIdFilter;
+    const matchesStatus = filterStatus === "all" || (filterStatus === "active" ? p.isActive !== false : p.isActive === false);
+    
+    return matchesSearch && matchesSeller && matchesStatus;
+  });
 
   const createProductMutation = useMutation({
     mutationFn: async (data) => {
@@ -270,6 +286,29 @@ export default function AdminProductsPage() {
           <span>{isAdding ? "Cancel" : "New Product"}</span>
         </button>
       </header>
+
+      {sellerIdFilter && (
+        <div className="mb-8 flex items-center justify-between bg-blue-50 border border-blue-100 p-6 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center space-x-4">
+            <div className="h-12 w-12 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+              <Store className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Filtering by Seller</p>
+              <h3 className="text-lg font-black uppercase tracking-tighter text-blue-900">
+                {sellers?.find(s => s.id === sellerIdFilter)?.storeName || "Selected Seller"}
+              </h3>
+            </div>
+          </div>
+          <button 
+            onClick={() => router.push('/admin/products')}
+            className="flex items-center space-x-2 px-4 py-2 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100"
+          >
+            <X className="h-3 w-3" />
+            <span>Clear Filter</span>
+          </button>
+        </div>
+      )}
 
       {isAdding ? (
         <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -768,13 +807,16 @@ export default function AdminProductsPage() {
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
                   Price
                 </th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Seller
+                </th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {products?.map((p) => {
+              {filteredProducts?.map((p) => {
                 const totalStock =
                   p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) ||
                   0;
@@ -835,7 +877,15 @@ export default function AdminProductsPage() {
                     <td className="px-8 py-6 font-black text-sm">
                       ₵{Number(p.basePrice).toLocaleString()}
                     </td>
-                    <td className="px-8 py-6 text-right space-x-2">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center space-x-2">
+                        <Store className="h-3 w-3 text-gray-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">
+                          {p.sellerName || sellers?.find(s => s.id === p.sellerId)?.storeName || "Admin"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right space-x-2 whitespace-nowrap">
                       <button
                         onClick={() => {
                           setEditingId(p.id);
