@@ -320,9 +320,12 @@ export default function SellerOnboardingPage() {
               <CheckCircle2 className="h-10 w-10 text-white" />
             </div>
             <div className="space-y-3">
-              <h2 className="text-3xl font-black uppercase tracking-tighter">Welcome Aboard!</h2>
+              <h2 className="text-3xl font-black uppercase tracking-tighter">Registration Received!</h2>
               <p className="text-gray-400 font-medium text-sm max-w-md mx-auto">
-                Your store <span className="text-white font-bold">{form.storeName}</span> is now active. You can start uploading products immediately.
+                Your store <span className="text-white font-bold">{form.storeName}</span> has been created and is now <span className="text-orange-400 font-bold">Pending Verification</span>.
+              </p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                Our team will review your profile and you'll receive an email once approved.
               </p>
             </div>
             <div className="flex flex-col space-y-3 max-w-sm mx-auto">

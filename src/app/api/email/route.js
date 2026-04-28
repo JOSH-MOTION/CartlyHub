@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import path from 'path';
+import fs from 'fs';
 
 export async function POST(request) {
   try {
-    const { to, subject, html } = await request.json();
+    const { to, subject, html, includeLogo } = await request.json();
 
     if (!to || !subject || !html) {
       return NextResponse.json(
@@ -20,11 +22,29 @@ export async function POST(request) {
       },
     });
 
+    const attachments = [];
+
+    if (includeLogo) {
+      try {
+        const logoPath = path.join(process.cwd(), 'public', 'cartly logo.png');
+        if (fs.existsSync(logoPath)) {
+          attachments.push({
+            filename: 'logo.png',
+            path: logoPath,
+            cid: 'logo' // same cid value as in the html img src
+          });
+        }
+      } catch (logoError) {
+        console.error('Error attaching logo:', logoError);
+      }
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"cartlyHub" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
+      attachments,
     };
 
     const info = await transporter.sendMail(mailOptions);

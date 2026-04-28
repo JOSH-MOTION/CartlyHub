@@ -70,6 +70,23 @@ export default function SellerDashboard() {
           <span>New Product</span>
         </button>
       </header>
+      
+      {!sellerProfile?.isVerified && (
+        <div className="bg-orange-50 border border-orange-100 p-6 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center space-x-4">
+            <div className="h-12 w-12 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-tight text-orange-900">Account Pending Verification</h3>
+              <p className="text-[10px] font-bold text-orange-700 uppercase tracking-widest mt-0.5">Our team is currently reviewing your store details. You will receive an email once approved.</p>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <span className="px-4 py-2 bg-white text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-orange-200 shadow-sm">Reviewing Profile</span>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
