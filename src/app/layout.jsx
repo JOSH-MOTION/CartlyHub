@@ -1,4 +1,5 @@
 import Providers from "@/components/Providers";
+import Script from "next/script";
 import "./global.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
@@ -102,6 +103,19 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-WGBSHGCE6Z"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-WGBSHGCE6Z');
+          `}
+        </Script>
         <link rel="preconnect" href="https://kit.fontawesome.com" />
         <link rel="preconnect" href="https://ka-f.fontawesome.com" />
 
