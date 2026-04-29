@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import ExpenseModal from "../../components/ExpenseModal";
+import { getCategories } from "@/utils/firebaseData";
 import { 
   BarChart, 
   Bar, 
@@ -56,12 +57,7 @@ export default function AdminDashboard() {
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'categories'));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      } catch (error) {
-        return [];
-      }
+      return await getCategories();
     },
   });
 

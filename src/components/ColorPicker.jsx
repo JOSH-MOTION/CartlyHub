@@ -121,7 +121,7 @@ export default function ColorPicker({ value, onChange }) {
       </div>
       
       {showPicker && (
-        <div className="absolute top-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50">
+        <div className="absolute top-full right-0 lg:left-0 lg:right-auto mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50">
           {/* Saturation/Lightness Square */}
           <div className="mb-4">
             <div

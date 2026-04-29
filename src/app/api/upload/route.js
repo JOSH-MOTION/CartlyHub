@@ -1,57 +1,84 @@
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
-  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo',
-  secure: true
-});
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dlng6dqtl';
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'eccomerce';
 
-async function uploadToCloudinary({
-  url,
-  buffer,
-  base64
-}) {
+// Configure Cloudinary SDK if keys are available
+if (CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: CLOUDINARY_CLOUD_NAME,
+    api_key: CLOUDINARY_API_KEY,
+    api_secret: CLOUDINARY_API_SECRET,
+    secure: true
+  });
+}
+
+async function uploadToCloudinary({ url, buffer, base64 }) {
   try {
+    // If we have API keys, use the Cloudinary SDK (Signed Upload)
+    if (CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET) {
+      let result;
+      if (url) {
+        result = await cloudinary.uploader.upload(url, {
+          folder: 'cartlyhub/products',
+          resource_type: 'auto'
+        });
+      } else if (base64) {
+        result = await cloudinary.uploader.upload(base64, {
+          folder: 'cartlyhub/products',
+          resource_type: 'auto'
+        });
+      } else if (buffer) {
+        const base64String = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+        result = await cloudinary.uploader.upload(base64String, {
+          folder: 'cartlyhub/products',
+          resource_type: 'auto'
+        });
+      }
+
+      if (result) {
+        return {
+          url: result.secure_url,
+          mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
+        };
+      }
+    }
+
+    // Fallback: Direct REST API Upload (Unsigned Upload)
+    // This works using the upload_preset and doesn't require an API key
+    console.log('Using fallback unsigned upload to Cloudinary');
+    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    
+    const formData = new FormData();
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    
     if (url) {
-      // For URL uploads, upload from URL
-      const result = await cloudinary.uploader.upload(url, {
-        folder: 'cartlyhub/products',
-        resource_type: 'auto'
-      });
-      return {
-        url: result.secure_url,
-        mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
-      };
+      formData.append('file', url);
+    } else if (base64) {
+      formData.append('file', base64);
+    } else if (buffer) {
+      const blob = new Blob([buffer]);
+      formData.append('file', blob);
     }
 
-    if (base64) {
-      // For base64 uploads
-      const result = await cloudinary.uploader.upload(base64, {
-        folder: 'cartlyhub/products',
-        resource_type: 'auto'
-      });
-      return {
-        url: result.secure_url,
-        mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
-      };
+    const response = await fetch(cloudinaryUrl, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Direct upload failed');
     }
 
-    if (buffer) {
-      // For buffer uploads, create a data URL first
-      const base64String = `data:image/jpeg;base64,${buffer.toString('base64')}`;
-      const result = await cloudinary.uploader.upload(base64String, {
-        folder: 'cartlyhub/products',
-        resource_type: 'auto'
-      });
-      return {
-        url: result.secure_url,
-        mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
-      };
-    }
+    const result = await response.json();
+    return {
+      url: result.secure_url,
+      mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
+    };
 
-    throw new Error('No valid upload data provided');
   } catch (error) {
     console.error('Cloudinary upload error:', error);
     throw error;

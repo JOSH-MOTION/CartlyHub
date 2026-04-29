@@ -3,9 +3,15 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { getCategories } from '@/utils/firebaseData';
 
 export default function ProductUpload() {
-  const { addProduct, categories } = useApp();
+  const { addProduct } = useApp();
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

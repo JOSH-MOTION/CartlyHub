@@ -202,9 +202,21 @@ export default function AdminCategoriesPage() {
           </span>
           <h2 className="text-4xl font-black tracking-tighter uppercase">Categories Management</h2>
         </div>
+        <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-start space-x-3">
+          <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
+            <X className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-amber-900 mb-1">Notice: Hardcoded Categories</p>
+            <p className="text-[10px] text-amber-700 font-bold uppercase leading-relaxed">
+              The application is currently using built-in categories defined in the codebase. 
+              Changes made here will not be reflected until they are updated in the source code.
+            </p>
+          </div>
+        </div>
         <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all"
+          disabled
+          className="flex items-center space-x-2 bg-gray-100 text-gray-400 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs cursor-not-allowed"
         >
           <Plus className="h-4 w-4" />
           <span>Add Category</span>
@@ -476,8 +488,8 @@ export default function AdminCategoriesPage() {
                             </td>
                             <td className="px-8 py-4 text-right">
                               <div className="flex justify-end space-x-2">
-                                <button onClick={() => handleEdit(category)} className="p-3 text-black bg-gray-100 hover:bg-black hover:text-white rounded-xl transition-all"><Edit className="h-4 w-4" /></button>
-                                <button onClick={() => { if(!confirm('Are you sure?')) return; handleDelete(category.id); }} disabled={deleteCategoryMutation.isLoading} className="p-3 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl transition-all"><Trash2 className="h-4 w-4" /></button>
+                                <button disabled className="p-3 text-gray-400 bg-gray-50 rounded-xl cursor-not-allowed"><Edit className="h-4 w-4" /></button>
+                                <button disabled className="p-3 text-gray-300 bg-gray-50 rounded-xl cursor-not-allowed"><Trash2 className="h-4 w-4" /></button>
                               </div>
                             </td>
                           </>
@@ -509,8 +521,8 @@ export default function AdminCategoriesPage() {
                               </td>
                               <td className="px-8 py-4 text-right">
                                 <div className="flex justify-end space-x-2">
-                                  <button onClick={() => handleEdit(sub)} className="p-2 text-gray-600 hover:bg-black hover:text-white rounded-lg transition-all"><Edit className="h-4 w-4" /></button>
-                                  <button onClick={() => { if(!confirm('Are you sure?')) return; handleDelete(sub.id); }} disabled={deleteCategoryMutation.isLoading} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"><Trash2 className="h-4 w-4" /></button>
+                                  <button disabled className="p-2 text-gray-300 cursor-not-allowed"><Edit className="h-4 w-4" /></button>
+                                  <button disabled className="p-2 text-gray-300 cursor-not-allowed"><Trash2 className="h-4 w-4" /></button>
                                 </div>
                               </td>
                             </>

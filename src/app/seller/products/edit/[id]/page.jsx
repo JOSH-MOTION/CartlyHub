@@ -342,7 +342,7 @@ export default function SellerEditProductPage({ params }) {
                   <button onClick={() => setForm({ ...form, variants: form.variants.filter((_, idx) => idx !== i) })} className="absolute right-4 top-4 text-gray-300 hover:text-red-500 transition-colors">
                     <Trash2 className="h-4 w-4" />
                   </button>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                     <CustomSelect
                       value={v.size}
                       onChange={(value) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, size: value } : varItem) })}

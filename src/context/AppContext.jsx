@@ -40,7 +40,6 @@ export const AppProvider = ({ children }) => {
 
   // Data State
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [promotions, setPromotions] = useState([]);
   const [settings, setSettings] = useState(null);
 
@@ -146,21 +145,7 @@ export const AppProvider = ({ children }) => {
     });
     listeners.push(unsubscribeProducts);
 
-    // Categories listener
-    const categoriesQuery = query(collection(db, 'categories'), orderBy('name'));
-    const unsubscribeCategories = onSnapshot(categoriesQuery, (snapshot) => {
-      const categoriesData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
-        };
-      });
-      setCategories(categoriesData);
-    });
-    listeners.push(unsubscribeCategories);
+
 
     return () => {
       listeners.forEach(unsubscribe => unsubscribe());
@@ -339,7 +324,6 @@ export const AppProvider = ({ children }) => {
 
     // Data
     products,
-    categories,
     promotions,
     settings,
 
