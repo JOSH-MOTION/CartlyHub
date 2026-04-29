@@ -87,44 +87,92 @@ export default function SellerProductsPage() {
           <div className="p-20 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-black" />
           </div>
-        ) : filteredProducts.length > 0 ? (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50/50 border-b border-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Status</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Price</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+                ) : filteredProducts.length > 0 ? (
+          <>
+            {/* Desktop View */}
+            <table className="w-full text-left hidden md:table">
+              <thead className="bg-gray-50/50 border-b border-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Product</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Price</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredProducts.map((p) => (
+                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group text-sm">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                          <img src={p.images?.[0]} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs uppercase tracking-tight">{p.name}</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{p.categoryId}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${p.isActive !== false ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                        {p.isActive !== false ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="font-black text-xs">₵{Number(p.basePrice).toLocaleString()}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-1">
+                      <button 
+                        onClick={() => router.push(`/seller/products/edit/${p.id}`)}
+                        className="p-2.5 hover:bg-black hover:text-white rounded-lg transition-all text-gray-400"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this product?")) {
+                            deleteProductMutation.mutate(p.id);
+                          }
+                        }}
+                        className="p-2.5 hover:bg-red-500 hover:text-white rounded-lg transition-all text-gray-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Mobile View */}
+            <div className="md:hidden divide-y divide-gray-50">
               {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group text-sm">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={p.images?.[0]} className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="font-black text-xs uppercase tracking-tight">{p.name}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{p.categoryId}</p>
-                      </div>
+                <div key={p.id} className="p-6 space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="h-16 w-16 bg-gray-100 rounded-2xl overflow-hidden flex-shrink-0">
+                      <img src={p.images?.[0]} className="w-full h-full object-cover" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${p.isActive !== false ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
-                      {p.isActive !== false ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="font-black text-xs">₵{Number(p.basePrice).toLocaleString()}</p>
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-black text-sm uppercase tracking-tight truncate">{p.name}</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{p.categoryId}</p>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${p.isActive !== false ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                          {p.isActive !== false ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <p className="font-black text-sm mt-1">₵{Number(p.basePrice).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 pt-2">
                     <button 
                       onClick={() => router.push(`/seller/products/edit/${p.id}`)}
-                      className="p-2.5 hover:bg-black hover:text-white rounded-lg transition-all text-gray-400"
+                      className="flex items-center justify-center space-x-2 py-3 bg-gray-50 hover:bg-black hover:text-white rounded-xl transition-all text-gray-900 font-black uppercase tracking-widest text-[10px]"
                     >
                       <Edit className="h-3.5 w-3.5" />
+                      <span>Edit Product</span>
                     </button>
                     <button 
                       onClick={() => {
@@ -132,15 +180,16 @@ export default function SellerProductsPage() {
                           deleteProductMutation.mutate(p.id);
                         }
                       }}
-                      className="p-2.5 hover:bg-red-500 hover:text-white rounded-lg transition-all text-gray-400"
+                      className="flex items-center justify-center space-x-2 py-3 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all text-red-600 font-black uppercase tracking-widest text-[10px]"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete</span>
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         ) : (
           <div className="p-20 text-center space-y-6">
             <div className="bg-gray-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto">
