@@ -61,7 +61,11 @@ export const metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    google: 'google29b55d0650dbdf66',
+    google: 'ex31KVfSIhxEToXi-DfdwEezNB_gAZto5e7cT7F4kE0',
+  },
+  icons: {
+    icon: '/logo-bg.png',
+    apple: '/logo-bg.png',
   },
 };
 
@@ -101,10 +105,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://kit.fontawesome.com" />
         <link rel="preconnect" href="https://ka-f.fontawesome.com" />
 
-        <link rel="icon" href="/logo-bg.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo-bg.png" />
         <meta name="theme-color" content="#000000" />
-        <meta name="google-site-verification" content="ex31KVfSIhxEToXi-DfdwEezNB_gAZto5e7cT7F4kE0" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
