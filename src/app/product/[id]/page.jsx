@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
+import ProductCard from "@/components/ProductCard";
 import {
   ShoppingCart,
   Heart,
@@ -64,6 +65,16 @@ export default function ProductDetailPage({ params }) {
       if (!product?.sellerId) return null;
       const { getSeller } = await import("@/utils/firebaseData");
       return await getSeller(product.sellerId);
+    },
+    enabled: !!product?.sellerId,
+  });
+
+  const { data: moreFromSeller = [], isLoading: moreFromSellerLoading } = useQuery({
+    queryKey: ["moreFromSeller", product?.sellerId, product?.id],
+    queryFn: async () => {
+      if (!product?.sellerId) return [];
+      const allProducts = await getProducts({ sellerId: product.sellerId });
+      return allProducts.filter(p => p.id !== product.id).slice(0, 4);
     },
     enabled: !!product?.sellerId,
   });
@@ -702,6 +713,42 @@ export default function ProductDetailPage({ params }) {
           </div>
         </div>
       </main>
+
+      {/* More from Seller Section */}
+      {moreFromSeller.length > 0 && (
+        <section className="bg-gray-50 py-24 border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2 block">
+                  Curation
+                </span>
+                <h2 className="text-4xl font-black text-black tracking-tighter uppercase">
+                  More from {product.sellerName || "this seller"}
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Discover more premium items from this boutique
+                </p>
+              </div>
+              <a
+                href={`/seller/${encodeURIComponent(product.sellerName || "cartly Hub Admin")}`}
+                className="inline-flex items-center px-8 py-4 bg-white text-black border-2 border-black font-bold uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-50 transition-all h-[52px]"
+              >
+                View Store
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+              {moreFromSeller.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Footer / Bottom Padding */}
+      <div className="h-24"></div>
     </div>
   );
 }

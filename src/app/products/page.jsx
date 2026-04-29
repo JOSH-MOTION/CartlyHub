@@ -13,6 +13,7 @@ import {
   X as CloseIcon,
 } from "lucide-react";
 import { getProducts, getCategories } from "@/utils/firebaseData";
+import { shuffleArray } from "@/utils/helpers";
 import FilterSidebar from "@/components/FilterSidebar";
 
 export default function ProductsPage() {
@@ -57,9 +58,15 @@ export default function ProductsPage() {
         );
       }
       
-      // Simple client-side sorting
+      // Simple client-side sorting / shuffling
       if (sortBy === "latest") {
-        products = products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // If searching or filtering by category, we keep the chronological order
+        // Otherwise, shuffle to scatter sellers as requested
+        if (!search && (!category || category === "all") && selectedRegion === "all") {
+          products = shuffleArray(products);
+        } else {
+          products = products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
       } else if (sortBy === "price-low") {
         products = products.sort((a, b) => a.basePrice - b.basePrice);
       } else if (sortBy === "price-high") {

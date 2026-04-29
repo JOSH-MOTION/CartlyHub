@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getAllSellers } from "@/utils/firebaseData";
 import ColorPicker from "@/components/ColorPicker";
 import CustomSelect from "@/components/CustomSelect";
+import { PRODUCT_SIZES, GHANA_REGIONS } from "@/utils/constants";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -56,24 +57,6 @@ export default function AdminProductsPage() {
     sellerPhone: "",
   });
 
-  const GHANA_REGIONS = [
-    "Greater Accra",
-    "Ashanti",
-    "Central",
-    "Eastern",
-    "Western",
-    "Northern",
-    "Volta",
-    "Upper East",
-    "Upper West",
-    "Bono",
-    "Bono East",
-    "Ahafo",
-    "Savannah",
-    "North East",
-    "Oti",
-    "Western North"
-  ];
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["admin", "products"],
@@ -554,11 +537,12 @@ export default function AdminProductsPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                           Size
                         </label>
-                        <input
-                          placeholder="e.g., M, L, XL"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                        <CustomSelect
                           value={v.size}
-                          onChange={(e) => updateVariant(v.vId, "size", e.target.value)}
+                          onChange={(value) => updateVariant(v.vId, "size", value)}
+                          options={PRODUCT_SIZES.map(size => ({ value: size, label: size }))}
+                          placeholder="Size"
+                          className="!py-2 !rounded-xl !bg-white"
                         />
                       </div>
                       <div className="space-y-2">

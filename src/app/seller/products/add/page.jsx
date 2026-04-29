@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { getCategories, createProduct } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
+import { PRODUCT_SIZES, GHANA_REGIONS } from "@/utils/constants";
 import ColorPicker from "@/components/ColorPicker";
 import CustomSelect from "@/components/CustomSelect";
 
@@ -47,11 +48,6 @@ export default function SellerAddProductPage() {
     sellerEmail: sellerProfile?.contactEmail,
   });
 
-  const GHANA_REGIONS = [
-    "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
-    "Northern", "Volta", "Upper East", "Upper West", "Bono", 
-    "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"
-  ];
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -295,11 +291,12 @@ export default function SellerAddProductPage() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-                    <input
-                      placeholder="Size"
-                      className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
+                    <CustomSelect
                       value={v.size}
-                      onChange={(e) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, size: e.target.value } : varItem) })}
+                      onChange={(value) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, size: value } : varItem) })}
+                      options={PRODUCT_SIZES.map(size => ({ value: size, label: size }))}
+                      placeholder="Size"
+                      className="!py-3 !rounded-xl !bg-white"
                     />
                     <input
                       placeholder="Stock"

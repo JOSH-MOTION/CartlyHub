@@ -7,6 +7,7 @@ import ProductCard from "../components/ProductCard";
 import FilterSidebar from "../components/FilterSidebar";
 import { ArrowRight, ShoppingBag, Truck, ShieldCheck, Zap, Filter, Grid3x3, List, SlidersHorizontal, X as CloseIcon } from "lucide-react";
 import { getProducts, getCategories } from "../utils/firebaseData";
+import { shuffleArray } from "../utils/helpers";
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -69,7 +70,12 @@ export default function HomePage() {
     return categoryMatch && regionMatch;
   });
 
-  const displayProducts = filteredProducts.slice(0, 12); // Show more products on front page
+  // Shuffle products to scatter sellers
+  const shuffledProducts = selectedCategory === "all" && selectedRegion === "all" 
+    ? shuffleArray(filteredProducts) 
+    : filteredProducts;
+
+  const displayProducts = shuffledProducts.slice(0, 12); // Show more products on front page
 
   return (
     <div className="min-h-screen bg-white">
