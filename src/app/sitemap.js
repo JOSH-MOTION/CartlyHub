@@ -1,7 +1,7 @@
 import { getProducts, getCategories } from '../utils/firebaseData';
 
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartly-hub.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
 
   // Static routes
   const staticRoutes = [

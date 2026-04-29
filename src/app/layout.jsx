@@ -1,13 +1,13 @@
 import Providers from "@/components/Providers";
 import "./global.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartly-hub.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
-    template: "%s | cartly Hub",
+    default: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",
+    template: "%s | Cartly Hub",
   },
   description:
     "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
@@ -16,14 +16,15 @@ export const metadata = {
     "Accra online store", "electronics Ghana", "phones Ghana",
     "fashion Ghana", "home appliances Ghana", "vehicles Ghana",
     "Jiji Ghana", "Tonaton alternative", "cheap deals Ghana",
-    "cartly", "cartly hub", "Ghana ecommerce",
+    "Cartly", "Cartly Hub", "Ghana ecommerce", "shopping in Kumasi",
+    "Ghana classifieds", "verified sellers Ghana",
   ],
-  authors: [{ name: "cartly Hub" }],
+  authors: [{ name: "Cartly Hub" }],
   alternates: {
     canonical: siteUrl,
   },
   openGraph: {
-    title: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
+    title: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",
     description:
       "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
     url: siteUrl,
@@ -41,7 +42,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "cartly Hub | Ghana's Premium Online Shopping Marketplace",
+    title: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",
     description:
       "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
     images: [`${siteUrl}/cartly-og.png`],
@@ -60,15 +61,15 @@ export const metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    // google: 'your-google-verification-code',
+    google: 'google29b55d0650dbdf66',
   },
 };
 
 // JSON-LD — now typed as a general marketplace/e-commerce platform
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "ShoppingCenter",
-  name: "cartly Hub",
+  "@type": "WebSite",
+  name: "Cartly Hub",
   description:
     "Ghana's trusted online marketplace for electronics, fashion, home goods, vehicles, phones, and more.",
   url: siteUrl,
