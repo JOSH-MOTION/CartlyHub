@@ -57,8 +57,8 @@ export default function FilterSidebar({
     setExpandedCats(newSet);
   };
 
-  const mainCategories = categories.filter(c => !c.parentId);
-  const getSubcategories = (parentId) => categories.filter(c => c.parentId === parentId);
+  // categories prop is now the structured array from categories.js
+  const mainCategories = categories;
 
   return (
     <>
@@ -121,16 +121,16 @@ export default function FilterSidebar({
                   </button>
                   
                   {mainCategories.map((cat) => {
-                    const subCats = getSubcategories(cat.id);
+                    const subCats = cat.subcategories || [];
                     const isExpanded = expandedCats.has(cat.id);
-                    const isSelected = selectedCategory === cat.name || selectedCategory === cat.id;
+                    const isSelected = selectedCategory === cat.id;
 
                     return (
                       <div key={cat.id} className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => { 
-                              setSelectedCategory(cat.id); // Switching to use ID for better matching
+                              setSelectedCategory(cat.id);
                             }}
                             className={`flex-1 flex items-center justify-between px-5 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${
                               selectedCategory === cat.id
@@ -138,7 +138,10 @@ export default function FilterSidebar({
                                 : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
                             }`}
                           >
-                            <span>{cat.name}</span>
+                            <div className="flex items-center space-x-3">
+                              <span>{cat.icon}</span>
+                              <span>{cat.name}</span>
+                            </div>
                             {selectedCategory === cat.id && <Check className="h-4 w-4 text-emerald-500" />}
                           </button>
                           {subCats.length > 0 && (
@@ -152,21 +155,54 @@ export default function FilterSidebar({
                         </div>
                         
                         {isExpanded && subCats.length > 0 && (
-                          <div className="ml-4 pl-4 border-l-2 border-gray-100 flex flex-col gap-1 mt-1 animate-in slide-in-from-left-2 duration-300">
-                            {subCats.map(sub => (
-                              <button
-                                key={sub.id}
-                                onClick={() => setSelectedCategory(sub.id)}
-                                className={`flex items-center justify-between px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                  selectedCategory === sub.id
-                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                    : "bg-white text-gray-400 hover:bg-gray-50 border border-transparent"
-                                }`}
-                              >
-                                <span>{sub.name}</span>
-                                {selectedCategory === sub.id && <Check className="h-3 w-3" />}
-                              </button>
-                            ))}
+                          <div className="ml-4 pl-4 border-l-2 border-gray-100 flex flex-col gap-2 mt-1 animate-in slide-in-from-left-2 duration-300">
+                            {subCats.map(sub => {
+                               const leafCats = sub.subcategories || [];
+                               const isSubExpanded = expandedCats.has(sub.id);
+                               return (
+                                 <div key={sub.id} className="flex flex-col gap-1">
+                                   <div className="flex items-center gap-2">
+                                     <button
+                                       onClick={() => setSelectedCategory(sub.id)}
+                                       className={`flex-1 flex items-center justify-between px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                         selectedCategory === sub.id
+                                           ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                           : "bg-white text-gray-400 hover:bg-gray-50 border border-transparent"
+                                       }`}
+                                     >
+                                       <span>{sub.name}</span>
+                                       {selectedCategory === sub.id && <Check className="h-3 w-3" />}
+                                     </button>
+                                     {leafCats.length > 0 && (
+                                       <button 
+                                         onClick={() => toggleCatExpand(sub.id)}
+                                         className={`p-2 rounded-xl border border-gray-100 transition-all ${isSubExpanded ? "bg-black text-white" : "bg-white text-gray-400 hover:bg-gray-50"}`}
+                                       >
+                                         {isSubExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                       </button>
+                                     )}
+                                   </div>
+                                   {isSubExpanded && leafCats.length > 0 && (
+                                      <div className="ml-4 pl-4 border-l-2 border-emerald-50 flex flex-col gap-1 mt-1 animate-in slide-in-from-left-2 duration-200">
+                                        {leafCats.map(leaf => (
+                                          <button
+                                            key={leaf.id}
+                                            onClick={() => setSelectedCategory(leaf.id)}
+                                            className={`flex items-center justify-between px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${
+                                              selectedCategory === leaf.id
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-white text-gray-400 hover:text-black"
+                                            }`}
+                                          >
+                                            <span>{leaf.name}</span>
+                                            {selectedCategory === leaf.id && <Check className="h-2 w-2" />}
+                                          </button>
+                                        ))}
+                                      </div>
+                                   )}
+                                 </div>
+                               )
+                            })}
                           </div>
                         )}
                       </div>

@@ -64,6 +64,9 @@ export const AppProvider = ({ children }) => {
   const [manualSales, setManualSales] = useState([]);
   const [orders, setOrders] = useState([]);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Computed values
   const cartTotal = cart.reduce((total, item) => total + (item.variant?.price || item.product?.basePrice || 0) * item.quantity, 0);
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
@@ -341,6 +344,10 @@ export const AppProvider = ({ children }) => {
 
     // Wishlist
     wishlist,
+
+    // Search
+    searchQuery,
+    setSearchQuery,
 
     // Actions
     signIn,

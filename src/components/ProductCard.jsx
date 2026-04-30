@@ -12,10 +12,20 @@ export default function ProductCard({ product, categories = [] }) {
   const price = firstInStockVariant?.price || product.basePrice;
   const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0;
 
-  // Get category name
+  // Get category name (searching through all levels)
   const getCategoryName = (categoryId) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Uncategorized';
+    if (!categoryId) return 'Uncategorized';
+    
+    for (const main of categories) {
+      if (main.id === categoryId) return main.name;
+      for (const sub of main.subcategories || []) {
+        if (sub.id === categoryId) return sub.name;
+        for (const leaf of sub.subcategories || []) {
+          if (leaf.id === categoryId) return leaf.name;
+        }
+      }
+    }
+    return 'Uncategorized';
   };
 
   const handleAddToCart = (e) => {

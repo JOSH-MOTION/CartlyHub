@@ -19,12 +19,12 @@ import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, profile, sellerProfile, signOut, wishlist } = useApp();
+  const { user, profile, sellerProfile, signOut, wishlist, searchQuery, setSearchQuery } = useApp();
   const { items } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
@@ -35,11 +35,21 @@ export default function Navbar() {
 
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
 
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // If not on homepage or products page, redirect to products page when starting to type
+    const pathname = window.location.pathname;
+    if (value.trim() && pathname !== '/' && pathname !== '/products') {
+      router.push(`/products?search=${encodeURIComponent(value.trim())}`);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
       setIsSearchFocused(false);
     }
   };
@@ -52,7 +62,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? "bg-white shadow-sm py-3" : "bg-white shadow-sm py-3 md:bg-transparent md:shadow-none md:py-5"}`}
+      className="w-full z-50 bg-white border-b border-gray-100 py-4"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
@@ -100,7 +110,7 @@ export default function Navbar() {
                       type="text"
                       placeholder="Search products..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearchChange}
                       onFocus={() => setIsSearchFocused(true)}
                       onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                       onKeyDown={handleSearchKeyPress}
@@ -160,7 +170,7 @@ export default function Navbar() {
                       href="/seller/onboarding"
                       className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-black text-white rounded-full hover:bg-gray-800 transition-all"
                     >
-                      Sell on cartlyHub
+                      Sell
                     </a>
                   )}
                   <button
@@ -182,7 +192,20 @@ export default function Navbar() {
 
             <button
               className="md:hidden p-2"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                setIsMobileSearchOpen(!isMobileSearchOpen);
+                if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+              }}
+            >
+              <Search className="h-6 w-6" />
+            </button>
+
+            <button
+              className="md:hidden p-2"
+              onClick={() => {
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+                if (isMobileSearchOpen) setIsMobileSearchOpen(false);
+              }}
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -193,6 +216,25 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Search Bar - Expandable */}
+      {isMobileSearchOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 p-4 animate-in slide-in-from-top-2 duration-300">
+          <form onSubmit={handleSearch}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none transition-all text-sm font-medium"
+              />
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
@@ -205,7 +247,7 @@ export default function Navbar() {
                   type="text" 
                   placeholder="Search products..." 
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}
                   className="bg-transparent border-none outline-none w-full text-sm"
                 />
               </div>
@@ -253,7 +295,7 @@ export default function Navbar() {
                 ) : (
                   <a href="/seller/onboarding" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
                     <Store className="h-4 w-4" />
-                    <span>Sell on cartlyHub</span>
+                    <span>Sell</span>
                   </a>
                 )}
                 <button onClick={signOut} className="flex items-center space-x-2 text-sm font-bold uppercase text-red-500 text-left">
