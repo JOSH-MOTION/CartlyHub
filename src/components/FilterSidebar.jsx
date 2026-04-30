@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, SlidersHorizontal, MapPin, Layers, RotateCcw, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, SlidersHorizontal, MapPin, Layers, RotateCcw, Check, ChevronRight, ChevronDown, DollarSign } from "lucide-react";
 
 export default function FilterSidebar({ 
   isOpen, 
@@ -10,10 +10,13 @@ export default function FilterSidebar({
   selectedCategory, 
   setSelectedCategory, 
   selectedRegion, 
-  setSelectedRegion 
+  setSelectedRegion,
+  priceRange,
+  setPriceRange
 }) {
-  const [expandedSection, setExpandedSection] = useState(null); // 'category' or 'region'
+  const [expandedSection, setExpandedSection] = useState(null); // 'category', 'region', or 'price'
   const [expandedCats, setExpandedCats] = useState(new Set());
+  const [localPriceRange, setLocalPriceRange] = useState({ min: "", max: "" });
 
   const GHANA_REGIONS = [
     "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
@@ -21,11 +24,26 @@ export default function FilterSidebar({
     "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"
   ];
 
+  // Initialize local price range when props change
+  useEffect(() => {
+    if (priceRange) {
+      setLocalPriceRange(priceRange);
+    }
+  }, [priceRange]);
+
   if (!isOpen) return null;
 
   const handleReset = () => {
     setSelectedCategory("all");
     setSelectedRegion("all");
+    setPriceRange({ min: "", max: "" });
+    setLocalPriceRange({ min: "", max: "" });
+  };
+
+  const handlePriceRangeChange = (field, value) => {
+    const newRange = { ...localPriceRange, [field]: value };
+    setLocalPriceRange(newRange);
+    setPriceRange(newRange);
   };
 
   const toggleSection = (section) => {
@@ -201,6 +219,64 @@ export default function FilterSidebar({
                       {selectedRegion === region && <Check className="h-4 w-4 text-blue-500" />}
                     </button>
                   ))}
+                </div>
+              )}
+            </section>
+
+            {/* Price Range Section */}
+            <section className="border border-gray-100 rounded-[2rem] overflow-hidden transition-all duration-300">
+               <button 
+                onClick={() => toggleSection('price')}
+                className={`w-full flex items-center justify-between p-6 transition-colors ${expandedSection === 'price' ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'}`}
+              >
+                <div className="flex items-center space-x-3">
+                  <DollarSign className={`h-5 w-5 ${expandedSection === 'price' ? 'text-yellow-400' : 'text-yellow-500'}`} />
+                  <span className="text-sm font-black uppercase tracking-widest">Price Range</span>
+                  {(localPriceRange.min || localPriceRange.max) && (
+                     <span className="h-2 w-2 bg-yellow-500 rounded-full border border-white" />
+                  )}
+                </div>
+                {expandedSection === 'price' ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+              
+              {expandedSection === 'price' && (
+                <div className="p-4 space-y-4 animate-in slide-in-from-top-4 duration-300">
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Minimum Price (GH¢)</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        value={localPriceRange.min}
+                        onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                        className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-black outline-none font-bold text-sm transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Maximum Price (GH¢)</label>
+                      <input
+                        type="number"
+                        placeholder="No limit"
+                        min="0"
+                        value={localPriceRange.max}
+                        onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                        className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:border-black outline-none font-bold text-sm transition-all"
+                      />
+                    </div>
+                  </div>
+                  {(localPriceRange.min || localPriceRange.max) && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-yellow-700">
+                        {localPriceRange.min && localPriceRange.max 
+                          ? `GH¢ ${localPriceRange.min} - GH¢ ${localPriceRange.max}`
+                          : localPriceRange.min 
+                            ? `From GH¢ ${localPriceRange.min}`
+                            : `Up to GH¢ ${localPriceRange.max}`
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </section>

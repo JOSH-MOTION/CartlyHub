@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   Package,
   Star,
+  MessageCircle,
+  User,
 } from "lucide-react";
 import { getProducts, getCategories, getSellerReviews, incrementStoreViews } from "@/utils/firebaseData";
 import Link from "next/link";
@@ -194,6 +196,131 @@ export default function SellerStorePage({ params }) {
             )}
           </div>
         )}
+
+        {/* Reviews Section */}
+        <div className="mt-20 pt-12 border-t border-gray-100">
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2 block">
+                  Customer Feedback
+                </span>
+                <h2 className="text-3xl font-black text-black tracking-tighter uppercase">
+                  Reviews for {sellerName}
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  What customers are saying about this store
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-black">{averageRating.toFixed(1)}</div>
+                <div className="flex text-yellow-400 mt-1 justify-center">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star
+                      key={s}
+                      className={`h-4 w-4 ${s <= averageRating ? 'fill-current' : 'text-gray-200'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  {sellerReviews.length} Reviews
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {reviewsLoading ? (
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-50 rounded-2xl p-6 animate-pulse">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 w-1/3 rounded"></div>
+                      <div className="h-3 bg-gray-200 w-1/2 rounded"></div>
+                      <div className="h-3 bg-gray-200 w-full rounded"></div>
+                      <div className="h-3 bg-gray-200 w-3/4 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : sellerReviews.length > 0 ? (
+            <div className="space-y-6">
+              {sellerReviews.map((review, index) => (
+                <div key={review.id || index} className="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h4 className="font-black text-sm uppercase tracking-widest">
+                            {review.name || "Anonymous Customer"}
+                          </h4>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <div className="flex text-yellow-400">
+                              {[1, 2, 3, 4, 5].map(s => (
+                                <Star
+                                  key={s}
+                                  className={`h-3 w-3 ${s <= review.rating ? 'fill-current' : 'text-gray-200'}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-widest">
+                              {review.rating}/5
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                            {review.createdAt?.toDate ? 
+                              new Date(review.createdAt.toDate()).toLocaleDateString('en-GH', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : 
+                              'Recently'
+                            }
+                          </div>
+                          {review.productId && (
+                            <div className="text-[10px] text-gray-400 mt-1">
+                              Product Review
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed mt-3">
+                        {review.comment}
+                      </p>
+                      {review.productId && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center space-x-2 text-[10px] text-gray-400 uppercase tracking-widest">
+                            <Package className="h-3 w-3" />
+                            <span>Reviewed Product</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-widest text-gray-400 mb-2">
+                No Reviews Yet
+              </h3>
+              <p className="text-gray-500 text-sm max-w-md mx-auto">
+                Be the first to leave a review for {sellerName}. Purchase a product and share your experience!
+              </p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

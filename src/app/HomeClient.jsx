@@ -12,6 +12,7 @@ import { shuffleArray } from "../utils/helpers";
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedRegion, setSelectedRegion] = useState("all");
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [viewMode, setViewMode] = useState("grid");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -58,7 +59,7 @@ export default function HomePage() {
     },
   });
 
-  // Filter products based on selected category AND region
+  // Filter products based on selected category, region, AND price range
   const filteredProducts = allProducts.filter(product => {
     const categoryMatch = selectedCategory === "all" ||
       product.categoryId === selectedCategory ||
@@ -67,15 +68,23 @@ export default function HomePage() {
     const regionMatch = selectedRegion === "all" ||
       product.region === selectedRegion;
 
-    return categoryMatch && regionMatch;
+    const priceMatch = (!priceRange.min && !priceRange.max) || 
+      (() => {
+        // Get the effective price (same logic as ProductCard)
+        const firstInStockVariant = product.variants?.find(v => v.stock > 0) || product.variants?.[0];
+        const price = firstInStockVariant?.price || product.basePrice || 0;
+        return price >= (priceRange.min || 0) && price <= (priceRange.max || Infinity);
+      })();
+
+    return categoryMatch && regionMatch && priceMatch;
   });
 
   // Shuffle products to scatter sellers
-  const shuffledProducts = selectedCategory === "all" && selectedRegion === "all" 
+  const shuffledProducts = selectedCategory === "all" && selectedRegion === "all" && !priceRange.min && !priceRange.max
     ? shuffleArray(filteredProducts) 
     : filteredProducts;
 
-  const displayProducts = shuffledProducts.slice(0, 12); // Show more products on front page
+  const displayProducts = shuffledProducts.slice(0, 24); // Show more products on front page
 
   return (
     <div className="min-h-screen bg-white">
@@ -200,7 +209,7 @@ export default function HomePage() {
           </div>
 
           {/* Active Filter Badges */}
-          {(selectedCategory !== "all" || selectedRegion !== "all") && (
+          {(selectedCategory !== "all" || selectedRegion !== "all" || priceRange.min || priceRange.max) && (
             <div className="flex flex-wrap items-center gap-2 mb-12 animate-in fade-in slide-in-from-left-4 duration-500">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">Filtering by:</span>
 
@@ -224,8 +233,25 @@ export default function HomePage() {
                 </button>
               )}
 
+              {(priceRange.min || priceRange.max) && (
+                <button
+                  onClick={() => setPriceRange({ min: "", max: "" })}
+                  className="flex items-center space-x-2 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-yellow-100 hover:bg-yellow-100 transition-colors"
+                >
+                  <span>
+                    Price: {priceRange.min && priceRange.max 
+                      ? `GH¢${priceRange.min}-${priceRange.max}`
+                      : priceRange.min 
+                        ? `From GH¢${priceRange.min}`
+                        : `Up to GH¢${priceRange.max}`
+                    }
+                  </span>
+                  <CloseIcon className="h-3 w-3" />
+                </button>
+              )}
+
               <button
-                onClick={() => { setSelectedCategory("all"); setSelectedRegion("all"); }}
+                onClick={() => { setSelectedCategory("all"); setSelectedRegion("all"); setPriceRange({ min: "", max: "" }); }}
                 className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 underline decoration-2 underline-offset-4 ml-2"
               >
                 Clear All
@@ -429,6 +455,8 @@ export default function HomePage() {
         setSelectedCategory={setSelectedCategory}
         selectedRegion={selectedRegion}
         setSelectedRegion={setSelectedRegion}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
       />
     </div>
   );

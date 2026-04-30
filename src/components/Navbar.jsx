@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
   Heart,
@@ -17,11 +18,14 @@ import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
+  const router = useRouter();
   const { user, profile, sellerProfile, signOut, wishlist } = useApp();
   const { items } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -30,6 +34,21 @@ export default function Navbar() {
   }, []);
 
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+      setIsSearchFocused(false);
+    }
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
+  };
 
   return (
     <nav
@@ -72,9 +91,24 @@ export default function Navbar() {
           {/* Icons */}
           <div className="flex items-center space-x-3 md:space-x-5">
             <div className="hidden md:flex items-center space-x-5">
-              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Search className="h-5 w-5" />
-              </button>
+              {/* Search Bar */}
+              <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-80' : 'w-64'}`}>
+                <form onSubmit={handleSearch}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search products..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                      onKeyDown={handleSearchKeyPress}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-full border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all text-sm font-medium"
+                    />
+                  </div>
+                </form>
+              </div>
               <a
                 href="/wishlist"
                 className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
@@ -163,9 +197,19 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="pb-4 border-b border-gray-100 flex items-center bg-gray-50 rounded-xl px-4 py-2">
-            <Search className="h-4 w-4 text-gray-400 mr-2" />
-            <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full text-sm" />
+          <div className="pb-4 border-b border-gray-100">
+            <form onSubmit={handleSearch}>
+              <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2">
+                <Search className="h-4 w-4 text-gray-400 mr-2" />
+                <input 
+                  type="text" 
+                  placeholder="Search products..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none w-full text-sm"
+                />
+              </div>
+            </form>
           </div>
           <a
             href="/products"

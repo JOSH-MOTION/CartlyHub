@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -17,11 +18,21 @@ import { shuffleArray } from "@/utils/helpers";
 import FilterSidebar from "@/components/FilterSidebar";
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("all");
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [sortBy, setSortBy] = useState("latest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Initialize search from URL params
+  useEffect(() => {
+    const searchParam = searchParams.get("search");
+    if (searchParam) {
+      setSearch(searchParam);
+    }
+  }, [searchParams]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -31,7 +42,7 @@ export default function ProductsPage() {
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["products", category, search, sortBy],
+    queryKey: ["products", category, search, sortBy, selectedRegion, priceRange],
     queryFn: async () => {
       // Determine what categories to filter by
       let categoryFilter = category;
@@ -50,6 +61,18 @@ export default function ProductsPage() {
         products = products.filter(p => p.region === selectedRegion);
       }
 
+      // Filter by price range if set
+      if (priceRange.min || priceRange.max) {
+        products = products.filter(p => {
+          // Get the effective price (same logic as ProductCard)
+          const firstInStockVariant = p.variants?.find(v => v.stock > 0) || p.variants?.[0];
+          const price = firstInStockVariant?.price || p.basePrice || 0;
+          const minPrice = priceRange.min ? Number(priceRange.min) : 0;
+          const maxPrice = priceRange.max ? Number(priceRange.max) : Infinity;
+          return price >= minPrice && price <= maxPrice;
+        });
+      }
+
       // Simple client-side filtering for search
       if (search) {
         products = products.filter(product => 
@@ -62,7 +85,7 @@ export default function ProductsPage() {
       if (sortBy === "latest") {
         // If searching or filtering by category, we keep the chronological order
         // Otherwise, shuffle to scatter sellers as requested
-        if (!search && (!category || category === "all") && selectedRegion === "all") {
+        if (!search && (!category || category === "all") && selectedRegion === "all" && !priceRange.min && !priceRange.max) {
           products = shuffleArray(products);
         } else {
           products = products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -137,7 +160,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Active Filter Badges */}
-        {(category || selectedRegion !== "all") && (
+        {(category || selectedRegion !== "all" || priceRange.min || priceRange.max) && (
           <div className="flex flex-wrap items-center gap-2 mb-12 animate-in fade-in slide-in-from-left-4 duration-500">
             {category && category !== "" && category !== "all" && (
               <button 
@@ -159,8 +182,25 @@ export default function ProductsPage() {
               </button>
             )}
 
+            {(priceRange.min || priceRange.max) && (
+              <button 
+                onClick={() => setPriceRange({ min: "", max: "" })}
+                className="flex items-center space-x-2 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-yellow-100 hover:bg-yellow-100 transition-colors"
+              >
+                <span>
+                  Price: {priceRange.min && priceRange.max 
+                    ? `GH¢${priceRange.min}-${priceRange.max}`
+                    : priceRange.min 
+                      ? `From GH¢${priceRange.min}`
+                      : `Up to GH¢${priceRange.max}`
+                  }
+                </span>
+                <CloseIcon className="h-3 w-3" />
+              </button>
+            )}
+
             <button 
-              onClick={() => { setCategory(""); setSelectedRegion("all"); }}
+              onClick={() => { setCategory(""); setSelectedRegion("all"); setPriceRange({ min: "", max: "" }); }}
               className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 underline decoration-2 underline-offset-4 ml-2"
             >
               Clear All
@@ -214,6 +254,8 @@ export default function ProductsPage() {
         setSelectedCategory={(val) => setCategory(val === "all" ? "" : val)}
         selectedRegion={selectedRegion}
         setSelectedRegion={setSelectedRegion}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
       />
     </div>
   );
