@@ -70,9 +70,13 @@ export default function Navbar() {
           <div className="flex items-center">
             <a
               href="/"
-              className="text-2xl font-black tracking-tighter text-black uppercase"
+              className="flex items-center group"
             >
-              cartly<span className="text-gray-500">Hub</span>
+              <img 
+                src="/logo-bg.png" 
+                alt="Cartly Hub" 
+                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </a>
           </div>
 

@@ -29,13 +29,13 @@ export const metadata = {
     description:
       "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
     url: siteUrl,
-    siteName: "cartly Hub",
+    siteName: "Cartly Hub",
     images: [
       {
-        url: `${siteUrl}/cartly-og.png`,
+        url: `${siteUrl}/logo-bg.png`,
         width: 1200,
         height: 630,
-        alt: "cartly Hub - Ghana's Premium Online Shopping Marketplace",
+        alt: "Cartly Hub Ghana",
       },
     ],
     locale: "en_GH",
@@ -46,7 +46,7 @@ export const metadata = {
     title: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",
     description:
       "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
-    images: [`${siteUrl}/cartly-og.png`],
+    images: [`${siteUrl}/logo-bg.png`],
     creator: "@cartlyhub",
   },
   robots: {
@@ -66,12 +66,11 @@ export const metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon.ico' },
+      { url: '/logo-bg.png', type: 'image/png' },
     ],
+    shortcut: '/logo-bg.png',
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/logo-bg.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };
