@@ -10,7 +10,8 @@ import {
   ChevronRight, 
   LogOut,
   Store,
-  Loader2
+  Loader2,
+  MessageCircle
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
@@ -27,8 +28,11 @@ export default function SellerLayout({ children }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="h-10 w-10 animate-spin text-black" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="text-3xl font-black tracking-tighter text-black uppercase animate-pulse mb-8">
+          cartly<span className="text-gray-400">Hub</span>
+        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
       </div>
     );
   }
@@ -48,6 +52,7 @@ export default function SellerLayout({ children }) {
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/seller" },
     { name: "Inventory", icon: Package, href: "/seller/products" },
+    { name: "Feedback", icon: MessageCircle, href: "/seller/feedback" },
     { name: "Store Settings", icon: Settings, href: "/seller/settings" },
   ];
 

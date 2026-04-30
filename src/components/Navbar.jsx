@@ -163,7 +163,7 @@ export default function Navbar() {
                       className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-gray-100 rounded-full hover:bg-black hover:text-white transition-all flex items-center space-x-1"
                     >
                       <LayoutDashboard className="h-3 w-3" />
-                      <span>Seller Portal</span>
+                      <span>Portal</span>
                     </a>
                   ) : (
                     <a
@@ -290,7 +290,7 @@ export default function Navbar() {
                 {sellerProfile ? (
                   <a href="/seller" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
                     <LayoutDashboard className="h-4 w-4" />
-                    <span>Seller Portal</span>
+                    <span>Portal</span>
                   </a>
                 ) : (
                   <a href="/seller/onboarding" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">

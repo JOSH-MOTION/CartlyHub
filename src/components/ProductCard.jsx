@@ -10,7 +10,8 @@ export default function ProductCard({ product, categories = [] }) {
   const { toggleWishlist, wishlist } = useApp();
   const firstInStockVariant = product.variants?.find(v => v.stock > 0) || product.variants?.[0];
   const price = firstInStockVariant?.price || product.basePrice;
-  const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0;
+  const isOutOfStock = !product.isService && (product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0) <= 0;
+  const totalStock = product.isService ? 999 : (product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0);
 
   // Get category name (searching through all levels)
   const getCategoryName = (categoryId) => {
@@ -84,7 +85,7 @@ export default function ProductCard({ product, categories = [] }) {
               Pack of {product.packSize}
             </span>
           )}
-          {totalStock <= 5 && totalStock > 1 && (product.isBulk || (product.variants && product.variants.length > 1)) && (
+          {!product.isService && totalStock <= 5 && totalStock > 1 && (product.isBulk || (product.variants && product.variants.length > 1)) && (
             <span className="bg-red-500/90 backdrop-blur-md text-white border border-red-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(239,68,68,0.2)]">
               Low Stock
             </span>
@@ -163,18 +164,18 @@ export default function ProductCard({ product, categories = [] }) {
         {/* Price and Action Section */}
         <div className="pt-3 sm:pt-5 border-t border-gray-50 flex items-center justify-between group-hover:border-transparent transition-colors duration-300">
           <div className="flex flex-col">
-            {totalStock <= 0 && <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-widest mb-0.5 sm:mb-1">Sold Out</span>}
+            {isOutOfStock && <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-widest mb-0.5 sm:mb-1">Sold Out</span>}
             <div className="flex items-baseline gap-1">
-              <span className={`text-xs sm:text-base font-bold ${totalStock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`text-xs sm:text-base font-bold ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
                 {process.env.NEXT_PUBLIC_STORE_CURRENCY || '₵'}
               </span>
-              <p className={`text-lg sm:text-2xl font-black tracking-tighter ${totalStock <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
+              <p className={`text-lg sm:text-2xl font-black tracking-tighter ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
                 {Number(price).toLocaleString()}
               </p>
             </div>
           </div>
           
-          {(product.isRental || !!product.sellerId) ? (
+          {(product.isRental || product.isService || !!product.sellerId) ? (
             <button
               onClick={() => window.location.href = `/product/${product.id}`}
               className="flex items-center justify-center p-2 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-300 border bg-white text-gray-900 border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] active:scale-95"
@@ -183,10 +184,10 @@ export default function ProductCard({ product, categories = [] }) {
             </button>
           ) : (
             <button
-              onClick={totalStock > 0 ? handleAddToCart : undefined}
-              disabled={totalStock <= 0}
+              onClick={!isOutOfStock ? handleAddToCart : undefined}
+              disabled={isOutOfStock}
               className={`flex items-center justify-center p-2 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-300 border ${
-                totalStock <= 0 
+                isOutOfStock 
                   ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' 
                   : 'bg-white text-gray-900 border-gray-200 hover:bg-black hover:text-white hover:border-black hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] active:scale-95'
               }`}

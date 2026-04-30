@@ -49,7 +49,7 @@ export default async function sitemap() {
     const products = await getProducts();
     productRoutes = products.map((product) => ({
       url: `${baseUrl}/product/${product.id}`,
-      lastModified: product.updatedAt?.toDate() || new Date(),
+      lastModified: product.updatedAt || new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     }));

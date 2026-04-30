@@ -55,6 +55,7 @@ export default function AdminProductsPage() {
     location: "",
     sellerName: "cartly Hub Admin",
     sellerPhone: "",
+    isService: false,
   });
 
 
@@ -128,6 +129,7 @@ export default function AdminProductsPage() {
         location: "",
         sellerName: "cartly Hub Admin",
         sellerPhone: "",
+        isService: false,
       });
     },
   });
@@ -459,26 +461,47 @@ export default function AdminProductsPage() {
 
           {/* Simple Inventory vs Variants Toggle */}
           <section className="space-y-6">
-            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-transparent">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
-                  Product Options
-                </h4>
-                <p className="text-[10px] text-gray-500 font-bold uppercase">
-                  Does this product come in different sizes, colors, or options?
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center justify-between p-6 bg-emerald-50 rounded-2xl border-2 border-emerald-100">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-emerald-800 mb-1">
+                    Service / Booking
+                  </h4>
+                  <p className="text-[10px] text-emerald-700/70 font-bold uppercase">
+                    Enable for services (Spa, Jobs, etc.) to hide stock requirements.
+                  </p>
+                </div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6 rounded-lg bg-white/10 accent-emerald-600"
+                    checked={form.isService}
+                    onChange={(e) => setForm({ ...form, isService: e.target.checked })}
+                  />
+                </label>
               </div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-6 h-6 rounded-lg bg-white/10 accent-black"
-                  checked={form.hasVariants}
-                  onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })}
-                />
-              </label>
+
+              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-transparent">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Product Options
+                  </h4>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">
+                    Does this product come in different sizes, colors, or options?
+                  </p>
+                </div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6 rounded-lg bg-white/10 accent-black"
+                    checked={form.hasVariants}
+                    onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })}
+                  />
+                </label>
+              </div>
             </div>
 
-            {!form.hasVariants && (
+            {!form.hasVariants && !form.isService && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Stock Quantity *</label>
                 <input
@@ -549,15 +572,21 @@ export default function AdminProductsPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                           Stock Quantity
                         </label>
-                        <input
-                          type="number"
-                          placeholder="0"
-                          className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
-                          value={v.stock}
-                          onChange={(e) =>
-                            updateVariant(v.vId, "stock", Number(e.target.value))
-                          }
-                        />
+                        {!form.isService ? (
+                          <input
+                            type="number"
+                            placeholder="0"
+                            className="w-full bg-white px-4 py-2 rounded-xl outline-none font-bold"
+                            value={v.stock}
+                            onChange={(e) =>
+                              updateVariant(v.vId, "stock", Number(e.target.value))
+                            }
+                          />
+                        ) : (
+                          <div className="w-full bg-white px-4 py-2 rounded-xl text-[10px] font-bold text-emerald-600 uppercase flex items-center h-[38px]">
+                            Service Mode
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -900,6 +929,7 @@ export default function AdminProductsPage() {
                             location: p.location || "",
                             sellerName: p.sellerName || "cartly Hub Admin",
                             sellerPhone: p.sellerPhone || "",
+                            isService: p.isService || false,
                           });
                           setIsAdding(true);
                         }}

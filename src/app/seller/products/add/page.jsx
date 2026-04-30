@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import { getCategories, createProduct } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
-import { PRODUCT_SIZES, GHANA_REGIONS } from "@/utils/constants";
+import { PRODUCT_SIZES, GHANA_REGIONS, PRODUCT_GENDERS, PRODUCT_CONDITIONS } from "@/utils/constants";
 import ColorPicker from "@/components/ColorPicker";
 import CustomSelect from "@/components/CustomSelect";
 
@@ -37,7 +37,7 @@ export default function SellerAddProductPage() {
     basePrice: "",
     isFeatured: false,
     hasVariants: false,
-    totalStock: 0,
+    totalStock: "",
     images: [],
     variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
     region: sellerProfile?.region || "",
@@ -46,6 +46,13 @@ export default function SellerAddProductPage() {
     sellerName: sellerProfile?.storeName,
     sellerPhone: sellerProfile?.contactPhone,
     sellerEmail: sellerProfile?.contactEmail,
+    // New Attributes
+    brand: "",
+    gender: "",
+    condition: "",
+    closure: "",
+    color: "", 
+    isService: false, 
   });
 
 
@@ -213,6 +220,61 @@ export default function SellerAddProductPage() {
             </div>
           </section>
 
+          {/* Specifications */}
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+            <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50 flex items-center space-x-2">
+               <Plus className="h-5 w-5 text-gray-300" />
+               <span>Product Specifications (Optional)</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Brand</label>
+                 <input
+                   className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                   value={form.brand}
+                   onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                   placeholder="E.g. Gucci, Nike, or Hand-made"
+                 />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Gender</label>
+                 <CustomSelect
+                   value={form.gender}
+                   onChange={(value) => setForm({ ...form, gender: value })}
+                   options={PRODUCT_GENDERS.map(g => ({ value: g, label: g }))}
+                   placeholder="Select Gender"
+                 />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Condition</label>
+                 <CustomSelect
+                   value={form.condition}
+                   onChange={(value) => setForm({ ...form, condition: value })}
+                   options={PRODUCT_CONDITIONS.map(c => ({ value: c, label: c }))}
+                   placeholder="Select Condition"
+                 />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Color</label>
+                 <input
+                   className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                   value={form.color}
+                   onChange={(e) => setForm({ ...form, color: e.target.value })}
+                   placeholder="E.g. Black, Navy Blue, etc."
+                 />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Closure / Material (Optional)</label>
+                 <input
+                   className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                   value={form.closure}
+                   onChange={(e) => setForm({ ...form, closure: e.target.value })}
+                   placeholder="E.g. Zipper, Button, Leather"
+                 />
+               </div>
+            </div>
+          </section>
+
           {/* Media */}
           <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
             <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50">Product Images</h2>
@@ -238,26 +300,47 @@ export default function SellerAddProductPage() {
 
           {/* Simple Inventory vs Variants Toggle */}
           <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <div>
-                <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">
-                  Product Options
-                </h4>
-                <p className="text-[10px] text-gray-500 font-bold uppercase">
-                  Does this product come in different sizes, colors, or options?
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-widest text-emerald-900 mb-1">
+                    Service / Booking
+                  </h4>
+                  <p className="text-[10px] text-emerald-700 font-bold uppercase leading-tight">
+                    Enable for services (Spa, Jobs, etc.) to hide stock requirements.
+                  </p>
+                </div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6 rounded-lg bg-white/10 accent-emerald-600"
+                    checked={form.isService}
+                    onChange={(e) => setForm({ ...form, isService: e.target.checked })}
+                  />
+                </label>
               </div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-6 h-6 rounded-lg bg-white/10 accent-black"
-                  checked={form.hasVariants}
-                  onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })}
-                />
-              </label>
+
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">
+                    Product Options
+                  </h4>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">
+                    Does this product come in sizes, colors, or options?
+                  </p>
+                </div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6 rounded-lg bg-white/10 accent-black"
+                    checked={form.hasVariants}
+                    onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })}
+                  />
+                </label>
+              </div>
             </div>
 
-            {!form.hasVariants && (
+            {!form.hasVariants && !form.isService && (
                <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Stock Quantity *</label>
                 <input
@@ -265,7 +348,7 @@ export default function SellerAddProductPage() {
                   min="0"
                   className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                   value={form.totalStock}
-                  onChange={(e) => setForm({ ...form, totalStock: Number(e.target.value) })}
+                  onChange={(e) => setForm({ ...form, totalStock: e.target.value })}
                   placeholder="0"
                 />
               </div>
@@ -298,13 +381,15 @@ export default function SellerAddProductPage() {
                       placeholder="Size"
                       className="!py-3 !rounded-xl !bg-white"
                     />
-                    <input
-                      placeholder="Stock"
-                      type="number"
-                      className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
-                      value={v.stock}
-                      onChange={(e) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, stock: Number(e.target.value) } : varItem) })}
-                    />
+                    {!form.isService && (
+                      <input
+                        placeholder="Stock"
+                        type="number"
+                        className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
+                        value={v.stock}
+                        onChange={(e) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, stock: Number(e.target.value) } : varItem) })}
+                      />
+                    )}
                     <input
                       placeholder="Price"
                       type="number"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Package,
   ShoppingCart,
@@ -223,8 +224,11 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="h-10 w-10 animate-spin text-black" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="text-3xl font-black tracking-tighter text-black uppercase animate-pulse mb-8">
+          cartly<span className="text-gray-400">Hub</span>
+        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
       </div>
     );
   }
@@ -440,7 +444,12 @@ export default function AdminDashboard() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="text-sm font-black text-black tracking-tight">{rev.name}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">on {rev.sellerName}</p>
+                        <Link 
+                          href={rev.sellerId ? `/opinions/${rev.sellerId}` : `/store/${encodeURIComponent(rev.sellerName)}`}
+                          className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:underline"
+                        >
+                          on {rev.sellerName}
+                        </Link>
                       </div>
                       <div className="flex items-center space-x-1 text-yellow-500">
                         <Star className="h-3 w-3 fill-current" />

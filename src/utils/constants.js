@@ -19,3 +19,11 @@ export const GHANA_REGIONS = [
   "Northern", "Volta", "Upper East", "Upper West", "Bono", 
   "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"
 ];
+
+export const PRODUCT_GENDERS = [
+  "Unisex", "Male", "Female", "Kids"
+];
+
+export const PRODUCT_CONDITIONS = [
+  "Brand New", "Like New", "Used (Normal Wear)", "Refurbished", "Vintage"
+];
