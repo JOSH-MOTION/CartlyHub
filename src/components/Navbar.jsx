@@ -12,6 +12,9 @@ import {
   LogOut,
   LayoutDashboard,
   Store,
+  ChevronRight,
+  Facebook,
+  Instagram
 } from "lucide-react";
 import { useApp } from '../context/AppContext';
 import useCart from '../store/useCart';
@@ -240,78 +243,128 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="pb-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-[60] md:hidden bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-right duration-500 flex flex-col">
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <img src="/logo-bg.png" alt="Cartly Hub" className="h-7 w-auto" />
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 bg-gray-50 rounded-full"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex-grow overflow-y-auto px-5 py-6 space-y-8">
+            {/* Search Section */}
             <form onSubmit={handleSearch}>
-              <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2">
-                <Search className="h-4 w-4 text-gray-400 mr-2" />
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <input 
                   type="text" 
-                  placeholder="Search products..." 
+                  placeholder="Search..." 
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="bg-transparent border-none outline-none w-full text-sm"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all text-[10px] font-black uppercase tracking-widest"
                 />
               </div>
             </form>
-          </div>
-          <a
-            href="/products"
-            className="block text-lg font-bold uppercase tracking-widest"
-          >
-            Shop All
-          </a>
-          <a
-            href="/products?category=fashion"
-            className="block text-lg font-bold uppercase tracking-widest"
-          >
-            Fashion
-          </a>
-          <a
-            href="/products?category=shoes"
-            className="block text-lg font-bold uppercase tracking-widest"
-          >
-            Shoes
-          </a>
 
-          <div className="pt-4 border-t border-gray-100 flex flex-col space-y-4">
-            <a href="/wishlist" className="flex items-center space-x-2 text-sm font-bold uppercase">
-              <Heart className="h-4 w-4" />
-              <span>Wishlist {wishlist?.length > 0 ? `(${wishlist.length})` : ''}</span>
-            </a>
-            {user ? (
-              <>
-                <a href="/account/profile" className="flex items-center space-x-2 text-sm font-bold uppercase">
-                  <User className="h-4 w-4" />
-                  <span>My Profile</span>
-                </a>
-                <a href="/account/orders" className="flex items-center space-x-2 text-sm font-bold uppercase">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span>My Orders</span>
-                </a>
-                {sellerProfile ? (
-                  <a href="/seller" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
-                    <LayoutDashboard className="h-4 w-4" />
-                    <span>Portal</span>
+            {/* Marketplace Section - 3 Column Grid */}
+            <div className="space-y-3">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Marketplace</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { name: "All", href: "/products", icon: Store },
+                  { name: "Fashion", href: "/products?category=fashion", icon: Heart },
+                  { name: "Shoes", href: "/products?category=shoes", icon: ShoppingCart }
+                ].map((item) => (
+                  <a 
+                    key={item.name}
+                    href={item.href}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-xl hover:bg-black group transition-all"
+                  >
+                    <item.icon className="h-4 w-4 text-gray-900 group-hover:text-white mb-2" />
+                    <span className="text-[8px] font-black uppercase tracking-tighter group-hover:text-white transition-colors">{item.name}</span>
                   </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Account Section */}
+            <div className="space-y-3">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Account</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {user ? (
+                  <>
+                    <a href="/account/profile" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Profile</span>
+                    </a>
+                    <a href="/wishlist" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent">
+                      <Heart className="h-4 w-4 text-gray-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Saved</span>
+                    </a>
+                    {sellerProfile ? (
+                      <a href="/seller" className="col-span-2 flex items-center justify-between p-4 bg-black text-white rounded-xl">
+                        <div className="flex items-center space-x-3">
+                           <LayoutDashboard className="h-4 w-4" />
+                           <span className="text-[9px] font-black uppercase tracking-widest">Seller Portal</span>
+                        </div>
+                        <ChevronRight className="h-3 w-3" />
+                      </a>
+                    ) : (
+                      <a href="/seller/onboarding" className="col-span-2 flex items-center justify-between p-4 bg-emerald-600 text-white rounded-xl">
+                        <div className="flex items-center space-x-3">
+                           <Store className="h-4 w-4" />
+                           <span className="text-[9px] font-black uppercase tracking-widest">Start Selling</span>
+                        </div>
+                        <ChevronRight className="h-3 w-3" />
+                      </a>
+                    )}
+                    <button 
+                      onClick={signOut}
+                      className="col-span-2 flex items-center justify-center p-3 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      Sign Out
+                    </button>
+                  </>
                 ) : (
-                  <a href="/seller/onboarding" className="flex items-center space-x-2 text-sm font-bold uppercase text-black">
-                    <Store className="h-4 w-4" />
-                    <span>Sell</span>
+                  <a href="/account/signin" className="col-span-2 flex items-center justify-center p-4 bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px]">
+                    Login / Register
                   </a>
                 )}
-                <button onClick={signOut} className="flex items-center space-x-2 text-sm font-bold uppercase text-red-500 text-left">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
-              </>
-            ) : (
-              <a href="/account/signin" className="flex items-center justify-center w-full bg-black text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest">
-                Login / Register
-              </a>
-            )}
+              </div>
+            </div>
+
+            {/* Legal Section */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Information</h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {[
+                  { name: "Terms", href: "/terms" },
+                  { name: "Privacy", href: "/privacy" },
+                  { name: "Refunds", href: "/refund" },
+                  { name: "Safety", href: "/safety-tips" }
+                ].map(link => (
+                  <a key={link.name} href={link.href} className="text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors flex items-center">
+                    <div className="w-1 h-1 bg-gray-200 rounded-full mr-2"></div>
+                    {link.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Footer */}
+          <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <p className="text-[8px] font-black uppercase tracking-widest text-gray-300">© 2026 CartlyHub</p>
+            <div className="flex space-x-3">
+               <a href="#" className="text-gray-300"><Facebook className="h-3.5 w-3.5" /></a>
+               <a href="#" className="text-gray-300"><Instagram className="h-3.5 w-3.5" /></a>
+            </div>
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ import MobileCategoryCircles from "../components/MobileCategoryCircles";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import FilterSidebar from "@/components/FilterSidebar";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
   const { searchQuery, setSearchQuery } = useApp();
@@ -248,10 +249,8 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Footer Placeholder / Final Spacer */}
-            <div className="mt-32 pb-10 text-center">
-               <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-300">© 2026 CartlyHub Ghana</p>
-            </div>
+            {/* Footer */}
+            <Footer />
           </div>
         </div>
       </div>

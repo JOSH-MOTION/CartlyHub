@@ -9,7 +9,7 @@ import LocationSearch from './LocationSearch.tsx';
 // Ghana MOMO Configuration
 const MOMO_CONFIG = {
   number: '0551234567',
-  whatsapp: '233123456789'
+  whatsapp: '233242403450'
 };
 
 const CheckoutGhana = ({ cart, total: subtotal, userProfile, onComplete, onCancel }) => {

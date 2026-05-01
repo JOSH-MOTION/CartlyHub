@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
+import Footer from "@/components/Footer";
 import {
   ShoppingCart,
   Heart,
@@ -133,7 +134,7 @@ export default function ProductDetailClient({ params }) {
 
   const handleWhatsAppOrder = () => {
     const text = `Hi Cartly Hub, I want to order:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nPrice: GH₵${Number(price * quantity).toLocaleString()}\nURL: ${window.location.href}`;
-    const phone = sellerInfo?.whatsappNumber || sellerInfo?.contactPhone || product.sellerPhone || "233123456789";
+    const phone = sellerInfo?.whatsappNumber || sellerInfo?.contactPhone || product.sellerPhone || "233242403450";
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -494,6 +495,7 @@ export default function ProductDetailClient({ params }) {
         priceRange={{ min: "", max: "" }}
         setPriceRange={() => {}}
       />
+      <Footer />
     </div>
   );
 }
