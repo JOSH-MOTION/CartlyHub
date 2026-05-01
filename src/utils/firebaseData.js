@@ -110,6 +110,19 @@ export const updateProduct = async (productId, productData) => {
   }
 };
 
+export const incrementProductViews = async (productId) => {
+  try {
+    const productRef = doc(db, 'products', productId);
+    await updateDoc(productRef, {
+      views: increment(1)
+    });
+    return true;
+  } catch (error) {
+    console.error('Error incrementing product views:', error);
+    return false;
+  }
+};
+
 export const deleteProduct = async (productId) => {
   try {
     await productService.delete(productId);

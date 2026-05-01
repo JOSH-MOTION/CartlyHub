@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
-import { getProducts, getProductReviews, submitReview } from "@/utils/firebaseData";
+import { getProducts, getProductReviews, submitReview, incrementProductViews } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getTimeOnPlatform, getTimeAgo } from "@/utils/helpers";
@@ -45,6 +45,12 @@ export default function ProductDetailClient({ params }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (id) {
+      incrementProductViews(id);
+    }
+  }, [id]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
