@@ -271,17 +271,20 @@ export const reviewService = {
     // 1. Add the review
     const docRef = await addDoc(collection(db, 'reviews'), reviewData);
     
-    // 2. Fetch all reviews for this product to recalculate total stats
-    const q = query(collection(db, 'reviews'), where('productId', '==', review.productId));
-    const snapshot = await getDocs(q);
-    const reviews = snapshot.docs.map(doc => doc.data());
-    
-    const count = reviews.length;
-    const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
-    const average = totalRating / count;
-    
-    // 3. Update the product document with new stats for fast listing
-    await productService.updateStats(review.productId, average, count);
+    // 2. Only update product stats if this is a product review
+    if (review.productId) {
+      // Fetch all reviews for this product to recalculate total stats
+      const q = query(collection(db, 'reviews'), where('productId', '==', review.productId));
+      const snapshot = await getDocs(q);
+      const reviews = snapshot.docs.map(doc => doc.data());
+      
+      const count = reviews.length;
+      const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+      const average = totalRating / count;
+      
+      // 3. Update the product document with new stats for fast listing
+      await productService.updateStats(review.productId, average, count);
+    }
     
     return docRef.id;
   },
