@@ -54,6 +54,7 @@ export default function SellerEditProductPage({ params }) {
     closure: "",
     color: "",
     isService: false,
+    selectedSizes: [],
   });
 
   const { data: productData, isLoading: isProductLoading } = useQuery({
@@ -65,8 +66,13 @@ export default function SellerEditProductPage({ params }) {
   useEffect(() => {
     if (productData) {
       // Determine if it has meaningful variants
-      const hasMeaningfulVariants = productData.variants?.some(v => v.size || v.color || v.colorName || v.hexColor) || false;
+      const hasMeaningfulVariants = productData.variants?.some(v => v.color || v.colorName || v.hexColor || (v.price && v.price !== productData.basePrice)) || false;
       const totalStock = productData.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0;
+      
+      // Get selected sizes from variants if they are "simple" variants (same price as basePrice and no color)
+      const selectedSizes = !hasMeaningfulVariants ? (productData.variants
+        ?.filter(v => v.size)
+        .map(v => v.size) || []) : [];
 
       setForm({
         name: productData.name || "",
@@ -78,6 +84,7 @@ export default function SellerEditProductPage({ params }) {
         isFeatured: productData.isFeatured || false,
         hasVariants: hasMeaningfulVariants,
         totalStock: totalStock,
+        selectedSizes: selectedSizes,
         images: productData.images || [],
         variants: productData.variants?.map((v, idx) => ({
           vId: v.vId || (Date.now() + idx).toString(),
@@ -181,18 +188,38 @@ export default function SellerEditProductPage({ params }) {
     // Construct payload
     let payload = { ...form };
     
-    // If no variants, override the variants array with a single default variant
-    if (!form.hasVariants) {
+    // If no variants but multiple sizes selected, generate them
+    if (!form.hasVariants && form.selectedSizes.length > 0) {
+      payload.variants = form.selectedSizes.map(size => ({
+        vId: `size-${size}-${Date.now()}`,
+        size: size,
+        color: "",
+        colorName: "",
+        stock: 999999,
+        price: Number(form.basePrice) || 0,
+        sku: "",
+        hexColor: ""
+      }));
+    } else if (!form.hasVariants) {
+      // If no variants and no sizes, override the variants array with a single default variant
       payload.variants = [{
         vId: Date.now().toString(),
         size: "",
         color: "",
         colorName: "",
-        stock: Number(form.totalStock) || 0,
+        stock: 999999,
         price: Number(form.basePrice) || 0,
         sku: "",
         hexColor: ""
       }];
+    }
+
+    // Set stock for variants if they don't have it (fallback)
+    if (payload.variants) {
+      payload.variants = payload.variants.map(v => ({
+        ...v,
+        stock: v.stock || 999999
+      }));
     }
     
     updateProductMutation.mutate(payload);
@@ -400,16 +427,47 @@ export default function SellerEditProductPage({ params }) {
             </div>
 
             {!form.hasVariants && !form.isService && (
-               <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Stock Quantity *</label>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
-                  value={form.totalStock}
-                  onChange={(e) => setForm({ ...form, totalStock: e.target.value })}
-                  placeholder="0"
-                />
+               <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Available Sizes</label>
+                  <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Select multiple</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {PRODUCT_SIZES.map((size) => {
+                    const isSelected = form.selectedSizes.includes(size);
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          const newSizes = isSelected 
+                            ? form.selectedSizes.filter(s => s !== size)
+                            : [...form.selectedSizes, size];
+                          setForm({ ...form, selectedSizes: newSizes });
+                        }}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-2 ${
+                          isSelected 
+                            ? "bg-black text-white border-black" 
+                            : "bg-white text-gray-400 border-gray-100 hover:border-black hover:text-black"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Stock Quantity *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    value={form.totalStock}
+                    onChange={(e) => setForm({ ...form, totalStock: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
               </div>
             )}
           </section>
@@ -440,11 +498,12 @@ export default function SellerEditProductPage({ params }) {
                       placeholder="Size"
                       className="!py-3 !rounded-xl !bg-white"
                     />
+                    {/* Stock hidden but defaulted */}
                     {!form.isService && (
                       <input
                         placeholder="Stock"
                         type="number"
-                        className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
+                        className="hidden bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
                         value={v.stock}
                         onChange={(e) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, stock: Number(e.target.value) } : varItem) })}
                       />

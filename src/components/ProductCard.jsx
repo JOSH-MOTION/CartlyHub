@@ -8,10 +8,10 @@ import { toast } from "sonner";
 export default function ProductCard({ product, categories = [] }) {
   const { addItem } = useCart();
   const { toggleWishlist, wishlist } = useApp();
-  const firstInStockVariant = product.variants?.find(v => v.stock > 0) || product.variants?.[0];
+  const firstInStockVariant = product.variants?.[0];
   const price = firstInStockVariant?.price || product.basePrice;
-  const isOutOfStock = !product.isService && (product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0) <= 0;
-  const totalStock = product.isService ? 999 : (product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? product.stock ?? 0);
+  const isOutOfStock = false;
+  const totalStock = 999999;
 
   // Get category name (searching through all levels)
   const getCategoryName = (categoryId) => {
@@ -31,12 +31,8 @@ export default function ProductCard({ product, categories = [] }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    if (!firstInStockVariant) {
+    if (!firstInStockVariant && !product.basePrice) {
       toast.error("Product has no available variants");
-      return;
-    }
-    if (totalStock <= 0) {
-      toast.error("Product is completely out of stock");
       return;
     }
     addItem(product, firstInStockVariant, 1);
@@ -85,11 +81,7 @@ export default function ProductCard({ product, categories = [] }) {
               Pack of {product.packSize}
             </span>
           )}
-          {!product.isService && totalStock <= 5 && totalStock > 1 && (product.isBulk || (product.variants && product.variants.length > 1)) && (
-            <span className="bg-red-500/90 backdrop-blur-md text-white border border-red-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(239,68,68,0.2)]">
-              Low Stock
-            </span>
-          )}
+          {/* Low stock badges removed */}
         </div>
 
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 ease-out">

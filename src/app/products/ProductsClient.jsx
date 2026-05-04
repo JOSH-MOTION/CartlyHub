@@ -74,8 +74,8 @@ export default function ProductsPage() {
       // Filter by price range if set
       if (priceRange.min || priceRange.max) {
         products = products.filter(p => {
-          const firstInStockVariant = p.variants?.find(v => v.stock > 0) || p.variants?.[0];
-          const price = firstInStockVariant?.price || p.basePrice || 0;
+          const firstVariant = p.variants?.[0];
+          const price = firstVariant?.price || p.basePrice || 0;
           const minPrice = priceRange.min ? Number(priceRange.min) : 0;
           const maxPrice = priceRange.max ? Number(priceRange.max) : Infinity;
           return price >= minPrice && price <= maxPrice;
