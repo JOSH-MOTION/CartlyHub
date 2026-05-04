@@ -2,6 +2,7 @@
 
 import { useApp } from "@/context/AppContext";
 import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getSellerReviews } from "@/utils/firebaseData";
 import { 
