@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
-import { getProducts, getProductReviews, submitReview, incrementProductViews } from "@/utils/firebaseData";
+import { getProducts, getProductReviews, submitReview, incrementProductViews, getSellerReviews } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getTimeOnPlatform, getTimeAgo } from "@/utils/helpers";
@@ -73,6 +73,16 @@ export default function ProductDetailClient({ params }) {
     },
     enabled: !!product?.sellerId,
   });
+
+  const { data: sellerReviews } = useQuery({
+    queryKey: ["seller-reviews", product?.sellerName],
+    queryFn: () => getSellerReviews(product?.sellerName),
+    enabled: !!product?.sellerName,
+  });
+
+  const averageSellerRating = sellerReviews?.length > 0 
+    ? sellerReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / sellerReviews.length 
+    : 0;
 
   const { data: moreFromSeller = [], isLoading: moreFromSellerLoading } = useQuery({
     queryKey: ["moreFromSeller", product?.sellerId, product?.id],
@@ -366,12 +376,15 @@ export default function ProductDetailClient({ params }) {
                     {getTimeOnPlatform(sellerInfo?.createdAt)}
                   </p>
                   <Link href={`/opinions/${product.sellerId || sellerInfo?.id || "admin"}`} className="flex items-center space-x-1 mt-1 group">
-                    <div className="flex text-yellow-400">
+                    <div className="flex">
                       {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} className="h-2 w-2 fill-current" />
+                        <Star 
+                          key={s} 
+                          className={`h-2 w-2 ${s <= (averageSellerRating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                        />
                       ))}
                     </div>
-                    <span className="text-[8px] font-black uppercase text-gray-400 group-hover:text-emerald-600 transition-colors">({sellerInfo?.reviewCount || 0})</span>
+                    <span className="text-[8px] font-black uppercase text-gray-400 group-hover:text-emerald-600 transition-colors">({sellerReviews?.length || 0})</span>
                   </Link>
                 </div>
               </div>
@@ -413,7 +426,7 @@ export default function ProductDetailClient({ params }) {
                   href={`/opinions/${product.sellerId || sellerInfo?.id || "admin"}`}
                   className="flex items-center space-x-2 group cursor-pointer"
                 >
-                   <span className="text-[10px] font-black uppercase text-gray-900 group-hover:text-emerald-600 transition-colors">{sellerInfo?.reviewCount || 0} Feedback</span>
+                   <span className="text-[10px] font-black uppercase text-gray-900 group-hover:text-emerald-600 transition-colors">{sellerReviews?.length || 0} Feedback</span>
                    <ChevronRight className="h-3 w-3 text-gray-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                 </Link>
                 <a href={`/store/${encodeURIComponent(product.sellerName || "Admin")}`} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:underline">View All</a>

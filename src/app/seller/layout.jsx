@@ -1,8 +1,9 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
-import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getSellerReviews } from "@/utils/firebaseData";
 import { 
   LayoutDashboard, 
   Package, 
@@ -19,6 +20,12 @@ export default function SellerLayout({ children }) {
   const { user, sellerProfile, isLoading, signOut } = useApp();
   const router = useRouter();
   const pathname = usePathname();
+
+  const { data: reviews } = useQuery({
+    queryKey: ["seller", "reviews", sellerProfile?.storeName],
+    queryFn: () => getSellerReviews(sellerProfile?.storeName),
+    enabled: !!sellerProfile?.storeName,
+  });
 
   useEffect(() => {
     if (!isLoading && (!user || !sellerProfile) && pathname !== "/seller/onboarding") {
@@ -91,6 +98,9 @@ export default function SellerLayout({ children }) {
                   <div className="flex items-center space-x-3">
                     <item.icon className={`h-4 w-4 ${isActive ? "text-black" : "text-gray-300 group-hover:text-black"}`} />
                     <span className="text-[10px] font-black uppercase tracking-widest">{item.name}</span>
+                    {item.name === "Feedback" && (
+                      <span className="text-[10px] font-bold text-emerald-600 ml-1">({reviews?.length || 0})</span>
+                    )}
                   </div>
                   {isActive && <ChevronRight className="h-3 w-3" />}
                 </a>
@@ -127,7 +137,14 @@ export default function SellerLayout({ children }) {
                 isActive ? "text-black" : "text-gray-300"
               }`}
             >
-              <item.icon className={`h-5 w-5 ${isActive ? "text-black" : "text-gray-300"}`} />
+              <div className="relative">
+                <item.icon className={`h-5 w-5 ${isActive ? "text-black" : "text-gray-300"}`} />
+                {item.name === "Feedback" && (
+                  <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[7px] font-black h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center">
+                    {reviews?.length || 0}
+                  </span>
+                )}
+              </div>
               <span className="text-[9px] font-black uppercase tracking-widest">{item.name}</span>
             </a>
           );

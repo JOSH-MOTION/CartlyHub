@@ -138,11 +138,11 @@ export default function ProductCard({ product, categories = [] }) {
 
         {/* Rating Section */}
         <div className="flex items-center mb-2 sm:mb-4">
-          <div className="flex gap-0.5 text-yellow-400">
+          <div className="flex gap-0.5">
             {[1, 2, 3, 4, 5].map((s) => (
               <Star 
                 key={s} 
-                className={`h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 ${s <= (product.averageRating || 0) ? 'fill-current' : 'text-gray-200'}`} 
+                className={`h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 ${s <= (Number(product.averageRating) || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
               />
             ))}
           </div>

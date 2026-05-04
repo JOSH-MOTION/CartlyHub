@@ -115,11 +115,11 @@ export default function StoreFrontPage({ params }) {
             <div className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-gray-100 shadow-sm min-w-[200px]">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Store Rating</span>
               <div className="text-3xl font-black">{averageRating.toFixed(1)}</div>
-              <div className="flex text-yellow-400 mt-1">
+              <div className="flex mt-1">
                 {[1, 2, 3, 4, 5].map(s => (
                   <Star
                     key={s}
-                    className={`h-4 w-4 ${s <= averageRating ? 'fill-current' : 'text-gray-100'}`}
+                    className={`h-4 w-4 ${s <= averageRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                   />
                 ))}
               </div>
@@ -216,11 +216,11 @@ export default function StoreFrontPage({ params }) {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-black">{averageRating.toFixed(1)}</div>
-                <div className="flex text-yellow-400 mt-1 justify-center">
+                <div className="flex mt-1 justify-center">
                   {[1, 2, 3, 4, 5].map(s => (
                     <Star
                       key={s}
-                      className={`h-4 w-4 ${s <= averageRating ? 'fill-current' : 'text-gray-200'}`}
+                      className={`h-4 w-4 ${s <= averageRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                     />
                   ))}
                 </div>
@@ -262,11 +262,11 @@ export default function StoreFrontPage({ params }) {
                             {review.name || "Anonymous Customer"}
                           </h4>
                           <div className="flex items-center space-x-2 mt-1">
-                            <div className="flex text-yellow-400">
+                            <div className="flex">
                               {[1, 2, 3, 4, 5].map(s => (
                                 <Star
                                   key={s}
-                                  className={`h-3 w-3 ${s <= review.rating ? 'fill-current' : 'text-gray-200'}`}
+                                  className={`h-3 w-3 ${s <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                                 />
                               ))}
                             </div>

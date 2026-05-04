@@ -2,7 +2,7 @@
 
 import { useApp } from "@/context/AppContext";
 import { useQuery } from "@tanstack/react-query";
-import { getSellerProducts } from "@/utils/firebaseData";
+import { getSellerProducts, getSellerReviews } from "@/utils/firebaseData";
 import { 
   Package, 
   TrendingUp, 
@@ -10,7 +10,9 @@ import {
   Plus, 
   ChevronRight,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  MessageCircle,
+  Star
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +25,16 @@ export default function SellerDashboard() {
     queryFn: () => getSellerProducts(sellerProfile?.uid),
     enabled: !!sellerProfile?.uid,
   });
+
+  const { data: reviews } = useQuery({
+    queryKey: ["seller", "reviews", sellerProfile?.storeName],
+    queryFn: () => getSellerReviews(sellerProfile?.storeName),
+    enabled: !!sellerProfile?.storeName,
+  });
+
+  const averageRating = reviews?.length > 0 
+    ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length 
+    : 0;
 
   const stats = [
     { 
@@ -44,9 +56,18 @@ export default function SellerDashboard() {
       color: "bg-purple-50 text-purple-600" 
     },
     { 
-      name: "Sales (GHS)", 
-      value: "0.00", 
-      icon: TrendingUp, 
+      name: "Rating", 
+      value: (
+        <div className="flex items-center space-x-2">
+          <span>{averageRating.toFixed(1)}</span>
+          <div className="flex text-yellow-400">
+            {[1, 2, 3, 4, 5].map(s => (
+              <Star key={s} className={`h-3 w-3 ${s <= averageRating ? 'fill-current' : 'text-gray-200'}`} />
+            ))}
+          </div>
+        </div>
+      ), 
+      icon: Star, 
       color: "bg-emerald-50 text-emerald-600" 
     },
   ];
