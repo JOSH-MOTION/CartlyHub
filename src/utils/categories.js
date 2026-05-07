@@ -155,7 +155,7 @@ export const categories = [
   {
     id: "fashion",
     name: "Fashion & Apparel",
-    icon: "👗",
+    icon: "Shirt",
     subcategories: [
 
       {
@@ -892,6 +892,31 @@ export const categories = [
               GENDER, NEGOTIABLE, DELIVERY, LOCATION,
             ],
           },
+          {
+            id: "wholesale_clothing",
+            name: "Wholesale & Bulk Clothing",
+            attributes: [
+              PRICE, PRICE_RANGE, CONDITION, COLOR,
+              {
+                id: "bulk_type",
+                label: "Type",
+                type: "multi-select",
+                options: ["Bales", "Dozens", "Mixed Packs", "Clearance Lots", "Other"],
+                required: true,
+                filterable: true,
+                placeholder: "Select bulk type",
+              },
+              {
+                id: "quantity_bulk",
+                label: "Quantity / Units",
+                type: "text",
+                required: true,
+                filterable: false,
+                placeholder: "e.g. 50 pieces, 1 bale",
+              },
+              NEGOTIABLE, DELIVERY, LOCATION,
+            ],
+          },
         ],
       },
 
@@ -904,7 +929,7 @@ export const categories = [
   {
     id: "electronics",
     name: "Electronics & Tech",
-    icon: "📱",
+    icon: "Smartphone",
     subcategories: [
 
       {
@@ -1375,6 +1400,34 @@ export const categories = [
         ],
       },
 
+      {
+        id: "gadgets_tech",
+        name: "Gadgets & Novelty Tech",
+        subcategories: [
+          {
+            id: "cool_gadgets",
+            name: "Cool Gadgets",
+            attributes: [
+              PRICE, PRICE_RANGE, CONDITION,
+              {
+                id: "gadget_type",
+                label: "Type",
+                type: "multi-select",
+                options: [
+                  "Smart Rings", "VR / AR Headsets", "Pocket Projectors",
+                  "Digital Notepads", "Trackers (AirTags, etc.)",
+                  "Handheld Fans", "Electric Scooters / Hoverboards",
+                  "Retro Consoles", "Other Unique Tech",
+                ],
+                required: true,
+                filterable: true,
+                placeholder: "Select gadget type",
+              },
+              BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+            ],
+          },
+        ],
+      },
     ],
   },
 
@@ -1384,7 +1437,7 @@ export const categories = [
   {
     id: "home",
     name: "Home & Garden",
-    icon: "🏠",
+    icon: "Home",
     subcategories: [
 
       {
@@ -1561,14 +1614,39 @@ export const categories = [
                 type: "multi-select",
                 options: [
                   "Pots & Pans", "Frying Pan", "Wok", "Bakeware",
-                  "Cutlery", "Plates & Bowls", "Cups & Mugs",
-                  "Serving Dishes", "Kitchen Gadgets", "Other",
+                  "Cutlery (Spoons, Forks, Knives)", "Plates & Bowls",
+                  "Cups & Mugs", "Glassware / Tumblers", "Serving Dishes",
+                  "Kitchen Gadgets (Peelers, Graters, etc.)",
+                  "Food Containers & Jars", "Chopping Boards",
+                  "Water Bottles & Flasks", "Dish Racks", "Other",
                 ],
                 required: true,
                 filterable: true,
                 placeholder: "Select type",
               },
               BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+            ],
+          },
+          {
+            id: "kitchen_essentials",
+            name: "Kitchen Stuffs & Essentials",
+            attributes: [
+              PRICE, PRICE_RANGE, CONDITION,
+              {
+                id: "kitchen_stuff_type",
+                label: "Type",
+                type: "multi-select",
+                options: [
+                  "Kitchen Linens (Aprons, Towels)", "Trash Cans",
+                  "Organizers & Racks", "Kitchen Lighting",
+                  "Sink Accessories", "Gas Cylinders & Accessories",
+                  "Cleaning Stuffs (Sponges, Brushes)", "Other",
+                ],
+                required: true,
+                filterable: true,
+                placeholder: "Select type",
+              },
+              NEGOTIABLE, DELIVERY, LOCATION,
             ],
           },
         ],
@@ -1724,7 +1802,7 @@ export const categories = [
   {
     id: "beauty",
     name: "Beauty & Personal Care",
-    icon: "💄",
+    icon: "Heart",
     subcategories: [
 
       {
@@ -1998,56 +2076,6 @@ export const categories = [
       },
 
       {
-        id: "fragrances",
-        name: "Fragrances & Deodorants",
-        subcategories: [
-          {
-            id: "perfumes",
-            name: "Perfumes & Colognes",
-            attributes: [
-              PRICE, PRICE_RANGE, CONDITION,
-              {
-                id: "fragrance_type",
-                label: "Type",
-                type: "single-select",
-                options: [
-                  "Eau de Parfum (EDP)", "Eau de Toilette (EDT)",
-                  "Parfum / Extrait", "Body Spray", "Deodorant",
-                  "Roll-On", "Oil Perfume", "Other",
-                ],
-                required: true,
-                filterable: true,
-                placeholder: "Select type",
-              },
-              GENDER,
-              {
-                id: "scent_family",
-                label: "Scent Family",
-                type: "multi-select",
-                options: [
-                  "Floral", "Woody", "Musky", "Fresh / Citrus",
-                  "Oriental / Spicy", "Fruity", "Aquatic", "Other",
-                ],
-                required: false,
-                filterable: true,
-                placeholder: "Select scent family",
-              },
-              {
-                id: "bottle_size",
-                label: "Size (ml)",
-                type: "single-select",
-                options: ["30ml", "50ml", "75ml", "100ml", "125ml", "200ml+"],
-                required: false,
-                filterable: true,
-                placeholder: "Select size",
-              },
-              BRAND, NEGOTIABLE, DELIVERY, LOCATION,
-            ],
-          },
-        ],
-      },
-
-      {
         id: "mens_grooming",
         name: "Men's Grooming",
         subcategories: [
@@ -2115,7 +2143,7 @@ export const categories = [
   {
     id: "food",
     name: "Food & Groceries",
-    icon: "🛒",
+    icon: "ShoppingBag",
     subcategories: [
       {
         id: "fresh_produce",
@@ -2280,6 +2308,34 @@ export const categories = [
           },
         ],
       },
+      {
+        id: "ready_to_eat",
+        name: "Ready-to-Eat & Catering",
+        subcategories: [
+          {
+            id: "cooked_food",
+            name: "Cooked Meals & Catering",
+            attributes: [
+              PRICE, PRICE_RANGE,
+              {
+                id: "meal_type",
+                label: "Meal / Service Type",
+                type: "multi-select",
+                options: [
+                  "Local Dishes (Jollof, Banku, Fufu, etc.)",
+                  "Continental / Fast Food", "Pastries & Cakes",
+                  "Healthy Meals / Salads", "Catering Service (Event)",
+                  "Meal Prep Subscriptions", "Other",
+                ],
+                required: true,
+                filterable: true,
+                placeholder: "Select type",
+              },
+              DELIVERY, LOCATION,
+            ],
+          },
+        ],
+      },
     ],
   },
 
@@ -2289,7 +2345,7 @@ export const categories = [
   {
     id: "health",
     name: "Health & Wellness",
-    icon: "💊",
+    icon: "Activity",
     subcategories: [
       {
         id: "vitamins_supplements",
@@ -2499,7 +2555,7 @@ export const categories = [
   {
     id: "sports",
     name: "Sports & Outdoors",
-    icon: "⚽",
+    icon: "Trophy",
     subcategories: [
       {
         id: "team_sports",
@@ -2717,7 +2773,7 @@ export const categories = [
   {
     id: "vehicles",
     name: "Vehicles",
-    icon: "🚗",
+    icon: "Car",
     subcategories: [
       {
         id: "cars",
@@ -3008,7 +3064,7 @@ export const categories = [
   {
     id: "property",
     name: "Property & Real Estate",
-    icon: "🏡",
+    icon: "Building",
     subcategories: [
       {
         id: "houses_for_sale",
@@ -3307,7 +3363,7 @@ export const categories = [
   {
     id: "jobs",
     name: "Jobs",
-    icon: "💼",
+    icon: "Briefcase",
     subcategories: [
       {
         id: "jobs_listings",
@@ -3395,9 +3451,8 @@ export const categories = [
   {
     id: "services",
     name: "Services",
-    icon: "🛠️",
+    icon: "Wrench",
     subcategories: [
-
       {
         id: "beauty_services",
         name: "Beauty & Wellness Services",
@@ -3452,7 +3507,6 @@ export const categories = [
           },
         ],
       },
-
       {
         id: "home_services",
         name: "Home & Repair Services",
@@ -3494,7 +3548,6 @@ export const categories = [
           },
         ],
       },
-
       {
         id: "professional_services",
         name: "Professional Services",
@@ -3535,7 +3588,6 @@ export const categories = [
           },
         ],
       },
-
       {
         id: "education_tutoring",
         name: "Education & Tutoring",
@@ -3598,7 +3650,40 @@ export const categories = [
           },
         ],
       },
-
+      {
+        id: "health_services",
+        name: "Health & Medical Services",
+        subcategories: [
+          {
+            id: "medical_services",
+            name: "Medical Services",
+            attributes: [
+              PRICE, PRICE_RANGE,
+              {
+                id: "medical_service_type",
+                label: "Service Type",
+                type: "multi-select",
+                options: [
+                  "General Practitioner / Doctor",
+                  "Dentist", "Eye Care / Optician",
+                  "Physiotherapy",
+                  "Nursing / Home Care",
+                  "Mental Health / Counseling",
+                  "Lab Tests & Diagnostics",
+                  "Pharmacy",
+                  "Dietitian / Nutritionist",
+                  "Traditional / Herbal Medicine",
+                  "Other",
+                ],
+                required: true,
+                filterable: true,
+                placeholder: "Select service type",
+              },
+              LOCATION,
+            ],
+          },
+        ],
+      },
       {
         id: "event_services",
         name: "Events & Entertainment",
@@ -3653,7 +3738,6 @@ export const categories = [
           },
         ],
       },
-
       {
         id: "transport_logistics",
         name: "Transport & Logistics",
@@ -3688,42 +3772,6 @@ export const categories = [
           },
         ],
       },
-
-      {
-        id: "health_services",
-        name: "Health & Medical Services",
-        subcategories: [
-          {
-            id: "medical_services",
-            name: "Medical Services",
-            attributes: [
-              PRICE, PRICE_RANGE,
-              {
-                id: "medical_service_type",
-                label: "Service Type",
-                type: "multi-select",
-                options: [
-                  "General Practitioner / Doctor",
-                  "Dentist", "Eye Care / Optician",
-                  "Physiotherapy",
-                  "Nursing / Home Care",
-                  "Mental Health / Counseling",
-                  "Lab Tests & Diagnostics",
-                  "Pharmacy",
-                  "Dietitian / Nutritionist",
-                  "Traditional / Herbal Medicine",
-                  "Other",
-                ],
-                required: true,
-                filterable: true,
-                placeholder: "Select service type",
-              },
-              LOCATION,
-            ],
-          },
-        ],
-      },
-
     ],
   },
 
@@ -3733,7 +3781,7 @@ export const categories = [
   {
     id: "agriculture",
     name: "Agriculture & Farming",
-    icon: "🌾",
+    icon: "Sprout",
     subcategories: [
       {
         id: "livestock",
@@ -3863,7 +3911,7 @@ export const categories = [
   {
     id: "power_energy",
     name: "Power & Solar Energy",
-    icon: "⚡",
+    icon: "Zap",
     subcategories: [
       {
         id: "solar",
@@ -4016,7 +4064,7 @@ export const categories = [
   {
     id: "books",
     name: "Books & Media",
-    icon: "📚",
+    icon: "Book",
     subcategories: [
       {
         id: "books_main",
@@ -4063,37 +4111,6 @@ export const categories = [
           },
         ],
       },
-      {
-        id: "music_instruments",
-        name: "Music & Instruments",
-        subcategories: [
-          {
-            id: "instruments",
-            name: "Musical Instruments",
-            attributes: [
-              PRICE, PRICE_RANGE, CONDITION,
-              {
-                id: "instrument_type",
-                label: "Instrument",
-                type: "multi-select",
-                options: [
-                  "Guitar (Acoustic)", "Guitar (Electric)",
-                  "Bass Guitar", "Keyboard / Piano",
-                  "Drums / Drum Kit", "Saxophone",
-                  "Trumpet", "Violin", "Flute",
-                  "DJ Equipment", "Microphone",
-                  "Traditional / Percussion",
-                  "Music Accessories", "Other",
-                ],
-                required: true,
-                filterable: true,
-                placeholder: "Select instrument",
-              },
-              BRAND, NEGOTIABLE, DELIVERY, LOCATION,
-            ],
-          },
-        ],
-      },
     ],
   },
 
@@ -4103,7 +4120,7 @@ export const categories = [
   {
     id: "office",
     name: "Office & Business",
-    icon: "🖨️",
+    icon: "Printer",
     subcategories: [
       {
         id: "office_furniture_main",
@@ -4199,7 +4216,7 @@ export const categories = [
   {
     id: "pets",
     name: "Pet Supplies",
-    icon: "🐾",
+    icon: "Dog",
     subcategories: [
       {
         id: "pets_for_sale",
@@ -4305,7 +4322,7 @@ export const categories = [
   {
     id: "industrial",
     name: "Industrial & Tools",
-    icon: "🔧",
+    icon: "Wrench",
     subcategories: [
       {
         id: "hand_tools",
@@ -4437,40 +4454,6 @@ export const categories = [
           },
         ],
       },
-      {
-        id: "electrical_plumbing",
-        name: "Electrical & Plumbing",
-        subcategories: [
-          {
-            id: "electrical_supplies",
-            name: "Electrical & Plumbing Supplies",
-            attributes: [
-              PRICE, PRICE_RANGE, CONDITION,
-              {
-                id: "elec_plumb_type",
-                label: "Type",
-                type: "multi-select",
-                options: [
-                  "Wires & Cables", "Switches & Sockets",
-                  "Circuit Breakers / MCB",
-                  "Distribution Boards",
-                  "Conduit & Fittings",
-                  "Pipes & PVC Fittings",
-                  "Taps & Faucets",
-                  "Water Tanks & Pumps",
-                  "Water Heater / Boiler",
-                  "Drainage & Gutters",
-                  "Other",
-                ],
-                required: true,
-                filterable: true,
-                placeholder: "Select type",
-              },
-              BRAND, NEGOTIABLE, DELIVERY, LOCATION,
-            ],
-          },
-        ],
-      },
     ],
   },
 
@@ -4480,7 +4463,7 @@ export const categories = [
   {
     id: "digital",
     name: "Digital Goods",
-    icon: "💻",
+    icon: "Monitor",
     subcategories: [
       {
         id: "gift_cards",
@@ -4615,7 +4598,300 @@ export const categories = [
       },
     ],
   },
-
+  {
+    id: "photography",
+    name: "Photography & Media",
+    icon: "Camera",
+    subcategories: [
+      {
+        id: "photography_services",
+        name: "Photography & Videography",
+        attributes: [
+          PRICE, PRICE_RANGE,
+          {
+            id: "photo_service_type",
+            label: "Service Type",
+            type: "multi-select",
+            options: [
+              "Event Photography", "Wedding Photography",
+              "Studio / Portrait", "Product / Commercial",
+              "Drone / Aerial Shots", "Videography / Cinematography",
+              "Photo / Video Editing", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select service type",
+          },
+          LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "laundry",
+    name: "Laundry & Cleaning",
+    icon: "Sparkles",
+    subcategories: [
+      {
+        id: "laundry_cleaning",
+        name: "Laundry, Dry Cleaning & Washing",
+        attributes: [
+          PRICE, PRICE_RANGE,
+          {
+            id: "cleaning_service_type",
+            label: "Service Type",
+            type: "multi-select",
+            options: [
+              "Laundry (Wash & Fold)", "Dry Cleaning",
+              "Car Wash & Detailing", "Home / Office Cleaning",
+              "Fumigation & Pest Control", "Rug & Sofa Cleaning",
+              "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select service type",
+          },
+          LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "wholesale",
+    name: "Wholesale & Bulk",
+    icon: "Package",
+    subcategories: [
+      {
+        id: "wholesale_clothing_main",
+        name: "Wholesale Clothing",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION, COLOR,
+          {
+            id: "bulk_type",
+            label: "Type",
+            type: "multi-select",
+            options: ["Bales", "Dozens", "Mixed Packs", "Clearance Lots", "Other"],
+            required: true,
+            filterable: true,
+            placeholder: "Select bulk type",
+          },
+          NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "wholesale_food_main",
+        name: "Wholesale Food",
+        attributes: [
+          PRICE, PRICE_RANGE,
+          {
+            id: "produce_unit",
+            label: "Sold By",
+            type: "single-select",
+            options: [
+              "Per Kg", "Per Bag (50kg)", "Per Tonne",
+              "Per Crate", "Per Bundle", "Per Piece",
+            ],
+            required: true,
+            filterable: false,
+            placeholder: "Select unit",
+          },
+          NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "instruments",
+    name: "Music & Instruments",
+    icon: "Music",
+    subcategories: [
+      {
+        id: "instruments_main",
+        name: "Musical Instruments",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "instrument_type",
+            label: "Instrument",
+            type: "multi-select",
+            options: [
+              "Guitar (Acoustic)", "Guitar (Electric)",
+              "Bass Guitar", "Keyboard / Piano",
+              "Drums / Drum Kit", "Saxophone",
+              "Trumpet", "Violin", "Flute",
+              "DJ Equipment", "Microphone",
+              "Traditional / Percussion",
+              "Music Accessories", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select instrument",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "fragrances_main",
+    name: "Perfumes & Fragrances",
+    icon: "Gem",
+    subcategories: [
+      {
+        id: "perfumes_colognes",
+        name: "Perfumes & Colognes",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "fragrance_type",
+            label: "Type",
+            type: "single-select",
+            options: [
+              "Eau de Parfum (EDP)", "Eau de Toilette (EDT)",
+              "Parfum / Extrait", "Body Spray", "Deodorant",
+              "Roll-On", "Oil Perfume", "Bakhoor / Incense", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          GENDER,
+          {
+            id: "scent_family",
+            label: "Scent Family",
+            type: "multi-select",
+            options: [
+              "Floral", "Woody", "Musky", "Fresh / Citrus",
+              "Oriental / Spicy", "Fruity", "Aquatic", "Oud", "Other",
+            ],
+            required: false,
+            filterable: true,
+            placeholder: "Select scent family",
+          },
+          {
+            id: "bottle_size",
+            label: "Size (ml)",
+            type: "single-select",
+            options: ["30ml", "50ml", "75ml", "100ml", "125ml", "200ml+"],
+            required: false,
+            filterable: true,
+            placeholder: "Select size",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "electrical_lighting",
+    name: "Electrical & Lighting",
+    icon: "Zap",
+    subcategories: [
+      {
+        id: "elec_supplies",
+        name: "Electrical Supplies",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "elec_type",
+            label: "Type",
+            type: "multi-select",
+            options: [
+              "Wires & Cables", "Switches & Sockets",
+              "Circuit Breakers / MCB", "Distribution Boards",
+              "Conduit & Fittings", "Extension Boards",
+              "Voltage Stabilizers", "Inverters", "Solar Panels",
+              "Solar Batteries", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "lighting_main",
+        name: "Lighting & Bulbs",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "light_type",
+            label: "Type",
+            type: "multi-select",
+            options: [
+              "LED Bulbs", "Energy Savers", "Chandeliers",
+              "Ceiling Lights", "Wall Lamps", "Flood Lights",
+              "Street Lights", "Smart Lighting", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
+  {
+    id: "car_parts_oils",
+    name: "Car Parts & Oils",
+    icon: "Wrench",
+    subcategories: [
+      {
+        id: "spare_parts_main",
+        name: "Spare Parts",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "parts_type_main",
+            label: "Part Type",
+            type: "multi-select",
+            options: [
+              "Engine Parts", "Brakes", "Tyres / Rims",
+              "Battery", "Exhaust", "Suspension",
+              "Gearbox", "Body Parts / Panel",
+              "Lights & Electrical", "Filters",
+              "Spark Plugs", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select part type",
+          },
+          {
+            id: "compat",
+            label: "Compatible With",
+            type: "text",
+            required: false,
+            filterable: false,
+            placeholder: "e.g. Toyota Camry 2015",
+          },
+          NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "oils_fluids",
+        name: "Oils & Fluids",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "oil_type",
+            label: "Fluid Type",
+            type: "multi-select",
+            options: [
+              "Engine Oil", "Transmission Fluid",
+              "Brake Fluid", "Coolant / Anti-freeze",
+              "Power Steering Fluid", "Grease", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select fluid type",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
 ];
 
 // ─── HELPER FUNCTIONS ─────────────────────────────────────

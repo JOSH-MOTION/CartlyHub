@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { categories } from "../utils/categories";
+import CategoryIcon from "./CategoryIcon";
 
 export default function HomeCategorySidebar({ selectedCategory, setSelectedCategory }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
@@ -21,7 +22,7 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
               onMouseEnter={() => setHoveredCategory(cat)}
             >
               <div className="flex items-center space-x-4">
-                <span className="text-2xl opacity-80">{cat.icon}</span>
+                <CategoryIcon iconName={cat.icon} className={`h-5 w-5 transition-colors duration-300 ${hoveredCategory?.id === cat.id ? "text-emerald-500" : "text-gray-400"}`} />
                 <span className="text-[13px] font-black uppercase tracking-widest leading-none">{cat.name}</span>
               </div>
               <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${hoveredCategory?.id === cat.id ? "translate-x-1 opacity-100" : "opacity-0"}`} />
@@ -38,7 +39,7 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center space-x-4 mb-8 pb-6 border-b border-gray-50">
-               <span className="text-4xl">{hoveredCategory.icon}</span>
+               <CategoryIcon iconName={hoveredCategory.icon} className="h-10 w-10 text-emerald-500" />
                <div>
                  <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900">{hoveredCategory.name}</h2>
                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Explore {hoveredCategory.subcategories.length} Categories</p>

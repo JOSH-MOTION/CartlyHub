@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, SlidersHorizontal, MapPin, Layers, RotateCcw, Check, ChevronRight, ChevronDown, DollarSign } from "lucide-react";
+import CategoryIcon from "./CategoryIcon";
 
 export default function FilterSidebar({ 
   isOpen, 
@@ -139,7 +140,7 @@ export default function FilterSidebar({
                             }`}
                           >
                             <div className="flex items-center space-x-3">
-                              <span>{cat.icon}</span>
+                              <CategoryIcon iconName={cat.icon} className={`h-4 w-4 ${selectedCategory === cat.id ? "text-emerald-500" : "text-gray-400"}`} />
                               <span>{cat.name}</span>
                             </div>
                             {selectedCategory === cat.id && <Check className="h-4 w-4 text-emerald-500" />}

@@ -1,6 +1,7 @@
 "use client";
 
 import { categories } from "../utils/categories";
+import CategoryIcon from "./CategoryIcon";
 
 export default function MobileCategoryCircles({ selectedCategory, setSelectedCategory }) {
   // Find which main category is currently "active" (either selected or a parent of selected)
@@ -26,7 +27,7 @@ export default function MobileCategoryCircles({ selectedCategory, setSelectedCat
                   ? "bg-white border-emerald-500 shadow-xl shadow-emerald-100 scale-110 z-10" 
                   : "bg-white border-gray-100 group-hover:border-gray-200"
               }`}>
-                {cat.icon}
+                <CategoryIcon iconName={cat.icon} className={`h-6 w-6 ${isActive ? "text-emerald-500" : "text-gray-400"}`} />
                 {isActive && (
                   <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white">
                     <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
