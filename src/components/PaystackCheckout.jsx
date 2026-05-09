@@ -266,7 +266,7 @@ Please confirm delivery time. Thank you! 🙏`;
       <div className="space-y-4 mb-12">
         <button
           onClick={handleWhatsAppMessage}
-          className="w-full py-6 bg-[#25D366] text-white rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-xl shadow-green-500/20 scale-105"
+          className="w-full py-6 bg-[#442efb] text-white rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-[#3d2ad2] transition-all shadow-xl shadow-green-500/20 scale-105"
         >
           <MessageCircle size={24} fill="white" /> Confirm Delivery on WhatsApp
         </button>

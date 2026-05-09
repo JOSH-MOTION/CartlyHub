@@ -309,7 +309,7 @@ export default function ProductDetailClient({ params }) {
 
               <button
                 onClick={handleWhatsAppOrder}
-                className="w-full flex items-center justify-center space-x-3 bg-[#25D366] text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#128C7E] transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/20 mb-4"
+                className="w-full flex items-center justify-center space-x-3 bg-[#442efb] text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#3d2ad2] transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/20 mb-4"
               >
                 <MessageCircle className="h-5 w-5 fill-current" />
                 <span>Chat on WhatsApp</span>

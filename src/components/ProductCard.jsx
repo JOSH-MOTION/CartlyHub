@@ -77,7 +77,7 @@ export default function ProductCard({ product, categories = [] }) {
             </span>
           )}
           {product.isBulk && product.packSize > 1 && (
-            <span className="bg-emerald-500/90 backdrop-blur-md text-white border border-emerald-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(16,185,129,0.2)]">
+            <span className="bg-emerald-500/90 backdrop-blur-md text-white border border-emerald-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(68,46,251,0.2)]">
               Pack of {product.packSize}
             </span>
           )}
@@ -108,7 +108,7 @@ export default function ProductCard({ product, categories = [] }) {
             {getCategoryName(product.categoryId)}
           </p>
           <a href={`/product/${product.id}`} className="block group/link">
-            <h3 className="text-sm sm:text-lg font-black text-gray-900 line-clamp-2 leading-[1.3] tracking-tight group-hover/link:text-emerald-600 transition-colors duration-300">
+            <h3 className="text-sm sm:text-base font-black text-gray-900 line-clamp-2 leading-[1.3] tracking-tight group-hover/link:text-emerald-600 transition-colors duration-300">
               {product.name}
             </h3>
           </a>
@@ -117,7 +117,7 @@ export default function ProductCard({ product, categories = [] }) {
         {/* Location & Seller */}
         <div className="flex flex-col gap-1 sm:gap-2 mb-2 sm:mb-4">
           {(product.region || product.location) && (
-            <div className="flex items-center text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            <div className="flex items-center text-[8px] sm:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
               <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 text-emerald-500" />
               <span className="truncate">
                 {product.region}{product.location ? `, ${product.location}` : ''}
@@ -127,7 +127,7 @@ export default function ProductCard({ product, categories = [] }) {
           {product.sellerName && (
             <a 
               href={`/seller/${encodeURIComponent(product.sellerName)}`}
-              className="flex items-center text-[8px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-black transition-colors"
+              className="flex items-center text-[8px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:text-black transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <Store className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
@@ -158,10 +158,10 @@ export default function ProductCard({ product, categories = [] }) {
           <div className="flex flex-col">
             {isOutOfStock && <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-widest mb-0.5 sm:mb-1">Sold Out</span>}
             <div className="flex items-baseline gap-1">
-              <span className={`text-xs sm:text-base font-bold ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`text-xs sm:text-sm font-bold ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
                 {process.env.NEXT_PUBLIC_STORE_CURRENCY || '₵'}
               </span>
-              <p className={`text-lg sm:text-2xl font-black tracking-tighter ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
+              <p className={`text-lg sm:text-xl font-black tracking-tighter ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
                 {Number(price).toLocaleString()}
               </p>
             </div>

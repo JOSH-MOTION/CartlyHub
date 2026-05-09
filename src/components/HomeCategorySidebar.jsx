@@ -16,14 +16,14 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className={`flex items-center justify-between px-6 py-4 cursor-pointer transition-all duration-300 ${
+              className={`flex items-center justify-between px-6 py-2.5 cursor-pointer transition-all duration-300 ${
                 hoveredCategory?.id === cat.id ? "bg-emerald-50/80 text-emerald-700" : "text-gray-600 hover:bg-gray-50"
               } ${selectedCategory === cat.id ? "font-bold text-emerald-600 bg-emerald-50" : ""}`}
               onMouseEnter={() => setHoveredCategory(cat)}
             >
               <div className="flex items-center space-x-4">
-                <CategoryIcon iconName={cat.icon} className={`h-5 w-5 transition-colors duration-300 ${hoveredCategory?.id === cat.id ? "text-emerald-500" : "text-gray-400"}`} />
-                <span className="text-[13px] font-black uppercase tracking-widest leading-none">{cat.name}</span>
+                <CategoryIcon iconName={cat.icon} className={`h-4 w-4 transition-colors duration-300 ${hoveredCategory?.id === cat.id ? "text-emerald-500" : "text-gray-400"}`} />
+                <span className="text-[11px] font-black uppercase tracking-widest leading-none">{cat.name}</span>
               </div>
               <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${hoveredCategory?.id === cat.id ? "translate-x-1 opacity-100" : "opacity-0"}`} />
             </div>
@@ -39,10 +39,10 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center space-x-4 mb-8 pb-6 border-b border-gray-50">
-               <CategoryIcon iconName={hoveredCategory.icon} className="h-10 w-10 text-emerald-500" />
+               <CategoryIcon iconName={hoveredCategory.icon} className="h-8 w-8 text-emerald-500" />
                <div>
-                 <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900">{hoveredCategory.name}</h2>
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Explore {hoveredCategory.subcategories.length} Categories</p>
+                 <h2 className="text-lg font-black uppercase tracking-tighter text-gray-900">{hoveredCategory.name}</h2>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Explore {hoveredCategory.subcategories.length} Categories</p>
                </div>
             </div>
 
@@ -50,7 +50,7 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
               {hoveredCategory.subcategories.map((sub) => (
                 <div key={sub.id} className="space-y-5 group/sub">
                   <h3 
-                    className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 cursor-pointer hover:text-emerald-600 transition-colors flex items-center group-hover/sub:text-gray-900"
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 cursor-pointer hover:text-emerald-600 transition-colors flex items-center group-hover/sub:text-gray-900"
                     onClick={() => {
                       setSelectedCategory(sub.id);
                       setHoveredCategory(null);
@@ -67,7 +67,7 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
                           setSelectedCategory(leaf.id);
                           setHoveredCategory(null);
                         }}
-                        className="text-sm font-medium text-gray-500 hover:text-emerald-600 text-left transition-all hover:translate-x-1 flex items-center"
+                        className="text-[12px] font-medium text-gray-500 hover:text-emerald-600 text-left transition-all hover:translate-x-1 flex items-center"
                       >
                         <span className="w-1 h-1 bg-gray-200 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors" />
                         {leaf.name}
@@ -81,7 +81,7 @@ export default function HomeCategorySidebar({ selectedCategory, setSelectedCateg
             <div className="mt-10 pt-8 border-t border-gray-50">
                <button 
                 onClick={() => { setSelectedCategory(hoveredCategory.id); setHoveredCategory(null); }}
-                className="w-full py-4 bg-gray-50 text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all border border-gray-100"
+                className="w-full py-4 bg-gray-50 text-gray-900 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all border border-gray-100"
                >
                  View All {hoveredCategory.name}
                </button>

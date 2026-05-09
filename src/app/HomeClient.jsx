@@ -88,7 +88,7 @@ export default function HomePage() {
 
       <div className="flex-grow flex overflow-hidden">
         {/* Sidebar - Desktop Only */}
-        <aside className="hidden lg:block w-72 h-full border-r border-gray-100 flex-shrink-0 bg-white">
+        <aside className="hidden lg:block w-60 h-full border-r border-gray-100 flex-shrink-0 bg-white">
           <HomeCategorySidebar 
             selectedCategory={selectedCategory} 
             setSelectedCategory={setSelectedCategory} 
@@ -116,7 +116,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1] mb-6">
-                    Discover Quality <span className="text-emerald-600">Everywhere</span>
+                    Discover Quality <span className="text-[#442efb]">Everywhere</span>
                   </h1>
                   <p className="text-lg text-gray-600 mb-8 max-w-lg leading-relaxed font-medium">
                     The most trusted platform for buying and selling in Ghana. Modern, secure, and fast.
@@ -125,7 +125,7 @@ export default function HomePage() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="inline-flex items-center justify-center px-8 py-4 bg-gray-900 text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-xl shadow-black/10"
+                      className="inline-flex items-center justify-center px-8 py-4 bg-[#fa8929] text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-xl shadow-black/10"
                     >
                       Shop Now
                       <ArrowRight className="ml-3 h-5 w-5" />
@@ -166,7 +166,7 @@ export default function HomePage() {
           </div>
 
           {/* Products Feed Section */}
-          <div id="products" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div id="products" className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-20">
             {/* Mobile Category Circles */}
             <div className="lg:hidden mb-12">
               <MobileCategoryCircles 
@@ -210,7 +210,7 @@ export default function HomePage() {
 
             {/* Products Grid */}
             {productsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="animate-pulse space-y-4">
                     <div className="bg-gray-100 aspect-[4/5] rounded-3xl"></div>
@@ -220,7 +220,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                 {displayProducts.map((product) => (
                   <ProductCard
                     key={product.id}

@@ -341,7 +341,7 @@ export default function AdminFinancialsPage() {
                   />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
                   <Bar dataKey="Revenue" fill="#000000" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Profit" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Profit" fill="#442efb" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -133,7 +133,7 @@ Thank you.
           href={whatsappUrl || `https://wa.me/${MOMO_CONFIG.whatsapp}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-6 bg-[#25D366] text-white rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-xl shadow-green-500/20 scale-105"
+          className="w-full py-6 bg-[#442efb] text-white rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-[#3d2ad2] transition-all shadow-xl shadow-green-500/20 scale-105"
         >
           <MessageCircle size={24} fill="white" /> Confirm on WhatsApp Now
         </a>
@@ -193,7 +193,7 @@ Thank you.
 
               <div className="p-6 bg-stone-50 rounded-3xl border border-stone-100 space-y-2">
                 <div className="flex items-center gap-2 text-stone-900">
-                  <Info size={14} className="text-[#0052D4]" />
+                  <Info size={14} className="text-[#442efb]" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Delivery Information</span>
                 </div>
                 <p className="text-[11px] text-stone-500 leading-relaxed">
