@@ -14,7 +14,8 @@ import {
   Star,
   MessageCircle,
   Store,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
@@ -254,6 +255,14 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4" />
             <span className="hidden xs:inline">Log Expense</span>
             <span className="xs:hidden">Expense</span>
+          </button>
+          <button
+            onClick={() => router.push('/admin/promotions')}
+            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-white text-black border-2 border-black px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-gray-50 transition-all"
+          >
+            <Tag className="h-4 w-4" />
+            <span className="hidden xs:inline">Manage Ads</span>
+            <span className="xs:hidden">Ads</span>
           </button>
           <button
             onClick={() => router.push('/admin/products')}
