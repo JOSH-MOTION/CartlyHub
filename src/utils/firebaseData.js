@@ -35,7 +35,7 @@ export const getProducts = async (options = {}) => {
       };
     });
     
-    // Filter out soft-deleted products
+    // Filter out soft-deleted products (remaining for compatibility with old deletions)
     products = products.filter(product => product.isActive !== false);
     
     // Apply filters

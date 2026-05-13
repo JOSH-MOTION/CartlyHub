@@ -37,7 +37,7 @@ export const productService = {
 
   async delete(id) {
     const productRef = doc(db, 'products', id);
-    await updateDoc(productRef, { isActive: false });
+    await deleteDoc(productRef);
   },
 
   async getById(id) {

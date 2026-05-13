@@ -48,7 +48,9 @@ export default function AdminDashboard() {
     queryFn: async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'products'));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return querySnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(p => p.isActive !== false);
       } catch (error) {
         return [];
       }

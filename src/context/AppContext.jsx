@@ -144,7 +144,7 @@ export const AppProvider = ({ children }) => {
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
         };
       });
-      setProducts(productsData);
+      setProducts(productsData.filter(p => p.isActive !== false));
     });
     listeners.push(unsubscribeProducts);
 
