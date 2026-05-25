@@ -24,6 +24,7 @@ import {
   Bookmark,
   PhoneCall,
   Loader2,
+  Share2,
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
@@ -171,12 +172,35 @@ export default function ProductDetailClient({ params }) {
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 />
-                <button
-                  onClick={handleToggleWishlist}
-                  className={`absolute top-6 right-6 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 border ${isInWishlist ? 'bg-red-500 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100 hover:text-red-500'}`}
-                >
-                  <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
-                </button>
+                <div className="absolute top-6 right-6 flex flex-col gap-3">
+                  <button
+                    onClick={handleToggleWishlist}
+                    className={`p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 border ${isInWishlist ? 'bg-red-500 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100 hover:text-red-500'}`}
+                  >
+                    <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        if (navigator.share) {
+                          await navigator.share({
+                            title: product.name,
+                            text: `Check out ${product.name} for GH₵${price} on CartlyHub!`,
+                            url: window.location.href,
+                          });
+                        } else {
+                          await navigator.clipboard.writeText(window.location.href);
+                          toast.success("Link copied to clipboard!");
+                        }
+                      } catch (error) {
+                        console.error("Error sharing:", error);
+                      }
+                    }}
+                    className="p-3 bg-white text-gray-400 border border-gray-100 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 hover:text-black"
+                  >
+                    <Share2 className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 {product.images?.map((img, i) => (
