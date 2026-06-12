@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Heart, Star, MapPin, Store, MessageCircle } from "lucide-react";
+import { ShoppingCart, Heart, Star, MapPin, Store, MessageCircle, Share2 } from "lucide-react";
 import useCart from '../store/useCart';
 import { useApp } from '../context/AppContext';
 import { toast } from "sonner";
@@ -84,7 +84,7 @@ export default function ProductCard({ product, categories = [] }) {
           {/* Low stock badges removed */}
         </div>
 
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 ease-out">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex flex-col gap-2 transition-all duration-300 ease-out sm:translate-x-4 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100">
           <button 
             onClick={handleToggleWishlist}
             className={`p-2 sm:p-3 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.06)] backdrop-blur-md border border-white/40 transition-all duration-300 hover:scale-110 active:scale-95 ${
@@ -94,6 +94,30 @@ export default function ProductCard({ product, categories = [] }) {
             }`}
           >
             <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isInWishlist ? 'fill-current' : ''}`} />
+          </button>
+          <button 
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                const url = `${window.location.origin}/product/${product.id}`;
+                if (navigator.share) {
+                  await navigator.share({
+                    title: product.name,
+                    text: `Check out ${product.name} for GH₵${price} on CartlyHub!`,
+                    url: url,
+                  });
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  toast.success("Link copied to clipboard!");
+                }
+              } catch (error) {
+                console.error("Error sharing:", error);
+              }
+            }}
+            className="p-2 sm:p-3 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.06)] backdrop-blur-md border border-white/40 bg-white/70 text-gray-900 hover:bg-white hover:text-black transition-all duration-300 hover:scale-110 active:scale-95"
+          >
+            <Share2 className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>
         </div>
       </div>

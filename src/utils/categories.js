@@ -4892,6 +4892,302 @@ export const categories = [
       },
     ],
   },
+  // ══════════════════════════════════════════════════════════
+  // LARGE APPLIANCES
+  // ══════════════════════════════════════════════════════════
+  {
+    id: "large_appliances",
+    name: "Large Appliances",
+    icon: "Refrigerator",
+    subcategories: [
+      {
+        id: "fridges_freezers",
+        name: "Fridges & Freezers",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "fridge_type",
+            label: "Type",
+            type: "single-select",
+            options: [
+              "Single Door Fridge", "Double Door Fridge", "Side-by-Side Fridge",
+              "Top Freezer", "Bottom Freezer", "Chest Freezer",
+              "Upright Freezer", "Mini Fridge / Bar Fridge", "Wine Cooler", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          {
+            id: "capacity_litres",
+            label: "Capacity (Litres)",
+            type: "single-select",
+            options: [
+              "Under 100L", "100–200L", "200–300L", "300–400L",
+              "400–500L", "500–700L", "700L+",
+            ],
+            required: false,
+            filterable: true,
+            placeholder: "Select capacity",
+          },
+          {
+            id: "inverter_tech",
+            label: "Inverter Technology",
+            type: "boolean",
+            required: false,
+            filterable: true,
+          },
+          {
+            id: "energy_rating",
+            label: "Energy Rating",
+            type: "single-select",
+            options: ["1 Star", "2 Star", "3 Star", "4 Star", "5 Star"],
+            required: false,
+            filterable: true,
+            placeholder: "Select energy rating",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "air_conditioners",
+        name: "Air Conditioners",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "ac_type",
+            label: "Type",
+            type: "single-select",
+            options: [
+              "Split AC", "Window AC", "Portable AC",
+              "Cassette AC", "Central AC Unit", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          {
+            id: "ac_capacity",
+            label: "Capacity (BTU/HP)",
+            type: "single-select",
+            options: [
+              "0.75 HP / 7,000 BTU", "1 HP / 9,000 BTU", "1.5 HP / 12,000 BTU",
+              "2 HP / 18,000 BTU", "2.5 HP / 24,000 BTU", "3 HP+ / 28,000 BTU+",
+            ],
+            required: false,
+            filterable: true,
+            placeholder: "Select capacity",
+          },
+          {
+            id: "ac_inverter",
+            label: "Inverter Technology",
+            type: "boolean",
+            required: false,
+            filterable: true,
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "washing_machines",
+        name: "Washing Machines & Dryers",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "washer_type",
+            label: "Type",
+            type: "single-select",
+            options: [
+              "Top Load Washer", "Front Load Washer",
+              "Twin Tub", "Washer-Dryer Combo", "Tumble Dryer", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          {
+            id: "washer_capacity",
+            label: "Capacity (Kg)",
+            type: "single-select",
+            options: ["5–6 Kg", "7–8 Kg", "9–10 Kg", "11–12 Kg", "13Kg+"],
+            required: false,
+            filterable: true,
+            placeholder: "Select capacity",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+      {
+        id: "water_heaters",
+        name: "Water Heaters",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "heater_type",
+            label: "Type",
+            type: "single-select",
+            options: [
+              "Instant Water Heater", "Storage Tank Heater",
+              "Solar Water Heater", "Shower Heater", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select type",
+          },
+          {
+            id: "heater_capacity",
+            label: "Capacity (Litres)",
+            type: "single-select",
+            options: ["Instant (No Tank)", "10–30L", "30–50L", "50–100L", "100L+"],
+            required: false,
+            filterable: true,
+            placeholder: "Select capacity",
+          },
+          BRAND, NEGOTIABLE, DELIVERY, LOCATION,
+        ],
+      },
+    ],
+  },
+  // ══════════════════════════════════════════════════════════
+  // HEAVY EQUIPMENT & CONSTRUCTION
+  // ══════════════════════════════════════════════════════════
+  {
+    id: "heavy_equipment",
+    name: "Heavy Equipment & Construction",
+    icon: "Truck",
+    subcategories: [
+      {
+        id: "construction_machinery",
+        name: "Construction Machinery",
+        attributes: [
+          PRICE, PRICE_RANGE, CONDITION,
+          {
+            id: "machinery_type",
+            label: "Equipment Type",
+            type: "single-select",
+            options: [
+              "Excavator", "Bulldozer", "Wheel Loader", "Backhoe Loader",
+              "Crane", "Grader", "Compactor / Roller",
+              "Cement Mixer", "Concrete Pump", "Dump Truck",
+              "Scaffolding", "Generator (Industrial)", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select equipment type",
+          },
+          {
+            id: "machinery_year",
+            label: "Year",
+            type: "number",
+            required: false,
+            filterable: true,
+            placeholder: "e.g. 2015",
+          },
+          {
+            id: "operating_hours",
+            label: "Operating Hours",
+            type: "number",
+            required: false,
+            filterable: true,
+            placeholder: "e.g. 5000",
+          },
+          BRAND, NEGOTIABLE, LOCATION,
+        ],
+      },
+      {
+        id: "equipment_rental",
+        name: "Equipment for Hire",
+        attributes: [
+          PRICE, PRICE_RANGE,
+          {
+            id: "rental_equipment_type",
+            label: "Equipment Type",
+            type: "single-select",
+            options: [
+              "Excavator", "Bulldozer", "Crane", "Generator",
+              "Cement Mixer", "Scaffolding", "Dump Truck",
+              "Compactor / Roller", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select equipment type",
+          },
+          {
+            id: "rental_period",
+            label: "Rental Period",
+            type: "single-select",
+            options: ["Per Hour", "Per Day", "Per Week", "Per Month"],
+            required: true,
+            filterable: true,
+            placeholder: "Select rental period",
+          },
+          {
+            id: "operator_included",
+            label: "Operator Included",
+            type: "boolean",
+            required: false,
+            filterable: true,
+          },
+          NEGOTIABLE, LOCATION,
+        ],
+      },
+    ],
+  },
+  // ══════════════════════════════════════════════════════════
+  // TICKETS & VOUCHERS
+  // ══════════════════════════════════════════════════════════
+  {
+    id: "tickets",
+    name: "Tickets & Vouchers",
+    icon: "Ticket",
+    subcategories: [
+      {
+        id: "event_tickets",
+        name: "Event Tickets",
+        attributes: [
+          PRICE, PRICE_RANGE,
+          {
+            id: "ticket_type",
+            label: "Event Type",
+            type: "single-select",
+            options: [
+              "Concert", "Festival", "Sports Match",
+              "Conference / Seminar", "Theatre / Comedy Show",
+              "Movie Premiere", "Party / Club Event", "Other",
+            ],
+            required: true,
+            filterable: true,
+            placeholder: "Select event type",
+          },
+          {
+            id: "event_date",
+            label: "Event Date",
+            type: "date",
+            required: true,
+            filterable: true,
+          },
+          {
+            id: "ticket_quantity",
+            label: "Number of Tickets",
+            type: "number",
+            required: true,
+            filterable: false,
+            placeholder: "e.g. 2",
+          },
+          {
+            id: "seating_category",
+            label: "Seating / Access Category",
+            type: "single-select",
+            options: ["General Admission", "VIP", "VVIP", "Regular Seating", "Other"],
+            required: false,
+            filterable: true,
+            placeholder: "Select category",
+          },
+          NEGOTIABLE, LOCATION,
+        ],
+      },
+    ],
+  },
 ];
 
 // ─── HELPER FUNCTIONS ─────────────────────────────────────

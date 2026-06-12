@@ -1,6 +1,17 @@
 "use client";
 
-import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Github, Linkedin } from "lucide-react";
+import { Instagram, Mail, MapPin, Phone } from "lucide-react";
+
+const Tiktok = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 16 16" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M9 0h1.98c.144.715.54 1.617 1.235 2.512C12.895 3.389 13.797 4 15 4v2c-1.753 0-3.07-.814-4-1.829V11a5 5 0 1 1-5-5v2a3 3 0 1 0 3 3z"/>
+  </svg>
+);
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -22,14 +33,11 @@ export default function Footer() {
               Ghana's premium marketplace for verified quality. We connect trusted sellers with discerning buyers across the nation.
             </p>
             <div className="flex items-center space-x-4">
-              <a href="#" className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition-all">
-                <Facebook className="h-4 w-4" />
+              <a href="https://www.tiktok.com/@cartly_hub?_r=1&_t=ZS-979p4joLmb6" target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition-all" title="TikTok">
+                <Tiktok className="h-4 w-4" />
               </a>
-              <a href="#" className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition-all">
+              <a href="https://www.instagram.com/cartlyhub?igsh=MWwydWpzZ3g1YXF0dA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition-all" title="Instagram">
                 <Instagram className="h-4 w-4" />
-              </a>
-              <a href="#" className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition-all">
-                <Twitter className="h-4 w-4" />
               </a>
             </div>
           </div>

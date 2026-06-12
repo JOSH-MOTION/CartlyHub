@@ -140,6 +140,9 @@ export default function ProductsPage() {
               <h1 className="text-5xl font-black tracking-tighter uppercase leading-none">
                 {category === "" ? "Marketplace" : categories.find(c => c.id === category)?.name || category}
               </h1>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+                Showing {products?.length || 0} products
+              </p>
             </div>
 
             {/* Search & Sort Toolbar */}

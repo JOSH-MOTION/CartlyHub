@@ -110,11 +110,11 @@ export default function HomePage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 {/* Left Content */}
                 <div className="text-left animate-in fade-in slide-in-from-left-8 duration-700">
-                  <div className="mb-6">
+                  {/* <div className="mb-6">
                     <span className="inline-block px-4 py-1.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm">
                       Premium Marketplace
                     </span>
-                  </div>
+                  </div> */}
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1] mb-6">
                     Discover Quality <span className="text-[#442efb]">Everywhere</span>
                   </h1>
@@ -184,6 +184,9 @@ export default function HomePage() {
                 <h2 className="text-4xl font-black text-black tracking-tighter uppercase leading-none">
                   {selectedCategory === "all" ? "Latest Arrivals" : categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
                 </h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+                  Showing {filteredProducts?.length || 0} products
+                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">

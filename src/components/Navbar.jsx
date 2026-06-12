@@ -13,9 +13,19 @@ import {
   LayoutDashboard,
   Store,
   ChevronRight,
-  Facebook,
   Instagram
 } from "lucide-react";
+
+const Tiktok = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 16 16" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M9 0h1.98c.144.715.54 1.617 1.235 2.512C12.895 3.389 13.797 4 15 4v2c-1.753 0-3.07-.814-4-1.829V11a5 5 0 1 1-5-5v2a3 3 0 1 0 3 3z"/>
+  </svg>
+);
 import { useApp } from '../context/AppContext';
 import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
@@ -362,8 +372,8 @@ export default function Navbar() {
           <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
             <p className="text-[8px] font-black uppercase tracking-widest text-gray-300">© 2026 CartlyHub</p>
             <div className="flex space-x-3">
-               <a href="#" className="text-gray-300"><Facebook className="h-3.5 w-3.5" /></a>
-               <a href="#" className="text-gray-300"><Instagram className="h-3.5 w-3.5" /></a>
+               <a href="https://www.tiktok.com/@cartly_hub?_r=1&_t=ZS-979p4joLmb6" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-black transition-colors"><Tiktok className="h-3.5 w-3.5" /></a>
+               <a href="https://www.instagram.com/cartlyhub?igsh=MWwydWpzZ3g1YXF0dA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-black transition-colors"><Instagram className="h-3.5 w-3.5" /></a>
             </div>
           </div>
         </div>

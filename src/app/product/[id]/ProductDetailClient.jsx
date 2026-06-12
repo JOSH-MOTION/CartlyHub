@@ -161,8 +161,8 @@ export default function ProductDetailClient({ params }) {
     <div className="min-h-screen bg-white font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           {/* Images & Main Info */}
           <div className="space-y-8">
             <div className="space-y-6">
@@ -216,9 +216,9 @@ export default function ProductDetailClient({ params }) {
             </div>
 
             {/* Product Stats & Attributes (Under Images on Mobile, Left Side on Desktop) */}
-            <div className="space-y-10 pt-10">
+            <div className="space-y-6 pt-6">
               {/* Stats Bar */}
-              <div className="flex flex-wrap items-center gap-y-4 gap-x-6 pb-6 border-b border-gray-100">
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 pb-4 border-b border-gray-100">
                 <div className="flex items-center text-[10px] font-black uppercase text-gray-400 tracking-widest whitespace-nowrap">
                   <div className="p-1.5 bg-gray-50 rounded-lg mr-2">
                     <Eye className="h-3 w-3 text-gray-400" />
@@ -246,7 +246,7 @@ export default function ProductDetailClient({ params }) {
               </div>
 
               {/* Attributes Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
                 {product.category_name && (
                   <div className="flex justify-between border-b border-gray-50 py-3">
                     <span className="text-[10px] font-black uppercase text-gray-400">Type</span>
@@ -302,8 +302,8 @@ export default function ProductDetailClient({ params }) {
               </div>
 
               {/* Address / Store Link */}
-              <div className="bg-gray-50 rounded-2xl p-6 flex items-center justify-between border border-gray-100">
-                <div className="flex items-center space-x-4">
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100">
+                <div className="flex items-center space-x-3">
                    <div className="p-3 bg-white rounded-xl shadow-sm">
                       <MapPin className="h-4 w-4 text-emerald-500" />
                    </div>
@@ -318,13 +318,13 @@ export default function ProductDetailClient({ params }) {
           </div>
 
           {/* Details Sidebar */}
-          <div className="flex flex-col space-y-6">
+          <div className="flex flex-col space-y-4">
             
             {/* Price & Primary Action Card */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
-              <div className="flex items-baseline justify-between mb-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
+              <div className="flex items-baseline justify-between mb-4">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-4xl font-black text-black tracking-tighter">GH₵ {price?.toLocaleString()}</span>
+                  <span className="text-3xl font-black text-black tracking-tight">GH₵ {price?.toLocaleString()}</span>
                 </div>
                 <button className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:underline">
                   Price History
@@ -333,9 +333,9 @@ export default function ProductDetailClient({ params }) {
 
               <button
                 onClick={handleWhatsAppOrder}
-                className="w-full flex items-center justify-center space-x-3 bg-[#442efb] text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#3d2ad2] transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/20 mb-4"
+                className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-6 py-3.5 rounded-xl font-black uppercase tracking-widest text-[11px] hover:bg-green-700 transition-all transform hover:-translate-y-0.5 shadow-md shadow-green-600/10 mb-4"
               >
-                <MessageCircle className="h-5 w-5 fill-current" />
+                <MessageCircle className="h-4 w-4 fill-current" />
                 <span>Chat on WhatsApp</span>
               </button>
 
@@ -382,15 +382,15 @@ export default function ProductDetailClient({ params }) {
             </div>
 
             {/* Seller Info Card */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
-              <div className="mb-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
+              <div className="mb-4">
                 <h1 className="text-xl font-black text-black tracking-tight uppercase mb-1">{product.name}</h1>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   Listed in {product.category_name} • {product.region}
                 </p>
               </div>
 
-              <div className="flex items-center space-x-4 mb-8">
+              <div className="flex items-center space-x-3 mb-6">
                 <div className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm">
                   {product.sellerName?.charAt(0).toUpperCase() || "C"}
                 </div>
@@ -413,39 +413,39 @@ export default function ProductDetailClient({ params }) {
                 </div>
               </div>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-2 mb-6">
                 <div className="flex items-center text-[10px] font-black uppercase text-gray-500 tracking-widest">
-                  <ShieldCheck className="h-4 w-4 mr-3 text-blue-500" />
+                  <ShieldCheck className="h-4 w-4 mr-2.5 text-blue-500" />
                   Verified ID
                 </div>
                 <div className="flex items-center text-[10px] font-black uppercase text-gray-500 tracking-widest">
-                  <Zap className="h-4 w-4 mr-3 text-emerald-500" />
+                  <Zap className="h-4 w-4 mr-2.5 text-emerald-500" />
                   Typically replies within a day
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2">
                 <button 
                   onClick={() => setShowPhone(!showPhone)}
-                  className="w-full bg-black text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-800 transition-all shadow-md shadow-black/5 flex items-center justify-center space-x-2"
+                  className="w-full bg-black text-white py-3 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-800 transition-all shadow-md shadow-black/5 flex items-center justify-center space-x-2"
                 >
                   <Phone className="h-3 w-3" />
                   <span>{showPhone ? (product.sellerPhone || "No Number") : "Show contact"}</span>
                 </button>
                 <button 
-                  className="w-full bg-white text-black border-2 border-black py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all"
+                  className="w-full bg-white text-black border border-black py-3 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all"
                 >
                   Make an offer
                 </button>
                 <button 
-                  className="w-full flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-100 transition-all border border-emerald-100"
+                  className="w-full flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 py-3 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-emerald-100 transition-all border border-emerald-100"
                 >
                   <PhoneCall className="h-3 w-3" />
                   <span>Request call back</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-50">
                 <Link 
                   href={`/opinions/${product.sellerId || sellerInfo?.id || "admin"}`}
                   className="flex items-center space-x-2 group cursor-pointer"
@@ -465,8 +465,8 @@ export default function ProductDetailClient({ params }) {
             </div>
 
             {/* Safety & Report Card */}
-            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Safety Tips</h4>
                 <button className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:underline">Report Abuse</button>
               </div>

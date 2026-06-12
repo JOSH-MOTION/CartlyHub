@@ -23,6 +23,9 @@ const ICON_MAP = {
   Dog: Icons.Dog,
   Monitor: Icons.Monitor,
   Trophy: Icons.Trophy,
+  Refrigerator: Icons.Refrigerator,
+  Truck: Icons.Truck,
+  Ticket: Icons.Ticket,
 };
 
 export default function CategoryIcon({ iconName, className = "h-5 w-5" }) {
