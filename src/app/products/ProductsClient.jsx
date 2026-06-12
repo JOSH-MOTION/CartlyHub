@@ -108,6 +108,13 @@ export default function ProductsPage() {
     enabled: !!categories,
   });
 
+  // Separate query for total unfiltered active product count
+  const { data: totalProducts } = useQuery({
+    queryKey: ["products-total"],
+    queryFn: () => getProducts(),
+    staleTime: 1000 * 60 * 5, // cache for 5 mins
+  });
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
       <Navbar />
@@ -141,7 +148,7 @@ export default function ProductsPage() {
                 {category === "" ? "Marketplace" : categories.find(c => c.id === category)?.name || category}
               </h1>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
-                Showing {products?.length || 0} products
+                {products?.length || 0} of {totalProducts?.length || 0} products
               </p>
             </div>
 

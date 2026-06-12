@@ -80,7 +80,7 @@ export default function HomePage() {
     ? shuffleArray(filteredProducts) 
     : filteredProducts;
 
-  const displayProducts = shuffledProducts.slice(0, 48);
+  const displayProducts = shuffledProducts;
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
@@ -185,7 +185,7 @@ export default function HomePage() {
                   {selectedCategory === "all" ? "Latest Arrivals" : categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
                 </h2>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
-                  Showing {filteredProducts?.length || 0} products
+                  Showing {displayProducts?.length || 0} of {allProducts?.length || 0} products
                 </p>
               </div>
 
