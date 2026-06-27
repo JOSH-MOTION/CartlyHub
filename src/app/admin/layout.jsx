@@ -14,7 +14,9 @@ import {
   Receipt,
   Menu,
   X,
-  Store
+  Store,
+  ArrowUpRight,
+  PlusCircle
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -103,11 +105,13 @@ export default function AdminLayout({ children }) {
         <nav className="flex-grow overflow-y-auto">
           <SidebarItem icon={LayoutDashboard} label="Overview" route="/admin" />
           <SidebarItem icon={Package} label="Inventory" route="/admin/products" />
+          <SidebarItem icon={PlusCircle} label="Buy Stock" route="/admin/buy-stock" />
           <SidebarItem icon={ShoppingCart} label="Orders" route="/admin/orders" />
           <SidebarItem icon={Receipt} label="Manual Sales" route="/admin/manual-sales" />
           <SidebarItem icon={Users} label="Customers" route="/admin/customers" />
           <SidebarItem icon={Store} label="Sellers" route="/admin/sellers" />
           <SidebarItem icon={DollarSign} label="Financials" route="/admin/financials" />
+          <SidebarItem icon={ArrowUpRight} label="Reinvestments" route="/admin/reinvestments" />
         </nav>
 
         <div className="p-6 border-t border-gray-100">

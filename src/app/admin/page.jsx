@@ -15,12 +15,14 @@ import {
   MessageCircle,
   Store,
   ChevronRight,
-  Tag
+  Tag,
+  ArrowUpRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import ExpenseModal from "../../components/ExpenseModal";
+import ReinvestmentModal from "../../components/ReinvestmentModal";
 import { getCategories } from "@/utils/firebaseData";
 import { 
   BarChart, 
@@ -41,6 +43,7 @@ import {
 export default function AdminDashboard() {
   const router = useRouter();
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isReinvestmentModalOpen, setIsReinvestmentModalOpen] = useState(false);
 
 
   // Real product and category queries
@@ -107,6 +110,23 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: reinvestments = [], isLoading: reinvestmentsLoading, refetch: refetchReinvestments } = useQuery({
+    queryKey: ["reinvestments"],
+    queryFn: async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'reinvestments'));
+        return querySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          amount: Number(doc.data().amount || 0)
+        }));
+      } catch (error) {
+        console.error("Error fetching reinvestments:", error);
+        return [];
+      }
+    },
+  });
+
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["admin-reviews"],
     queryFn: async () => {
@@ -138,18 +158,35 @@ export default function AdminDashboard() {
     },
   });
 
-  // Calculate live stats
-  const onlineRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-  const manualRevenue = manualSales.reduce((sum, sale) => sum + (Number(sale.totalAmount) || 0), 0);
+  // Calculate live stats - Admin-only product metrics
+  const adminProductIds = new Set(products.filter(p => !p.sellerId).map(p => p.id));
+
+  // Helper to extract revenue and profit from items belonging only to the admin
+  const getAdminOrderStats = (items) => {
+    const adminItems = items?.filter(item => adminProductIds.has(item.productId)) || [];
+    const revenue = adminItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0);
+    const profit = adminItems.reduce((sum, item) => sum + (Number(item.profit) || 0), 0);
+    return { revenue, profit, count: adminItems.length };
+  };
+
+  const onlineRevenue = orders.reduce((sum, order) => sum + getAdminOrderStats(order.items).revenue, 0);
+  const manualRevenue = manualSales.reduce((sum, sale) => sum + getAdminOrderStats(sale.items).revenue, 0);
   
-  const onlineProfit = orders.reduce((sum, order) => sum + (order.totalProfit || 0), 0);
-  const manualProfit = manualSales.reduce((sum, sale) => sum + (Number(sale.totalProfit) || 0), 0);
+  const onlineProfit = orders.reduce((sum, order) => sum + getAdminOrderStats(order.items).profit, 0);
+  const manualProfit = manualSales.reduce((sum, sale) => sum + getAdminOrderStats(sale.items).profit, 0);
   
   const totalRevenue = onlineRevenue + manualRevenue;
   const totalGrossProfit = onlineProfit + manualProfit;
-  const totalOrders = orders.length + manualSales.length;
+
+  // Only count orders/sales containing admin products
+  const adminOnlineOrders = orders.filter(o => o.items?.some(item => adminProductIds.has(item.productId)));
+  const adminManualSales = manualSales.filter(s => s.items?.some(item => adminProductIds.has(item.productId)));
+  const totalOrders = adminOnlineOrders.length + adminManualSales.length;
+
   const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const actualNetBalance = totalGrossProfit - totalExpenses;
+  const totalReinvested = reinvestments.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const remainingProfit = actualNetBalance - totalReinvested;
   const pendingSellers = sellers.filter(s => !s.isVerified);
 
   // Marketplace Reputation
@@ -189,18 +226,35 @@ export default function AdminDashboard() {
       });
     }
 
-    // Combined transactions
-    const allTransactions = [...orders, ...manualSales];
-
-    allTransactions.forEach(t => {
+    // Accumulate only admin items sales in chart
+    orders.forEach(t => {
       if (!t.createdAt) return;
+      const adminStats = getAdminOrderStats(t.items);
+      if (adminStats.count === 0) return;
+
       const date = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
       const m = date.getMonth();
       const y = date.getFullYear();
 
       const dataPoint = lastSixMonths.find(p => p.month === m && p.year === y);
       if (dataPoint) {
-        dataPoint.revenue += Number(t.totalAmount || 0);
+        dataPoint.revenue += adminStats.revenue;
+        dataPoint.orders += 1;
+      }
+    });
+
+    manualSales.forEach(t => {
+      if (!t.createdAt) return;
+      const adminStats = getAdminOrderStats(t.items);
+      if (adminStats.count === 0) return;
+
+      const date = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+      const m = date.getMonth();
+      const y = date.getFullYear();
+
+      const dataPoint = lastSixMonths.find(p => p.month === m && p.year === y);
+      if (dataPoint) {
+        dataPoint.revenue += adminStats.revenue;
         dataPoint.orders += 1;
       }
     });
@@ -215,15 +269,17 @@ export default function AdminDashboard() {
     totalProfit: totalGrossProfit, 
     totalExpenses: totalExpenses,
     actualNetBalance: actualNetBalance,
+    totalReinvested: totalReinvested,
+    remainingProfit: remainingProfit,
     totalOrders: totalOrders,
-    totalInventory: products.length,
-    onlineCount: orders.length,
-    manualCount: manualSales.length,
+    totalInventory: products.filter(p => !p.sellerId).length,
+    onlineCount: adminOnlineOrders.length,
+    manualCount: adminManualSales.length,
     salesData: chartData,
     pieData: pieData
   };
 
-  const isLoading = productsLoading || categoriesLoading || ordersLoading || expensesLoading || sellersLoading;
+  const isLoading = productsLoading || categoriesLoading || ordersLoading || expensesLoading || sellersLoading || reinvestmentsLoading;
 
   if (isLoading) {
     return (
@@ -257,6 +313,14 @@ export default function AdminDashboard() {
             <span className="xs:hidden">Expense</span>
           </button>
           <button
+            onClick={() => setIsReinvestmentModalOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-indigo-50 transition-all"
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            <span className="hidden xs:inline">Log Reinvestment</span>
+            <span className="xs:hidden">Reinvest</span>
+          </button>
+          <button
             onClick={() => router.push('/admin/promotions')}
             className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-white text-black border-2 border-black px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-gray-50 transition-all"
           >
@@ -277,7 +341,7 @@ export default function AdminDashboard() {
 
       <div className="space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-7 gap-4 md:gap-8">
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
               <div className="p-3 bg-gray-50 rounded-xl text-black">
@@ -311,6 +375,30 @@ export default function AdminDashboard() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Actual Net Balance</p>
               <h3 className="text-2xl md:text-3xl font-black text-green-600 tracking-tighter">GH₵{stats.actualNetBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+                <ArrowUpRight className="h-6 w-6" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Reinvested</p>
+              <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">GH₵{stats.totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-green-50 rounded-xl text-green-600">
+                <DollarSign className="h-6 w-6" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Remaining Profit</p>
+              <h3 className={`text-2xl md:text-3xl font-black tracking-tighter ${stats.remainingProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>GH₵{stats.remainingProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 
@@ -480,6 +568,11 @@ export default function AdminDashboard() {
         isOpen={isExpenseModalOpen} 
         onClose={() => setIsExpenseModalOpen(false)} 
         onSuccess={refetchExpenses}
+      />
+      <ReinvestmentModal 
+        isOpen={isReinvestmentModalOpen} 
+        onClose={() => setIsReinvestmentModalOpen(false)} 
+        onSuccess={refetchReinvestments}
       />
     </div>
   );

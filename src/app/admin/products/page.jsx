@@ -45,6 +45,7 @@ export default function AdminProductsPage() {
     subcategoryId: "",
     basePrice: "",
     costPrice: "",
+    supplier: "",
     isFeatured: false,
     isRental: false,
     isBulk: false,
@@ -95,7 +96,7 @@ export default function AdminProductsPage() {
   const filteredProducts = products?.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          p.slug?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSeller = !sellerIdFilter || p.sellerId === sellerIdFilter;
+    const matchesSeller = sellerIdFilter ? p.sellerId === sellerIdFilter : !p.sellerId;
     const matchesStatus = filterStatus === "all" || (filterStatus === "active" ? p.isActive !== false : p.isActive === false);
     
     return matchesSearch && matchesSeller && matchesStatus;
@@ -119,6 +120,7 @@ export default function AdminProductsPage() {
         subcategoryId: "",
         basePrice: "",
         costPrice: "",
+        supplier: "",
         isFeatured: false,
         isRental: false,
         hasVariants: false,
@@ -247,6 +249,30 @@ export default function AdminProductsPage() {
   const removeVariant = (vId) => {
     setForm({ ...form, variants: form.variants.filter((v) => v.vId !== vId) });
   };
+
+  // Calculate inventory stats
+  const targetProducts = products?.filter(p => sellerIdFilter ? p.sellerId === sellerIdFilter : !p.sellerId) || [];
+  const activeProducts = targetProducts.filter(p => p.isActive !== false);
+
+  const totalStock = activeProducts.reduce((sum, p) => {
+    return sum + (p.variants?.reduce((acc, v) => acc + (Number(v.stock) || 0), 0) || 0);
+  }, 0);
+
+  const capitalTiedUp = activeProducts.reduce((sum, p) => {
+    const cost = Number(p.costPrice || 0);
+    const productStock = p.variants?.reduce((acc, v) => acc + (Number(v.stock) || 0), 0) || 0;
+    return sum + (cost * productStock);
+  }, 0);
+
+  const expectedSellingValue = activeProducts.reduce((sum, p) => {
+    const variantsValue = p.variants?.reduce((acc, v) => {
+      const price = Number(v.price || p.basePrice || 0);
+      return acc + (price * (Number(v.stock) || 0));
+    }, 0) || 0;
+    return sum + variantsValue;
+  }, 0);
+
+  const expectedProfitMargin = expectedSellingValue - capitalTiedUp;
 
   return (
     <div className="space-y-4">
@@ -418,7 +444,7 @@ export default function AdminProductsPage() {
           {/* Media Section */}
           <section className="space-y-6">
             <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
-              Product Images
+              Product Images (Optional)
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {form.images.map((img, i) => (
@@ -696,7 +722,7 @@ export default function AdminProductsPage() {
             <h2 className="text-xl font-black uppercase tracking-widest pb-4 border-b border-gray-200">
               Pricing & Featured
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                   Cost Price (Buying Price)
@@ -723,6 +749,20 @@ export default function AdminProductsPage() {
                     setForm({ ...form, basePrice: e.target.value })
                   }
                   placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Supplier
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.supplier || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, supplier: e.target.value })
+                  }
+                  placeholder="e.g. Nestlé Ghana"
                 />
               </div>
             </div>
@@ -804,7 +844,33 @@ export default function AdminProductsPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="space-y-6">
+          {/* Inventory Health Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Items in Stock</p>
+              <h3 className="text-3xl font-black text-black tracking-tighter">
+                {totalStock.toLocaleString()}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Across all variants</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Capital Tied Up (Cost Value)</p>
+              <h3 className="text-3xl font-black text-black tracking-tighter">
+                GH¢{capitalTiedUp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Investment in active stock</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Expected Profit Margin</p>
+              <h3 className="text-3xl font-black text-green-600 tracking-tighter">
+                GH¢{expectedProfitMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Expected profit if all items sell</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
@@ -840,18 +906,29 @@ export default function AdminProductsPage() {
                   >
                     <td className="px-8 py-6">
                       <div className="flex items-center space-x-4">
-                        <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                          <img
-                            src={p.images?.[0]}
-                            className="w-full h-full object-cover"
-                          />
+                        <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {p.images?.[0] ? (
+                            <img
+                              src={p.images[0]}
+                              className="w-full h-full object-cover"
+                              alt={p.name}
+                            />
+                          ) : (
+                            <ImageIcon className="h-5 w-5 text-gray-400" />
+                          )}
                         </div>
                         <div>
                           <p className="font-black text-sm uppercase tracking-tight">
                             {p.name}
                           </p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                            #{p.slug}
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                            <span>#{p.slug}</span>
+                            {p.supplier && (
+                              <>
+                                <span className="text-gray-300">•</span>
+                                <span className="text-gray-500 font-black">Supplier: {p.supplier}</span>
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -909,6 +986,7 @@ export default function AdminProductsPage() {
                             subcategoryId: p.subcategoryId || "",
                             basePrice: p.basePrice,
                             costPrice: p.costPrice || "",
+                            supplier: p.supplier || "",
                             isFeatured: p.isFeatured,
                             isRental: p.isRental || false,
                             isBulk: p.isBulk || false,
@@ -956,6 +1034,7 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
+      </div>
       )}
 
       {productsLoading && (

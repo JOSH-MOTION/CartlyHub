@@ -1,0 +1,566 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Trash2, RefreshCw, DollarSign, Calendar, FileText, ArrowUpRight, Sparkles, FolderPlus, Layers, UserCheck, Loader2 } from "lucide-react";
+import { collection, addDoc, doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { toast } from "react-hot-toast";
+import { getProducts, getCategories } from "@/utils/firebaseData";
+import { useRouter } from "next/navigation";
+
+export default function AdminBuyStockPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState("new"); // "new" or "restock"
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Date shared state
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // RESTOCK MODE STATE
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [restockQty, setRestockQty] = useState("");
+
+  // ADD NEW PRODUCT MODE STATE
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductCategoryId, setNewProductCategoryId] = useState("");
+  const [newProductCostPrice, setNewProductCostPrice] = useState("");
+  const [newProductSellingPrice, setNewProductSellingPrice] = useState("");
+  const [newProductSupplier, setNewProductSupplier] = useState("");
+  
+  // List of variant combinations for new product
+  const [newVariants, setNewVariants] = useState([
+    { size: "Standard", color: "Standard", stock: "" }
+  ]);
+
+  // Fetch admin products
+  const { data: products = [], isLoading: productsLoading, refetch: refetchProducts } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const prod = await getProducts();
+      return prod.filter(p => !p.sellerId);
+    },
+  });
+
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+
+  const selectedProduct = products.find(p => p.id === selectedProductId);
+
+  // Auto-select variant in Restock mode
+  useEffect(() => {
+    if (selectedProduct && selectedProduct.variants?.length > 0) {
+      setSelectedVariantId(selectedProduct.variants[0].vId);
+    } else {
+      setSelectedVariantId("");
+    }
+  }, [selectedProductId, selectedProduct]);
+
+  // Handle dynamic variant additions/deletions in New mode
+  const handleAddVariantRow = () => {
+    setNewVariants([...newVariants, { size: "Standard", color: "Standard", stock: "" }]);
+  };
+
+  const handleRemoveVariantRow = (idx) => {
+    if (newVariants.length === 1) {
+      toast.error("Products must have at least one size/color variant combination");
+      return;
+    }
+    setNewVariants(newVariants.filter((_, i) => i !== idx));
+  };
+
+  const handleUpdateVariantRow = (idx, field, value) => {
+    const updated = newVariants.map((item, i) => {
+      if (i === idx) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    });
+    setNewVariants(updated);
+  };
+
+  // Compute calculated values
+  let totalQty = 0;
+  let totalReinvestmentCost = 0;
+
+  if (mode === "restock" && selectedProduct && restockQty) {
+    totalQty = Number(restockQty);
+    totalReinvestmentCost = totalQty * Number(selectedProduct.costPrice || 0);
+  } else if (mode === "new" && newProductCostPrice) {
+    totalQty = newVariants.reduce((sum, item) => sum + (Number(item.stock) || 0), 0);
+    totalReinvestmentCost = totalQty * Number(newProductCostPrice);
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (mode === "restock") {
+        if (!selectedProductId || !selectedVariantId || !restockQty || !purchaseDate) {
+          toast.error("Please fill in all restocking fields");
+          setIsLoading(false);
+          return;
+        }
+
+        const qty = Number(restockQty);
+        const costPrice = Number(selectedProduct.costPrice || 0);
+        const amount = costPrice * qty;
+
+        const productRef = doc(db, "products", selectedProductId);
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) {
+          throw new Error("Product not found in database");
+        }
+
+        const productData = productSnap.data();
+        const updatedVariants = productData.variants.map(v => {
+          if (v.vId === selectedVariantId) {
+            return {
+              ...v,
+              stock: (Number(v.stock) || 0) + qty
+            };
+          }
+          return v;
+        });
+
+        // 1. Update Firestore stock
+        await updateDoc(productRef, {
+          variants: updatedVariants,
+          updatedAt: Timestamp.now()
+        });
+
+        // 2. Log reinvestment
+        const variantObj = productData.variants.find(v => v.vId === selectedVariantId);
+        const desc = `Restocked ${qty}x ${selectedProduct.name} ${variantObj?.size ? `(Size: ${variantObj.size})` : ""} ${variantObj?.color ? `(Color: ${variantObj.color})` : ""}`;
+        
+        await addDoc(collection(db, "reinvestments"), {
+          description: desc,
+          amount: amount,
+          date: Timestamp.fromDate(new Date(purchaseDate)),
+          createdAt: Timestamp.now(),
+          type: "reinvestment",
+          reinvestmentType: "restock",
+          linkedProductId: selectedProductId,
+          linkedVariantId: selectedVariantId,
+          linkedQty: qty
+        });
+
+        toast.success(`Successfully restocked ${qty} items!`);
+      }
+      else if (mode === "new") {
+        if (!newProductName || !newProductCategoryId || !newProductCostPrice || !newProductSellingPrice || totalQty <= 0) {
+          toast.error("Please fill in all required product details and variant quantities");
+          setIsLoading(false);
+          return;
+        }
+
+        const cost = Number(newProductCostPrice);
+        const price = Number(newProductSellingPrice);
+
+        const slug = newProductName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
+        // 1. Build variants payload
+        const variantsPayload = newVariants.map((item, idx) => ({
+          vId: `${Date.now()}-${idx}`,
+          size: item.size || "Standard",
+          color: item.color || "Standard",
+          stock: Number(item.stock) || 0,
+          price: price,
+          sku: `${slug.toUpperCase()}-${(item.size || 'STD').toUpperCase()}-${idx}`,
+          hexColor: ""
+        }));
+
+        // 2. Create product in Firestore
+        const productPayload = {
+          name: newProductName,
+          description: `Inventory stock added for ${newProductName}`,
+          categoryId: newProductCategoryId,
+          basePrice: price,
+          costPrice: cost,
+          supplier: newProductSupplier || "N/A",
+          sellerName: "cartly Hub Admin",
+          sellerPhone: "",
+          isFeatured: false,
+          isRental: false,
+          isBulk: false,
+          packSize: 1,
+          images: [],
+          isActive: true,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          variants: variantsPayload
+        };
+
+        const productDocRef = await addDoc(collection(db, "products"), productPayload);
+
+        // 3. Log reinvestment
+        const desc = `Purchased inventory for new product: ${newProductName} (${totalQty} items, Cost: GH¢${cost.toFixed(2)} each)`;
+        await addDoc(collection(db, "reinvestments"), {
+          description: desc,
+          amount: totalReinvestmentCost,
+          date: Timestamp.fromDate(new Date(purchaseDate)),
+          createdAt: Timestamp.now(),
+          type: "reinvestment",
+          reinvestmentType: "new_product",
+          linkedProductId: productDocRef.id,
+          linkedQty: totalQty
+        });
+
+        toast.success(`Successfully created ${newProductName} with ${totalQty} items!`);
+      }
+
+      // Invalidate queries to refresh dashboard and ledger charts
+      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["admin", "products"]);
+      queryClient.invalidateQueries(["reinvestments"]);
+      queryClient.invalidateQueries(["admin-financials"]);
+
+      // Reset Form fields
+      setSelectedProductId("");
+      setSelectedVariantId("");
+      setRestockQty("");
+      setNewProductName("");
+      setNewProductCategoryId("");
+      setNewProductCostPrice("");
+      setNewProductSellingPrice("");
+      setNewProductSupplier("");
+      setNewVariants([{ size: "Standard", color: "Standard", stock: "" }]);
+
+      refetchProducts();
+      router.push("/admin/products");
+    } catch (error) {
+      console.error("Error creating stock item:", error);
+      toast.error("Failed to register stock purchase");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isFormLoading = productsLoading || categoriesLoading;
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Header */}
+      <header className="flex justify-between items-end pb-6 border-b border-gray-100">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
+            Purchasing & Supply
+          </span>
+          <h1 className="text-4xl font-black tracking-tighter uppercase">Buy Stock / Restock</h1>
+        </div>
+      </header>
+
+      {/* Mode Switcher Tabs */}
+      <div className="flex bg-gray-100 p-1.5 rounded-2xl max-w-md">
+        <button
+          type="button"
+          onClick={() => setMode("new")}
+          className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+            mode === "new" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+          }`}
+        >
+          <FolderPlus className="h-4 w-4" />
+          <span>Add New Product</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("restock")}
+          className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+            mode === "restock" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+          }`}
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span>Restock Existing</span>
+        </button>
+      </div>
+
+      {isFormLoading ? (
+        <div className="flex items-center justify-center p-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Main Input Form */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* New Product Fields */}
+            {mode === "new" && (
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Basic Information</h2>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Product Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Floral Chiffon Dress"
+                        className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Category *</label>
+                      <select
+                        required
+                        className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                        value={newProductCategoryId}
+                        onChange={(e) => setNewProductCategoryId(e.target.value)}
+                      >
+                        <option value="">-- Choose Category --</option>
+                        {categories.filter(c => !c.parentId).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Cost Price (Buying Cost) *</label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="number"
+                          required
+                          step="0.01"
+                          placeholder="0.00"
+                          className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                          value={newProductCostPrice}
+                          onChange={(e) => setNewProductCostPrice(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Base Selling Price *</label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="number"
+                          required
+                          step="0.01"
+                          placeholder="0.00"
+                          className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                          value={newProductSellingPrice}
+                          onChange={(e) => setNewProductSellingPrice(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Supplier / Vendor</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Kantamanto Market"
+                        className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                        value={newProductSupplier}
+                        onChange={(e) => setNewProductSupplier(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Variants List Builder */}
+                <div className="pt-6 border-t border-gray-100 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Sizes, Colors & Quantities</h2>
+                    <button
+                      type="button"
+                      onClick={handleAddVariantRow}
+                      className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-black hover:text-white transition-all"
+                    >
+                      Add Variant Combination
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {newVariants.map((item, idx) => (
+                      <div key={idx} className="flex items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-in fade-in duration-300">
+                        <div className="flex-grow grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Size</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. M"
+                              className="w-full bg-white border-none rounded-xl py-2.5 px-3 font-bold text-xs focus:ring-2 focus:ring-black outline-none"
+                              value={item.size}
+                              onChange={(e) => handleUpdateVariantRow(idx, "size", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Color</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Blue"
+                              className="w-full bg-white border-none rounded-xl py-2.5 px-3 font-bold text-xs focus:ring-2 focus:ring-black outline-none"
+                              value={item.color}
+                              onChange={(e) => handleUpdateVariantRow(idx, "color", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Quantity Bought</label>
+                            <input
+                              type="number"
+                              required
+                              min="1"
+                              placeholder="0"
+                              className="w-full bg-white border-none rounded-xl py-2.5 px-3 font-bold text-xs focus:ring-2 focus:ring-black outline-none"
+                              value={item.stock}
+                              onChange={(e) => handleUpdateVariantRow(idx, "stock", Number(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariantRow(idx)}
+                          className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-all self-end"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Restock Product Fields */}
+            {mode === "restock" && (
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Select Product to Restock</h2>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Choose Product</label>
+                    <select
+                      required
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                      value={selectedProductId}
+                      onChange={(e) => setSelectedProductId(e.target.value)}
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} (Supplier: {p.supplier || 'N/A'})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedProduct && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Select Size/Color Variant</label>
+                        <select
+                          required
+                          className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                          value={selectedVariantId}
+                          onChange={(e) => setSelectedVariantId(e.target.value)}
+                        >
+                          {selectedProduct.variants?.map(v => (
+                            <option key={v.vId} value={v.vId}>
+                              Size: {v.size || 'STD'} / Color: {v.color || 'STD'} (Currently: {v.stock} in stock)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Additional Quantity Purchased</label>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          placeholder="e.g. 50"
+                          className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                          value={restockQty}
+                          onChange={(e) => setRestockQty(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Summary & Submit */}
+          <div className="space-y-8">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+              <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Checkout Summary</h2>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Purchase Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="date"
+                      required
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all outline-none"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                    <span>Total Quantity:</span>
+                    <span className="text-black font-black">{totalQty} item(s)</span>
+                  </div>
+                  {mode === "new" && newProductCostPrice && (
+                    <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      <span>Unit Cost Price:</span>
+                      <span className="text-black font-black">GH¢{Number(newProductCostPrice).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {mode === "restock" && selectedProduct && (
+                    <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      <span>Unit Cost Price:</span>
+                      <span className="text-black font-black">GH¢{Number(selectedProduct.costPrice || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest border-t border-dashed border-gray-100 pt-3">
+                    <span>Reinvestment Cost:</span>
+                    <span className="text-indigo-600 font-black text-sm">GH¢{totalReinvestmentCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || (mode === "restock" && !selectedProductId)}
+                className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <DollarSign className="h-4 w-4" />
+                    <span>Confirm Purchase</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}

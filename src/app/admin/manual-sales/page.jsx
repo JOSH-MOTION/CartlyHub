@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Save, X, Search, Loader2, DollarSign, Phone, User as UserIcon, Package, Edit, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Save, X, Search, Loader2, DollarSign, Phone, User as UserIcon, Package, Edit, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { getProducts, getManualSales, createManualSale, updateManualSale, deleteManualSale } from "@/utils/firebaseData";
 
@@ -281,9 +281,11 @@ export default function ManualSalesPage() {
                           }}
                           className="w-full px-4 py-3 hover:bg-gray-50 text-left flex items-center gap-3 border-b last:border-b-0"
                         >
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                            {product.images?.[0] && (
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {product.images?.[0] ? (
                               <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
                             )}
                           </div>
                           <div>
