@@ -7,11 +7,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",
-    template: "%s | Cartly Hub",
+    default: "Cartly Hub | Shop Online in Ghana - Electronics, Fashion, Bags & Shoes",
+    template: "%s | Buy Online in Ghana | Cartly Hub",
   },
   description:
-    "Ghana's premier online marketplace. Buy and sell electronics, fashion, home goods, vehicles, phones & more with fast delivery and secure payments.",
+    "Cartly Hub is Ghana's trusted online shopping marketplace. Buy or sell fashion, clothing, bags, electronics, phones & more with fast delivery in Accra, Kumasi and across Ghana.",
   keywords: [
     "online shopping Ghana", "buy and sell Ghana", "Ghana marketplace",
     "Accra online store", "electronics Ghana", "phones Ghana",

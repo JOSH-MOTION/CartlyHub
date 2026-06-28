@@ -12,8 +12,8 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = `${product.name} | CartlyHub`;
-  const description = product.description?.substring(0, 160) || `Buy ${product.name} for GH₵${product.basePrice} on CartlyHub.`;
+  const title = `${product.name}`;
+  const description = product.description?.substring(0, 150) || `Shop ${product.name} online for GH₵${product.basePrice} on Cartly Hub. Secure online ordering with fast delivery in Accra, Kumasi, and across Ghana.`;
   const image = product.images?.[0] || "https://cartlyhubgh.com/default-share-image.jpg";
 
   return {
