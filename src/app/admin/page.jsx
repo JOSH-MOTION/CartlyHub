@@ -54,7 +54,7 @@ export default function AdminDashboard() {
         const querySnapshot = await getDocs(collection(db, 'products'));
         return querySnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(p => p.isActive !== false);
+          .filter(p => p.isActive !== false || p.isPrivate === true);
       } catch (error) {
         return [];
       }

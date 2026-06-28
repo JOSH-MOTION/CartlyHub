@@ -63,7 +63,7 @@ export default function AdminProductsPage() {
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["admin", "products"],
     queryFn: async () => {
-      return await getProducts();
+      return await getProducts({ includePrivate: true });
     },
   });
 
@@ -94,8 +94,8 @@ export default function AdminProductsPage() {
   });
 
   const filteredProducts = products?.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         p.slug?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (p.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (p.slug || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSeller = sellerIdFilter ? p.sellerId === sellerIdFilter : !p.sellerId;
     const matchesStatus = filterStatus === "all" || (filterStatus === "active" ? p.isActive !== false : p.isActive === false);
     
@@ -944,21 +944,25 @@ export default function AdminProductsPage() {
                           {totalStock} in stock
                         </div>
                         {p.variants && p.variants.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            {p.variants.slice(0, 3).map((variant, idx) => (
-                              (variant.color || variant.colorName || variant.hexColor) && (
-                                <div
-                                  key={idx}
-                                  className="w-4 h-4 rounded-full border border-gray-300"
-                                  style={{
-                                    backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc'
-                                  }}
-                                  title={variant.colorName || variant.color || 'Unknown color'}
-                                />
-                              )
+                          <div className="mt-2 space-y-1 bg-gray-50/50 p-2 rounded-xl border border-gray-100/50 max-w-[200px]">
+                            {p.variants.slice(0, 4).map((variant, idx) => (
+                              <div key={idx} className="text-[9px] text-gray-500 font-bold uppercase flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span 
+                                    className="w-2 h-2 rounded-full border border-gray-200 flex-shrink-0"
+                                    style={{
+                                      backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc'
+                                    }}
+                                  />
+                                  <span className="truncate max-w-[100px]">{variant.color || 'Std'} / {variant.size || 'M'}</span>
+                                </div>
+                                <span className="font-black text-black">{variant.stock} left</span>
+                              </div>
                             ))}
-                            {p.variants.length > 3 && (
-                              <span className="text-xs text-gray-500">+{p.variants.length - 3}</span>
+                            {p.variants.length > 4 && (
+                              <div className="text-[8px] text-gray-400 font-black uppercase text-center pt-1 border-t border-gray-100">
+                                +{p.variants.length - 4} more variants
+                              </div>
                             )}
                           </div>
                         )}

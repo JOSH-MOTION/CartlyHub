@@ -16,7 +16,7 @@ export const getCategories = async () => {
 
 export const getProducts = async (options = {}) => {
   try {
-    const { featured, category, limit, sellerId } = options;
+    const { featured, category, limit, sellerId, includePrivate } = options;
     
     // Get all products without isActive filter
     const productsQuery = query(
@@ -35,8 +35,10 @@ export const getProducts = async (options = {}) => {
       };
     });
     
-    // Filter out soft-deleted products (remaining for compatibility with old deletions)
-    products = products.filter(product => product.isActive !== false);
+    // Filter out private or inactive products unless explicitly requested
+    if (!includePrivate) {
+      products = products.filter(product => product.isActive !== false && product.isPrivate !== true);
+    }
     
     // Apply filters
     if (featured) {

@@ -92,5 +92,9 @@ service cloud.firestore {
     match /expenses/{expenseId} {
       allow read, write: if isAdmin();
     }
+
+    match /reinvestments/{reinvestmentId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

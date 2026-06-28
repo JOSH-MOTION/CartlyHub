@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, RefreshCw, DollarSign, Calendar, FileText, ArrowUpRight, Sparkles, FolderPlus, Layers, UserCheck, Loader2 } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, Calendar, FileText, ArrowUpRight, Sparkles, FolderPlus, Layers, UserCheck, Loader2, ListPlus } from "lucide-react";
 import { collection, addDoc, doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { getProducts, getCategories } from "@/utils/firebaseData";
 import { useRouter } from "next/navigation";
 
 export default function AdminBuyStockPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState("new"); // "new" or "restock"
+  const [mode, setMode] = useState("new"); // "new", "restock", or "bulk"
   const [isLoading, setIsLoading] = useState(false);
+  const [bulkText, setBulkText] = useState("");
 
   // Date shared state
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
@@ -29,6 +30,7 @@ export default function AdminBuyStockPage() {
   const [newProductCostPrice, setNewProductCostPrice] = useState("");
   const [newProductSellingPrice, setNewProductSellingPrice] = useState("");
   const [newProductSupplier, setNewProductSupplier] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
   
   // List of variant combinations for new product
   const [newVariants, setNewVariants] = useState([
@@ -39,7 +41,7 @@ export default function AdminBuyStockPage() {
   const { data: products = [], isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const prod = await getProducts();
+      const prod = await getProducts({ includePrivate: true });
       return prod.filter(p => !p.sellerId);
     },
   });
@@ -95,6 +97,42 @@ export default function AdminBuyStockPage() {
     totalQty = newVariants.reduce((sum, item) => sum + (Number(item.stock) || 0), 0);
     totalReinvestmentCost = totalQty * Number(newProductCostPrice);
   }
+
+  const bulkStats = useMemo(() => {
+    if (mode !== "bulk" || !bulkText.trim()) {
+      return { totalQty: 0, totalCost: 0, totalSales: 0, estimatedProfit: 0 };
+    }
+
+    const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    let qtyCount = 0;
+
+    for (const line of lines) {
+      try {
+        const digitIdx = line.search(/\d/);
+        if (digitIdx === -1) continue;
+
+        let rest = line.substring(digitIdx).split("(")[0].trim();
+        const segments = rest.split(",").map(s => s.trim()).filter(s => s.length > 0);
+
+        for (const segment of segments) {
+          const qtyMatch = segment.match(/\d+/);
+          if (qtyMatch) {
+            qtyCount += Number(qtyMatch[0]);
+          }
+        }
+      } catch (err) {
+        // ignore parse error during typing
+      }
+    }
+
+    const cost = Number(newProductCostPrice || 0);
+    const price = Number(newProductSellingPrice || 0);
+    const totalCost = cost * qtyCount;
+    const totalSales = price * qtyCount;
+    const estimatedProfit = Math.max(0, totalSales - totalCost);
+
+    return { totalQty: qtyCount, totalCost, totalSales, estimatedProfit };
+  }, [mode, bulkText, newProductCostPrice, newProductSellingPrice]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -154,14 +192,14 @@ export default function AdminBuyStockPage() {
         toast.success(`Successfully restocked ${qty} items!`);
       }
       else if (mode === "new") {
-        if (!newProductName || !newProductCategoryId || !newProductCostPrice || !newProductSellingPrice || totalQty <= 0) {
+        if (!newProductName || !newProductCostPrice || totalQty <= 0) {
           toast.error("Please fill in all required product details and variant quantities");
           setIsLoading(false);
           return;
         }
 
         const cost = Number(newProductCostPrice);
-        const price = Number(newProductSellingPrice);
+        const price = Number(newProductSellingPrice || 0);
 
         const slug = newProductName
           .toLowerCase()
@@ -182,8 +220,9 @@ export default function AdminBuyStockPage() {
         // 2. Create product in Firestore
         const productPayload = {
           name: newProductName,
+          slug: slug,
           description: `Inventory stock added for ${newProductName}`,
-          categoryId: newProductCategoryId,
+          categoryId: newProductCategoryId || "uncategorized",
           basePrice: price,
           costPrice: cost,
           supplier: newProductSupplier || "N/A",
@@ -195,6 +234,7 @@ export default function AdminBuyStockPage() {
           packSize: 1,
           images: [],
           isActive: true,
+          isPrivate: !isPublic,
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
           variants: variantsPayload
@@ -233,6 +273,7 @@ export default function AdminBuyStockPage() {
       setNewProductCostPrice("");
       setNewProductSellingPrice("");
       setNewProductSupplier("");
+      setIsPublic(false);
       setNewVariants([{ size: "Standard", color: "Standard", stock: "" }]);
 
       refetchProducts();
@@ -241,6 +282,131 @@ export default function AdminBuyStockPage() {
       console.error("Error creating stock item:", error);
       toast.error("Failed to register stock purchase");
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!newProductName.trim() || !newProductCostPrice) {
+      toast.error("Please enter a Product Name and Unit Cost Price first.");
+      return;
+    }
+    if (!bulkText.trim()) {
+      toast.error("Please enter the variant list.");
+      return;
+    }
+
+    setIsLoading(true);
+    const cost = Number(newProductCostPrice);
+    const price = Number(newProductSellingPrice || 0);
+    const name = newProductName.trim();
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const variants = [];
+    let totalQty = 0;
+
+    for (const line of lines) {
+      try {
+        const digitIdx = line.search(/\d/);
+        if (digitIdx === -1) continue; // skip line if no numbers are found
+
+        let color = line.substring(0, digitIdx).trim().replace(/[:\-：]/g, "").trim();
+        if (!color) color = "Standard";
+
+        // Remove everything after '('
+        let rest = line.substring(digitIdx).split("(")[0].trim();
+
+        // Split by commas
+        const segments = rest.split(",").map(s => s.trim()).filter(s => s.length > 0);
+
+        for (const segment of segments) {
+          const qtyMatch = segment.match(/\d+/);
+          if (qtyMatch) {
+            const qty = Number(qtyMatch[0]);
+            let size = segment.replace(qtyMatch[0], "").trim();
+            if (!size) size = "Standard";
+
+            if (qty > 0) {
+              const cleanSize = size.toUpperCase().replace(/[^A-Z0-9]/g, "") || "STD";
+              variants.push({
+                vId: `${Date.now()}-${variants.length}-${Math.random().toString(36).substr(2, 4)}`,
+                size: size,
+                color: color,
+                stock: qty,
+                price: price,
+                sku: `${slug.toUpperCase()}-${cleanSize}-${variants.length}`,
+                hexColor: ""
+              });
+              totalQty += qty;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error parsing bulk line:", line, err);
+      }
+    }
+
+    if (variants.length === 0) {
+      toast.error("Could not parse any variants. Please make sure the format is correct (e.g., 'Black: 5 Large, 3 XL').");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const productPayload = {
+        name: name,
+        slug: slug,
+        description: `Inventory stock added for ${name}`,
+        categoryId: "uncategorized",
+        basePrice: price,
+        costPrice: cost,
+        supplier: "Bulk Import",
+        sellerName: "cartly Hub Admin",
+        sellerPhone: "",
+        isFeatured: false,
+        isRental: false,
+        isBulk: false,
+        packSize: 1,
+        images: [],
+        isActive: true,
+        isPrivate: true, // defaults to personal/private items
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        variants: variants
+      };
+
+      const productDocRef = await addDoc(collection(db, "products"), productPayload);
+
+      const totalCost = cost * totalQty;
+      const desc = `Purchased inventory for new product: ${name} (${totalQty} items, Cost: GH¢${cost.toFixed(2)} each)`;
+      await addDoc(collection(db, "reinvestments"), {
+        description: desc,
+        amount: totalCost,
+        date: Timestamp.fromDate(new Date(purchaseDate)),
+        createdAt: Timestamp.now(),
+        type: "reinvestment",
+        reinvestmentType: "new_product",
+        linkedProductId: productDocRef.id,
+        linkedQty: totalQty
+      });
+
+      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["admin", "products"]);
+      queryClient.invalidateQueries(["reinvestments"]);
+      queryClient.invalidateQueries(["admin-financials"]);
+
+      toast.success(`Successfully parsed and added ${name} with ${totalQty} items!`);
+      setBulkText("");
+      refetchProducts();
+      router.push("/admin/manual-sales");
+    } catch (err) {
+      console.error("Error saving bulk stock:", err);
+      toast.error("Failed to save inventory.");
       setIsLoading(false);
     }
   };
@@ -261,7 +427,7 @@ export default function AdminBuyStockPage() {
       </header>
 
       {/* Mode Switcher Tabs */}
-      <div className="flex bg-gray-100 p-1.5 rounded-2xl max-w-md">
+      <div className="flex bg-gray-100 p-1.5 rounded-2xl max-w-xl">
         <button
           type="button"
           onClick={() => setMode("new")}
@@ -282,12 +448,146 @@ export default function AdminBuyStockPage() {
           <RefreshCw className="h-4 w-4" />
           <span>Restock Existing</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setMode("bulk")}
+          className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+            mode === "bulk" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+          }`}
+        >
+          <ListPlus className="h-4 w-4" />
+          <span>Bulk Paste List</span>
+        </button>
       </div>
 
       {isFormLoading ? (
         <div className="flex items-center justify-center p-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
+      ) : mode === "bulk" ? (
+        <form onSubmit={handleBulkSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8 animate-in fade-in duration-300">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Paste Purchased Items</h2>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Enter the product name and cost price, then paste your inventory counts by color and size in the format shown below.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Product Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Pleated Linen Shirt"
+                    className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                    value={newProductName}
+                    onChange={(e) => setNewProductName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Unit Cost Price *</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      placeholder="0.00"
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                      value={newProductCostPrice}
+                      onChange={(e) => setNewProductCostPrice(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs text-indigo-700 space-y-1.5 font-medium">
+                <p className="font-bold uppercase tracking-wider text-[10px] text-indigo-800">Required Format Example:</p>
+                <pre className="font-mono bg-white/50 p-3 rounded-lg overflow-x-auto leading-normal">
+{`Black: 5 Large, 3 XL, 2 XXL (Total: 10)
+White: 1 Large, 3 XL (Total: 4)
+Khaki: 1 Medium, 2 Large, 2 XL, 2 XXL (Total: 7)`}
+                </pre>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Paste Variant Counts here *</label>
+                <textarea
+                  rows="10"
+                  required
+                  placeholder="Paste your items list here..."
+                  className="w-full bg-gray-50 border-none rounded-2xl py-4 px-5 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all resize-none font-mono"
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Summary & Submit */}
+          <div className="space-y-8">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+              <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Checkout Summary</h2>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Purchase Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="date"
+                      required
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all outline-none"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4 space-y-3 font-bold text-xs uppercase tracking-widest text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Parsed Qty:</span>
+                    <span className="text-black font-black">{bulkStats.totalQty} item(s)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Cost:</span>
+                    <span className="text-black font-black">GH¢{bulkStats.totalCost.toFixed(2)}</span>
+                  </div>
+                  {bulkStats.totalSales > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Total Est. Sales:</span>
+                        <span className="text-black font-black">GH¢{bulkStats.totalSales.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-dashed border-gray-100 pt-3 text-green-600">
+                        <span>Est. Profit:</span>
+                        <span className="text-green-600 font-black text-sm">GH¢{bulkStats.estimatedProfit.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || !bulkText.trim() || !newProductName.trim() || !newProductCostPrice}
+                className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <DollarSign className="h-4 w-4" />
+                    <span>Process Bulk List</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
       ) : (
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -314,14 +614,13 @@ export default function AdminBuyStockPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Category *</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Category (Optional)</label>
                       <select
-                        required
                         className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
                         value={newProductCategoryId}
                         onChange={(e) => setNewProductCategoryId(e.target.value)}
                       >
-                        <option value="">-- Choose Category --</option>
+                        <option value="">-- Choose Category (Optional) --</option>
                         {categories.filter(c => !c.parentId).map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
@@ -347,12 +646,11 @@ export default function AdminBuyStockPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Base Selling Price *</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Base Selling Price (Optional)</label>
                       <div className="relative">
                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                           type="number"
-                          required
                           step="0.01"
                           placeholder="0.00"
                           className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
@@ -372,6 +670,25 @@ export default function AdminBuyStockPage() {
                         onChange={(e) => setNewProductSupplier(e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100 mt-4">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-gray-600 mb-1">
+                        List on public storefront
+                      </h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase">
+                        If disabled, this item is treated as a personal purchase and will not show on your shop home page or product catalog.
+                      </p>
+                    </div>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-6 h-6 rounded-lg bg-white accent-indigo-600"
+                        checked={isPublic}
+                        onChange={(e) => setIsPublic(e.target.checked)}
+                      />
+                    </label>
                   </div>
                 </div>
 

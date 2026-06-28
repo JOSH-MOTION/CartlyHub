@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Trash2, RefreshCcw, Receipt, Layers, Download, ArrowUpRight, PieChart as PieIcon } from "lucide-react";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { getOrders, getManualSales, deleteManualSale, getProducts } from "@/utils/firebaseData";
 import ExpenseModal from "@/components/ExpenseModal";
 import ReinvestmentModal from "@/components/ReinvestmentModal";
@@ -96,12 +96,71 @@ export default function AdminFinancialsPage() {
     deleteLedgerEntryMutation.mutate(entry);
   };
 
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetFinancials = async () => {
+    const confirmFirst = confirm("WARNING: This will permanently delete all sales data (online orders and manual sales), recorded expenses, and reinvestments. This action cannot be undone.\n\nAre you sure you want to proceed?");
+    if (!confirmFirst) return;
+
+    const confirmSecond = prompt("To confirm, type 'RESET' in the box below:");
+    if (confirmSecond !== "RESET") {
+      toast.error("Confirmation failed. Reset cancelled.");
+      return;
+    }
+
+    setIsResetting(true);
+    const toastId = toast.loading("Resetting financial history...");
+
+    try {
+      // 1. Delete expenses
+      const expensesSnapshot = await getDocs(collection(db, "expenses"));
+      const expenseDeletes = expensesSnapshot.docs.map(docRef => deleteDoc(doc(db, "expenses", docRef.id)));
+
+      // 2. Delete reinvestments
+      const reinvestmentsSnapshot = await getDocs(collection(db, "reinvestments"));
+      const reinvestmentDeletes = reinvestmentsSnapshot.docs.map(docRef => deleteDoc(doc(db, "reinvestments", docRef.id)));
+
+      // 3. Delete manual sales
+      const manualSalesSnapshot = await getDocs(collection(db, "manualSales"));
+      const manualSalesDeletes = manualSalesSnapshot.docs.map(docRef => deleteDoc(doc(db, "manualSales", docRef.id)));
+
+      // 4. Delete orders
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      const ordersDeletes = ordersSnapshot.docs.map(docRef => deleteDoc(doc(db, "orders", docRef.id)));
+
+      await Promise.all([
+        ...expenseDeletes,
+        ...reinvestmentDeletes,
+        ...manualSalesDeletes,
+        ...ordersDeletes
+      ]);
+
+      toast.success("Financial ledger reset successfully!", { id: toastId });
+      
+      // Invalidate queries to refresh dashboard and ledger charts
+      queryClient.invalidateQueries(["admin-financials"]);
+      queryClient.invalidateQueries(["expenses"]);
+      queryClient.invalidateQueries(["reinvestments"]);
+      queryClient.invalidateQueries(["orders"]);
+      queryClient.invalidateQueries(["manualSales"]);
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error("Error resetting financials:", error);
+      toast.error("Failed to reset financial records", { id: toastId });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Fetch products (to filter admin products)
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", { includePrivate: true }],
     queryFn: async () => {
       try {
-        return await getProducts();
+        return await getProducts({ includePrivate: true });
       } catch (error) {
         return [];
       }
@@ -300,7 +359,116 @@ export default function AdminFinancialsPage() {
     refetchReinvestments();
   };
 
-  // Export to CSV Function
+  // Export to Excel Function with Colors
+  const handleExportExcel = () => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    const fileName = `CartlyHub-Ledger-${activeTab}-${dateStr}.xls`;
+
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Financial Ledger</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10pt; }
+          th { background-color: #111827; color: #ffffff; font-weight: bold; padding: 12px 10px; border: 1px solid #d1d5db; text-transform: uppercase; font-size: 9pt; }
+          td { padding: 8px 10px; border: 1px solid #e5e7eb; }
+          .revenue { background-color: #DEF7EC; color: #03543F; font-weight: bold; }
+          .expense { background-color: #FDE8E8; color: #9B1C1C; }
+          .reinvestment { background-color: #E0E7FF; color: #3730A3; }
+          .amount { text-align: right; }
+        </style>
+      </head>
+      <body>
+        <h2>CartlyHub Financial Ledger - Exported on ${new Date().toLocaleDateString()}</h2>
+        <br/>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Reference</th>
+              <th>Type</th>
+              <th>Source / Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Net Profit</th>
+              <th>COGS</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    displayEntries.forEach(t => {
+      const date = t.createdAt?.toDate ? t.createdAt.toDate() : (t.date?.toDate ? t.date.toDate() : new Date(t.createdAt || t.date));
+      const ref = t.paymentReference || t.id?.slice(0, 8) || 'N/A';
+      const typeStr = t.type.toUpperCase();
+      const sourceStr = t.source === 'manual' ? 'Manual POS' : t.source === 'online' ? 'Online Store' : t.source || t.category || 'N/A';
+      const desc = t.description || (t.items ? t.items.map(i => i.productName).join(', ') : 'Direct Sale');
+      
+      const amountVal = t.totalAmount;
+      const profitVal = t.totalProfit || 0;
+      const cogsVal = t.type === 'revenue' ? (t.totalAmount - t.totalProfit) : 0;
+
+      let rowClass = '';
+      let amountPrefix = '';
+      if (t.type === 'revenue') {
+        rowClass = 'revenue';
+        amountPrefix = '+';
+      } else if (t.type === 'expense') {
+        rowClass = 'expense';
+        amountPrefix = '-';
+      } else {
+        rowClass = 'reinvestment';
+        amountPrefix = '-';
+      }
+
+      html += `
+        <tr>
+          <td>${date.toLocaleDateString()}</td>
+          <td>${date.toLocaleTimeString()}</td>
+          <td>${ref}</td>
+          <td class="${rowClass}">${typeStr}</td>
+          <td>${sourceStr}</td>
+          <td>${desc}</td>
+          <td class="amount ${rowClass}">${amountPrefix}GH¢${amountVal.toFixed(2)}</td>
+          <td class="amount" style="${profitVal > 0 ? 'color: #03543F; font-weight: bold; background-color: #DEF7EC;' : ''}">GH¢${profitVal.toFixed(2)}</td>
+          <td class="amount">GH¢${cogsVal.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Ledger exported to styled Excel sheet successfully!");
+  };
+
   const handleExportCSV = () => {
     const exportData = displayEntries.map(t => {
       const date = t.createdAt?.toDate ? t.createdAt.toDate() : (t.date?.toDate ? t.date.toDate() : new Date(t.createdAt || t.date));
@@ -312,8 +480,8 @@ export default function AdminFinancialsPage() {
         "Source/Category": t.source === 'manual' ? 'Manual POS' : t.source === 'online' ? 'Online Store' : t.source || t.category || 'N/A',
         "Description": t.description || (t.items ? t.items.map(i => i.productName).join(', ') : 'Direct Sale'),
         "Amount (GH¢)": (t.type === 'revenue' ? '+' : '-') + t.totalAmount.toFixed(2),
-        "Net Profit/Profit Portion (GH¢)": t.totalProfit ? t.totalProfit.toFixed(2) : '0.00',
-        "COGS (GH¢)": t.type === 'revenue' ? (t.totalAmount - t.totalProfit).toFixed(2) : '0.00',
+        "Net Profit (GH¢)": (t.totalProfit || 0).toFixed(2),
+        "COGS (GH¢)": t.type === 'revenue' ? (t.totalAmount - (t.totalProfit || 0)).toFixed(2) : '0.00',
       };
     });
 
@@ -322,11 +490,12 @@ export default function AdminFinancialsPage() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `CartlyHub-Financials-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `CartlyHub-Ledger-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success("Ledger exported to CSV successfully!");
   };
 
   const formatDate = (timestamp) => {
@@ -344,14 +513,14 @@ export default function AdminFinancialsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
             Accounting
           </span>
-          <h1 className="text-4xl font-black tracking-tighter uppercase">Financial Ledger</h1>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tighter uppercase">Financial Ledger</h1>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-black focus:border-transparent outline-none font-bold text-sm"
             value={dateFilter}
@@ -366,14 +535,15 @@ export default function AdminFinancialsPage() {
 
           <button
             onClick={handleRefetch}
-            className="flex items-center space-x-2 bg-gray-100 text-black px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all"
+            className="flex items-center space-x-2 bg-gray-100 text-black px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all"
+            title="Refresh Ledger"
           >
             <RefreshCcw className="h-4 w-4" />
           </button>
 
           <button
             onClick={() => setIsExpenseModalOpen(true)}
-            className="flex items-center space-x-2 bg-white text-black border-2 border-black px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all shadow-lg"
+            className="flex items-center space-x-2 bg-white text-black border-2 border-black px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all shadow-sm"
           >
             <Plus className="h-4 w-4" />
             <span>Record Expense</span>
@@ -381,7 +551,7 @@ export default function AdminFinancialsPage() {
 
           <button
             onClick={() => setIsReinvestmentModalOpen(true)}
-            className="flex items-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-indigo-50 transition-all shadow-lg"
+            className="flex items-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-indigo-50 transition-all shadow-sm"
           >
             <ArrowUpRight className="h-4 w-4" />
             <span>Record Reinvestment</span>
@@ -389,10 +559,27 @@ export default function AdminFinancialsPage() {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center space-x-2 bg-black text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all shadow-lg shadow-black/10"
+            className="flex items-center space-x-2 bg-white text-black border-2 border-black px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all shadow-sm"
           >
             <Download className="h-4 w-4" />
             <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center space-x-2 bg-black text-white px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all shadow-md shadow-black/10"
+          >
+            <Download className="h-4 w-4" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={handleResetFinancials}
+            disabled={isResetting}
+            className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-red-100 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>{isResetting ? "Resetting..." : "Reset"}</span>
           </button>
         </div>
       </div>
@@ -533,11 +720,11 @@ export default function AdminFinancialsPage() {
 
           {/* Ledger Table */}
           <div className="bg-white rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
               <h4 className="text-xs font-black uppercase tracking-widest">
                 Financial Ledger
               </h4>
-              <div className="flex bg-gray-100 p-1 rounded-xl">
+              <div className="flex bg-gray-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto whitespace-nowrap scrollbar-none">
                 {['all', 'revenue', 'expenses', 'reinvestments'].map((tab) => (
                   <button
                     key={tab}

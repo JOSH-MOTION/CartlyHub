@@ -5,7 +5,7 @@ import { X, DollarSign, Calendar, FileText, Loader2, ArrowUpRight, Plus, Refresh
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { collection, addDoc, Timestamp, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { getProducts, getCategories } from "@/utils/firebaseData";
 
 export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {

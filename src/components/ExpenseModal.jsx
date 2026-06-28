@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X, DollarSign, Calendar, Tag, FileText, Loader2 } from "lucide-react";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const EXPENSE_CATEGORIES = [
   { id: "stock", label: "Stock/Inventory", color: "bg-purple-100 text-purple-600" },
