@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, TrendingUp, DollarSign, Trash2, RefreshCcw, ArrowUpRight, Download, Layers } from "lucide-react";
+import { Plus, TrendingUp, DollarSign,TrendingDown, Trash2, RefreshCcw, ArrowUpRight, Download, Layers } from "lucide-react";
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -176,12 +176,43 @@ export default function AdminReinvestmentsPage() {
   const filteredExpenses = filterByDate(expenses);
   const filteredReinvestments = filterByDate(reinvestments);
 
+  // Sort reinvestments to find the oldest entry dynamically
+  const chronologicalReinvestments = [...reinvestments].sort((a, b) => {
+    const dateA = a.date?.toDate ? a.date.toDate() : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date || a.createdAt));
+    const dateB = b.date?.toDate ? b.date.toDate() : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date || b.createdAt));
+    return dateA - dateB;
+  });
+  const oldestReinvestmentId = chronologicalReinvestments[0]?.id;
+
+  // Helper to identify capital inflows
+  const isCapitalInflow = (r) => {
+    if (r.id && r.id === oldestReinvestmentId) return true;
+    if (r.reinvestmentType === "capital" || r.entryType === "inflow" || r.reinvestmentType === "simple") return true;
+    const desc = (r.description || "").toLowerCase();
+    return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
+  };
+
   // Financial Computations
   const grossProfit = filteredTransactions.reduce((sum, tx) => sum + tx.totalProfit, 0);
   const totalExpenses = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
-  const totalReinvested = filteredReinvestments.reduce((sum, re) => sum + re.amount, 0);
+  
+  // Total Capital Injected (Inflow)
+  const totalCapital = filteredReinvestments
+    .filter(isCapitalInflow)
+    .reduce((sum, re) => sum + re.amount, 0);
+
+  // Total Reinvested in Stock (Outflow)
+  const totalReinvested = filteredReinvestments
+    .filter(re => !isCapitalInflow(re))
+    .reduce((sum, re) => sum + re.amount, 0);
+
   const netProfit = grossProfit - totalExpenses;
-  const remainingProfit = netProfit - totalReinvested;
+  
+  // Remaining Profit = Capital Injected - Capital spent on stock
+  const remainingProfit = totalCapital - totalReinvested;
+
+  // Current Company Cash Balance = Initial Capital + Net Profit - Capital spent on stock
+  const totalCompanyCash = totalCapital + netProfit - totalReinvested;
 
   const handleRefetch = () => {
     refetchTransactions();
@@ -352,6 +383,7 @@ export default function AdminReinvestmentsPage() {
     }
 
     filteredReinvestments.forEach(r => {
+      if (isCapitalInflow(r)) return;
       const date = r.date?.toDate ? r.date.toDate() : (r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.date || r.createdAt));
       if (!date) return;
       const m = date.getMonth();
@@ -432,43 +464,56 @@ export default function AdminReinvestmentsPage() {
       ) : (
         <>
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
               <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl w-max">
                 <TrendingUp className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Net profit</p>
-                <h3 className="text-3xl font-black text-emerald-600 tracking-tighter">
+                <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">
                   GH¢{netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
                 <p className="text-[10px] text-gray-400 font-bold uppercase">Sales profit minus expenses</p>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl w-max">
                 <ArrowUpRight className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Reinvested</p>
-                <h3 className="text-3xl font-black text-indigo-600 tracking-tighter">
-                  GH¢{totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Initial Capital</p>
+                <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">
+                  GH¢{totalCapital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Capital reinvested in stock</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Total capital injected</p>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+              <div className="p-3 bg-red-50 text-red-600 rounded-xl w-max">
+                <TrendingDown className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
+                <h3 className="text-2xl font-black text-red-600 tracking-tighter">
+                  GH¢{totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Capital spent on stock</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
               <div className="p-3 bg-green-50 text-green-600 rounded-xl w-max">
                 <DollarSign className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Remaining Profit</p>
-                <h3 className={`text-3xl font-black tracking-tighter ${remainingProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  GH¢{remainingProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Cash Balance</p>
+                <h3 className={`text-2xl font-black tracking-tighter ${totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  GH¢{totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Profit available for withdrawal</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Funds available in company</p>
               </div>
             </div>
           </div>
@@ -584,8 +629,8 @@ export default function AdminReinvestmentsPage() {
                             {entry.description || 'Restocking inventory'}
                           </p>
                         </td>
-                        <td className="px-8 py-4 whitespace-nowrap text-right text-xs font-black text-indigo-600">
-                          -GH¢{entry.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className={`px-8 py-4 whitespace-nowrap text-right text-xs font-black ${isCapitalInflow(entry) ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                          {isCapitalInflow(entry) ? '+' : '-'}GH¢{entry.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="px-8 py-4 whitespace-nowrap text-right">
                           <button

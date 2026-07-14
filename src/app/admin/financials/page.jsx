@@ -97,6 +97,45 @@ export default function AdminFinancialsPage() {
   };
 
   const [isResetting, setIsResetting] = useState(false);
+  const [isResettingSales, setIsResettingSales] = useState(false);
+
+  const handleResetSalesOnly = async () => {
+    const confirmFirst = confirm("This will permanently delete all sales data (online orders and manual sales) to reset your sales profit. Reinvestments and expenses will NOT be touched.\n\nAre you sure you want to proceed?");
+    if (!confirmFirst) return;
+
+    setIsResettingSales(true);
+    const toastId = toast.loading("Resetting sales history...");
+
+    try {
+      // 1. Delete manual sales
+      const manualSalesSnapshot = await getDocs(collection(db, "manualSales"));
+      const manualSalesDeletes = manualSalesSnapshot.docs.map(docRef => deleteDoc(doc(db, "manualSales", docRef.id)));
+
+      // 2. Delete orders
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      const ordersDeletes = ordersSnapshot.docs.map(docRef => deleteDoc(doc(db, "orders", docRef.id)));
+
+      await Promise.all([
+        ...manualSalesDeletes,
+        ...ordersDeletes
+      ]);
+
+      toast.success("Sales history reset successfully!", { id: toastId });
+      
+      queryClient.invalidateQueries(["admin-financials"]);
+      queryClient.invalidateQueries(["orders"]);
+      queryClient.invalidateQueries(["manualSales"]);
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error("Error resetting sales:", error);
+      toast.error("Failed to reset sales records", { id: toastId });
+    } finally {
+      setIsResettingSales(false);
+    }
+  };
 
   const handleResetFinancials = async () => {
     const confirmFirst = confirm("WARNING: This will permanently delete all sales data (online orders and manual sales), recorded expenses, and reinvestments. This action cannot be undone.\n\nAre you sure you want to proceed?");
@@ -291,13 +330,43 @@ export default function AdminFinancialsPage() {
         ? filteredExpenses
         : filteredReinvestments;
 
+  // Sort reinvestments to find the oldest entry dynamically
+  const chronologicalReinvestments = [...reinvestments].sort((a, b) => {
+    const dateA = a.date?.toDate ? a.date.toDate() : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date || a.createdAt));
+    const dateB = b.date?.toDate ? b.date.toDate() : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date || b.createdAt));
+    return dateA - dateB;
+  });
+  const oldestReinvestmentId = chronologicalReinvestments[0]?.id;
+
+  // Helper to identify capital inflows
+  const isCapitalInflow = (r) => {
+    if (r.id && r.id === oldestReinvestmentId) return true;
+    if (r.reinvestmentType === "capital" || r.entryType === "inflow" || r.reinvestmentType === "simple") return true;
+    const desc = (r.description || "").toLowerCase();
+    return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
+  };
+
   // Financial Computations
   const totalRevenue = filteredTransactions.reduce((sum, tx) => sum + tx.totalAmount, 0);
   const grossProfit = filteredTransactions.reduce((sum, tx) => sum + tx.totalProfit, 0);
   const totalExpenses = filteredExpenses.reduce((sum, ex) => sum + ex.totalAmount, 0);
-  const totalReinvested = filteredReinvestments.reduce((sum, re) => sum + re.totalAmount, 0);
+  
+  // Total Capital Injected (Inflows)
+  const totalCapital = filteredReinvestments
+    .filter(isCapitalInflow)
+    .reduce((sum, re) => sum + re.totalAmount, 0);
+
+  // Total Reinvested in Stock (Outflows)
+  const totalReinvested = filteredReinvestments
+    .filter(re => !isCapitalInflow(re))
+    .reduce((sum, re) => sum + re.totalAmount, 0);
+
   const netBalance = grossProfit - totalExpenses;
-  const remainingProfit = netBalance - totalReinvested;
+  const remainingProfit = totalCapital - totalReinvested;
+  
+  // Current Company Cash Balance = Initial Capital + Net Balance - Capital spent on stock
+  const totalCompanyCash = totalCapital + netBalance - totalReinvested;
+  
   const cogs = totalRevenue - grossProfit;
   const avgMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : 0;
 
@@ -431,8 +500,13 @@ export default function AdminFinancialsPage() {
         rowClass = 'expense';
         amountPrefix = '-';
       } else {
-        rowClass = 'reinvestment';
-        amountPrefix = '-';
+        if (isCapitalInflow(t)) {
+          rowClass = 'revenue'; // Green style
+          amountPrefix = '+';
+        } else {
+          rowClass = 'reinvestment';
+          amountPrefix = '-';
+        }
       }
 
       html += `
@@ -472,14 +546,15 @@ export default function AdminFinancialsPage() {
   const handleExportCSV = () => {
     const exportData = displayEntries.map(t => {
       const date = t.createdAt?.toDate ? t.createdAt.toDate() : (t.date?.toDate ? t.date.toDate() : new Date(t.createdAt || t.date));
+      const isInflow = t.type === 'revenue' || (t.type === 'reinvestment' && isCapitalInflow(t));
       return {
         "Date": date.toLocaleDateString('en-US'),
         "Time": date.toLocaleTimeString('en-US'),
         "Reference": t.paymentReference || t.id?.slice(0, 8) || 'N/A',
-        "Type": t.type.toUpperCase(),
+        "Type": t.type === 'reinvestment' && isCapitalInflow(t) ? 'CAPITAL' : t.type.toUpperCase(),
         "Source/Category": t.source === 'manual' ? 'Manual POS' : t.source === 'online' ? 'Online Store' : t.source || t.category || 'N/A',
         "Description": t.description || (t.items ? t.items.map(i => i.productName).join(', ') : 'Direct Sale'),
-        "Amount (GH¢)": (t.type === 'revenue' ? '+' : '-') + t.totalAmount.toFixed(2),
+        "Amount (GH¢)": (isInflow ? '+' : '-') + t.totalAmount.toFixed(2),
         "Net Profit (GH¢)": (t.totalProfit || 0).toFixed(2),
         "COGS (GH¢)": t.type === 'revenue' ? (t.totalAmount - (t.totalProfit || 0)).toFixed(2) : '0.00',
       };
@@ -574,6 +649,15 @@ export default function AdminFinancialsPage() {
           </button>
 
           <button
+            onClick={handleResetSalesOnly}
+            disabled={isResettingSales}
+            className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-amber-100 disabled:opacity-50"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            <span>{isResettingSales ? "Resetting Sales..." : "Reset Sales Only"}</span>
+          </button>
+
+          <button
             onClick={handleResetFinancials}
             disabled={isResetting}
             className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-red-100 disabled:opacity-50"
@@ -639,7 +723,7 @@ export default function AdminFinancialsPage() {
                 <ArrowUpRight className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Reinvested</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
                 <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">
                   GH¢{totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
@@ -651,9 +735,9 @@ export default function AdminFinancialsPage() {
                 <DollarSign className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Remaining Profit</p>
-                <h3 className={`text-2xl font-black tracking-tighter ${remainingProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  GH¢{remainingProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Cash Balance</p>
+                <h3 className={`text-2xl font-black tracking-tighter ${totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  GH¢{totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
               </div>
             </div>
@@ -793,9 +877,11 @@ export default function AdminFinancialsPage() {
                               ? 'bg-green-50 text-green-600' 
                               : entry.type === 'expense' 
                                 ? 'bg-red-50 text-red-600' 
-                                : 'bg-indigo-50 text-indigo-600'
+                                : isCapitalInflow(entry)
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : 'bg-indigo-50 text-indigo-600'
                           }`}>
-                            {entry.type}
+                            {entry.type === 'reinvestment' && isCapitalInflow(entry) ? 'capital' : entry.type}
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-right text-xs font-black ${
@@ -803,9 +889,11 @@ export default function AdminFinancialsPage() {
                             ? 'text-green-600' 
                             : entry.type === 'expense' 
                               ? 'text-red-600' 
-                              : 'text-indigo-600'
+                              : isCapitalInflow(entry)
+                                ? 'text-emerald-600'
+                                : 'text-indigo-600'
                         }`}>
-                          {entry.type === 'revenue' ? '+' : '-'}GH¢{entry.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {entry.type === 'revenue' || (entry.type === 'reinvestment' && isCapitalInflow(entry)) ? '+' : '-'}GH¢{entry.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <button

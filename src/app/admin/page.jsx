@@ -183,10 +183,34 @@ export default function AdminDashboard() {
   const adminManualSales = manualSales.filter(s => s.items?.some(item => adminProductIds.has(item.productId)));
   const totalOrders = adminOnlineOrders.length + adminManualSales.length;
 
+  // Sort reinvestments to find the oldest entry dynamically
+  const chronologicalReinvestments = [...reinvestments].sort((a, b) => {
+    const dateA = a.date?.toDate ? a.date.toDate() : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date || a.createdAt));
+    const dateB = b.date?.toDate ? b.date.toDate() : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date || b.createdAt));
+    return dateA - dateB;
+  });
+  const oldestReinvestmentId = chronologicalReinvestments[0]?.id;
+
+  const isCapitalInflow = (r) => {
+    if (r.id && r.id === oldestReinvestmentId) return true;
+    if (r.reinvestmentType === "capital" || r.entryType === "inflow" || r.reinvestmentType === "simple") return true;
+    const desc = (r.description || "").toLowerCase();
+    return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
+  };
+
   const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const actualNetBalance = totalGrossProfit - totalExpenses;
-  const totalReinvested = reinvestments.reduce((sum, r) => sum + (r.amount || 0), 0);
-  const remainingProfit = actualNetBalance - totalReinvested;
+
+  const totalCapital = reinvestments
+    .filter(isCapitalInflow)
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+
+  const totalReinvested = reinvestments
+    .filter(r => !isCapitalInflow(r))
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+
+  const remainingProfit = totalCapital - totalReinvested;
+  const totalCompanyCash = totalCapital + actualNetBalance - totalReinvested;
   const pendingSellers = sellers.filter(s => !s.isVerified);
 
   // Marketplace Reputation
@@ -271,6 +295,7 @@ export default function AdminDashboard() {
     actualNetBalance: actualNetBalance,
     totalReinvested: totalReinvested,
     remainingProfit: remainingProfit,
+    totalCompanyCash: totalCompanyCash,
     totalOrders: totalOrders,
     totalInventory: products.filter(p => !p.sellerId).length,
     onlineCount: adminOnlineOrders.length,
@@ -385,7 +410,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Reinvested</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
               <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">GH₵{stats.totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
@@ -397,8 +422,8 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Remaining Profit</p>
-              <h3 className={`text-2xl md:text-3xl font-black tracking-tighter ${stats.remainingProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>GH₵{stats.remainingProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Cash Balance</p>
+              <h3 className={`text-2xl md:text-3xl font-black tracking-tighter ${stats.totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>GH₵{stats.totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 

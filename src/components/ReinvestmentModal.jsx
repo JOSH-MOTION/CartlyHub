@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, DollarSign, Calendar, FileText, Loader2, ArrowUpRight, Plus, RefreshCw, Sparkles } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { collection, addDoc, Timestamp, doc, getDoc, updateDoc } from "firebase/firestore";
@@ -19,6 +19,7 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [entryType, setEntryType] = useState("outflow"); // "inflow" or "outflow"
 
   // Restock form state
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -35,6 +36,11 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
   const [newProductQty, setNewProductQty] = useState("");
   const [newProductSupplier, setNewProductSupplier] = useState("");
 
+  // Bulk state
+  const [bulkText, setBulkText] = useState("");
+  const [bulkActionType, setBulkActionType] = useState("new"); // "new" or "restock"
+  const [bulkSelectedProductId, setBulkSelectedProductId] = useState("");
+
   // Fetch admin products
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -44,6 +50,33 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
     },
     enabled: isOpen,
   });
+
+  // Auto-detect and auto-select product if header contains product name in bulk restock
+  useEffect(() => {
+    if (mode === "bulk" && bulkActionType === "restock" && bulkText) {
+      const lines = bulkText.split("\n").map(l => l.trim());
+      const headerLine = lines.find(l => l.includes("📦") || l.toLowerCase().includes("remaining stock"));
+      if (headerLine) {
+        let parsedName = headerLine
+          .replace(/📦/g, "")
+          .replace(/remaining stock/gi, "")
+          .replace(/[:\-：]/g, "")
+          .trim();
+        if (parsedName) {
+          const matchedProd = products.find(p => p.name.toLowerCase() === parsedName.toLowerCase());
+          if (matchedProd) {
+            setBulkSelectedProductId(matchedProd.id);
+            if (matchedProd.costPrice && !newProductCostPrice) {
+              setNewProductCostPrice(matchedProd.costPrice.toString());
+            }
+            if (matchedProd.basePrice && !newProductSellingPrice) {
+              setNewProductSellingPrice(matchedProd.basePrice.toString());
+            }
+          }
+        }
+      }
+    }
+  }, [bulkText, mode, bulkActionType, products]);
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
@@ -63,6 +96,35 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
     }
   }, [selectedProductId, selectedProduct]);
 
+  // Bulk Qty Count
+  const bulkQtyCount = useMemo(() => {
+    if (mode !== "bulk" || !bulkText.trim()) return 0;
+    const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    let qtyCount = 0;
+    for (const line of lines) {
+      try {
+        if (line.includes("📦") || line.toLowerCase().includes("remaining stock") || line.toLowerCase().includes("pieces left")) {
+          continue;
+        }
+        if (line.toLowerCase().startsWith("total:") || line.toLowerCase().startsWith("total ")) {
+          continue;
+        }
+        const cleanLine = line.replace(/^[•\-\*\s]+/, "").trim();
+        const digitIdx = cleanLine.search(/\d/);
+        if (digitIdx === -1) continue;
+        let rest = cleanLine.substring(digitIdx).split("(")[0].trim();
+        const segments = rest.split(",").map(s => s.trim()).filter(s => s.length > 0);
+        for (const segment of segments) {
+          const qtyMatch = segment.match(/\d+/);
+          if (qtyMatch) {
+            qtyCount += Number(qtyMatch[0]);
+          }
+        }
+      } catch (err) {}
+    }
+    return qtyCount;
+  }, [mode, bulkText]);
+
   // Compute calculated amounts dynamically
   let computedAmount = "";
   if (mode === "restock" && selectedProduct && selectedVariantId && restockQty) {
@@ -70,6 +132,8 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
     computedAmount = (cost * Number(restockQty)).toFixed(2);
   } else if (mode === "new" && newProductCostPrice && newProductQty) {
     computedAmount = (Number(newProductCostPrice) * Number(newProductQty)).toFixed(2);
+  } else if (mode === "bulk" && newProductCostPrice && bulkQtyCount) {
+    computedAmount = (Number(newProductCostPrice) * bulkQtyCount).toFixed(2);
   }
 
   if (!isOpen) return null;
@@ -92,7 +156,8 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           date: Timestamp.fromDate(new Date(date)),
           createdAt: Timestamp.now(),
           type: "reinvestment",
-          reinvestmentType: "simple"
+          reinvestmentType: entryType === "inflow" ? "capital" : "simple",
+          entryType: entryType
         });
       }
       else if (mode === "restock") {
@@ -207,8 +272,203 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           linkedQty: qty
         });
       }
+      else if (mode === "bulk") {
+        if (bulkActionType === "restock" && !bulkSelectedProductId) {
+          toast.error("Please select a product to restock.");
+          setIsLoading(false);
+          return;
+        }
+        if (bulkActionType === "new" && !newProductName.trim()) {
+          toast.error("Please enter a Product Name first.");
+          setIsLoading(false);
+          return;
+        }
+        if (!newProductCostPrice || !bulkText.trim() || !date) {
+          toast.error("Please fill in all required fields.");
+          setIsLoading(false);
+          return;
+        }
 
-      toast.success("Reinvestment and inventory updated successfully");
+        const cost = Number(newProductCostPrice);
+        const price = Number(newProductSellingPrice || 0);
+
+        const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+        const parsedVariants = [];
+        let totalQty = 0;
+
+        for (const line of lines) {
+          try {
+            if (line.includes("📦") || line.toLowerCase().includes("remaining stock") || line.toLowerCase().includes("pieces left")) {
+              continue;
+            }
+            if (line.toLowerCase().startsWith("total:") || line.toLowerCase().startsWith("total ")) {
+              continue;
+            }
+
+            const cleanLine = line.replace(/^[•\-\*\s]+/, "").trim();
+            const digitIdx = cleanLine.search(/\d/);
+            if (digitIdx === -1) continue;
+
+            let color = cleanLine.substring(0, digitIdx).trim().replace(/[:\-：]/g, "").trim();
+            if (!color) color = "Standard";
+
+            let rest = cleanLine.substring(digitIdx).split("(")[0].trim();
+            const segments = rest.split(",").map(s => s.trim()).filter(s => s.length > 0);
+
+            for (const segment of segments) {
+              const qtyMatch = segment.match(/\d+/);
+              if (qtyMatch) {
+                const qty = Number(qtyMatch[0]);
+                let size = segment.replace(qtyMatch[0], "").trim();
+                if (!size) size = "Standard";
+
+                if (qty > 0) {
+                  parsedVariants.push({ color, size, qty });
+                  totalQty += qty;
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error parsing bulk line:", line, err);
+          }
+        }
+
+        if (parsedVariants.length === 0) {
+          toast.error("Could not parse any variants.");
+          setIsLoading(false);
+          return;
+        }
+
+        if (bulkActionType === "restock") {
+          const productRef = doc(db, "products", bulkSelectedProductId);
+          const productSnap = await getDoc(productRef);
+          if (!productSnap.exists()) {
+            throw new Error("Selected product not found in database");
+          }
+
+          const productData = productSnap.data();
+          const existingVariants = productData.variants || [];
+          const updatedVariants = [...existingVariants];
+
+          const slug = productData.slug || productData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+
+          for (const parsed of parsedVariants) {
+            const matchIndex = updatedVariants.findIndex(v => 
+              (v.size || "Standard").toLowerCase() === parsed.size.toLowerCase() &&
+              (v.color || "Standard").toLowerCase() === parsed.color.toLowerCase()
+            );
+
+            if (matchIndex > -1) {
+              updatedVariants[matchIndex] = {
+                ...updatedVariants[matchIndex],
+                stock: (Number(updatedVariants[matchIndex].stock) || 0) + parsed.qty
+              };
+            } else {
+              const newVId = `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+              const cleanSize = parsed.size.toUpperCase().replace(/[^A-Z0-9]/g, "") || "STD";
+              updatedVariants.push({
+                vId: newVId,
+                size: parsed.size,
+                color: parsed.color,
+                stock: parsed.qty,
+                price: price || productData.basePrice || 0,
+                sku: `${slug.toUpperCase()}-${cleanSize}-${updatedVariants.length}`,
+                hexColor: ""
+              });
+            }
+          }
+
+          const updates = {
+            variants: updatedVariants,
+            updatedAt: Timestamp.now()
+          };
+
+          if (cost > 0) {
+            updates.costPrice = cost;
+          }
+          if (price > 0) {
+            updates.basePrice = price;
+          }
+
+          await updateDoc(productRef, updates);
+
+          const totalCost = cost * totalQty;
+          const desc = `Bulk restocked inventory for: ${productData.name} (${totalQty} items, Cost: GH¢${cost.toFixed(2)} each)`;
+          await addDoc(collection(db, "reinvestments"), {
+            description: desc,
+            amount: totalCost,
+            date: Timestamp.fromDate(new Date(date)),
+            createdAt: Timestamp.now(),
+            type: "reinvestment",
+            reinvestmentType: "restock",
+            linkedProductId: bulkSelectedProductId,
+            linkedQty: totalQty
+          });
+
+          toast.success(`Successfully bulk restocked ${productData.name} with ${totalQty} items!`);
+        } else {
+          const name = newProductName.trim();
+          const slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)+/g, "");
+
+          const variants = parsedVariants.map((parsed, index) => {
+            const cleanSize = parsed.size.toUpperCase().replace(/[^A-Z0-9]/g, "") || "STD";
+            return {
+              vId: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 4)}`,
+              size: parsed.size,
+              color: parsed.color,
+              stock: parsed.qty,
+              price: price,
+              sku: `${slug.toUpperCase()}-${cleanSize}-${index}`,
+              hexColor: ""
+            };
+          });
+
+          const productPayload = {
+            name: name,
+            slug: slug,
+            description: `Inventory stock added for ${name}`,
+            categoryId: newProductCategoryId || "uncategorized",
+            basePrice: price,
+            costPrice: cost,
+            supplier: newProductSupplier || "N/A",
+            sellerName: "cartly Hub Admin",
+            sellerPhone: "",
+            isFeatured: false,
+            isRental: false,
+            isBulk: false,
+            packSize: 1,
+            images: [],
+            isActive: true,
+            isPrivate: true,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            variants: variants
+          };
+
+          const productDocRef = await addDoc(collection(db, "products"), productPayload);
+
+          const totalCost = cost * totalQty;
+          const desc = `Purchased inventory for new product: ${name} (${totalQty} items, Cost: GH¢${cost.toFixed(2)} each)`;
+          await addDoc(collection(db, "reinvestments"), {
+            description: desc,
+            amount: totalCost,
+            date: Timestamp.fromDate(new Date(date)),
+            createdAt: Timestamp.now(),
+            type: "reinvestment",
+            reinvestmentType: "new_product",
+            linkedProductId: productDocRef.id,
+            linkedQty: totalQty
+          });
+
+          toast.success(`Successfully parsed and added ${name} with ${totalQty} items!`);
+        }
+        setBulkText("");
+      }
+
+      toast.success("Reinvestment and inventory updated successfully");;
       
       // Invalidate React Queries
       queryClient.invalidateQueries(["reinvestments"]);
@@ -219,6 +479,7 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
       // Reset Form fields
       setDescription("");
       setAmount("");
+      setEntryType("outflow");
       setSelectedProductId("");
       setSelectedVariantId("");
       setRestockQty("");
@@ -292,6 +553,16 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           </button>
           <button
             type="button"
+            onClick={() => setMode("bulk")}
+            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+              mode === "bulk" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+            }`}
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>Bulk</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setMode("simple")}
             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
               mode === "simple" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
@@ -308,6 +579,20 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           {/* General mode form */}
           {mode === "simple" && (
             <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Transaction Type
+                </label>
+                <select
+                  className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all outline-none"
+                  value={entryType}
+                  onChange={(e) => setEntryType(e.target.value)}
+                >
+                  <option value="outflow">Inventory/Stock Purchase (Outflow)</option>
+                  <option value="inflow">Capital Injection / Initial Investment (Inflow)</option>
+                </select>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                   Description / Purpose
@@ -614,10 +899,186 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
             </div>
           )}
 
+          {/* Bulk mode form */}
+          {mode === "bulk" && (
+            <div className="space-y-6">
+              <div className="flex bg-gray-100 p-1 rounded-xl w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkActionType("new");
+                    setBulkSelectedProductId("");
+                    setNewProductName("");
+                  }}
+                  className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                    bulkActionType === "new" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+                  }`}
+                >
+                  Create New Product
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkActionType("restock");
+                    setNewProductName("");
+                  }}
+                  className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                    bulkActionType === "restock" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-400 hover:text-black"
+                  }`}
+                >
+                  Restock Existing
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {bulkActionType === "new" ? (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                        Product Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Pleated Linen Shirt"
+                        className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all"
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                        Category (Optional)
+                      </label>
+                      <select
+                        className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all outline-none"
+                        value={newProductCategoryId}
+                        onChange={(e) => setNewProductCategoryId(e.target.value)}
+                      >
+                        <option value="">-- Choose Category --</option>
+                        {categories.filter(c => !c.parentId).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                      Select Product to Restock *
+                    </label>
+                    <select
+                      required
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all outline-none"
+                      value={bulkSelectedProductId}
+                      onChange={(e) => {
+                        setBulkSelectedProductId(e.target.value);
+                        const matched = products.find(p => p.id === e.target.value);
+                        if (matched) {
+                          if (matched.costPrice) setNewProductCostPrice(matched.costPrice.toString());
+                          if (matched.basePrice) setNewProductSellingPrice(matched.basePrice.toString());
+                        }
+                      }}
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products
+                        .filter(p => p.isPrivate === true || p.supplier === "Bulk Import")
+                        .map(p => (
+                          <option key={p.id} value={p.id}>{p.name} (Supplier: {p.supplier || 'N/A'})</option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Unit Cost Price *
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="number"
+                      required
+                      step="any"
+                      placeholder="0.00"
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all"
+                      value={newProductCostPrice}
+                      onChange={(e) => setNewProductCostPrice(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Selling Price (Optional)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="0.00"
+                      className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all"
+                      value={newProductSellingPrice}
+                      onChange={(e) => setNewProductSellingPrice(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Paste Variant Counts here *
+                </label>
+                <textarea
+                  rows="4"
+                  required
+                  placeholder="e.g. Black: 5 Large, 3 XL"
+                  className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all resize-none font-mono"
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Calculated Cost
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder="GH¢0.00"
+                      className="w-full bg-indigo-50/50 text-indigo-600 border-none rounded-2xl py-4 pl-12 pr-4 font-black text-sm outline-none"
+                      value={computedAmount ? `GH¢${computedAmount}` : ""}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                    Purchase Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="w-full bg-gray-50 border-none rounded-2xl py-4 px-4 font-bold text-sm focus:ring-2 focus:ring-black transition-all"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || (mode === "bulk" && bulkActionType === "restock" && !bulkSelectedProductId) || (mode === "bulk" && bulkActionType === "new" && !newProductName.trim())}
             className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2 flex-shrink-0"
           >
             {isLoading ? (
@@ -626,7 +1087,7 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
               <>
                 <DollarSign className="h-4 w-4" />
                 <span>
-                  {mode === "restock" ? "Reinvest & Restock Stock" : mode === "new" ? "Reinvest & Create Product" : "Confirm Reinvestment"}
+                  {mode === "restock" ? "Reinvest & Restock Stock" : mode === "new" ? "Reinvest & Create Product" : mode === "bulk" ? (bulkActionType === "restock" ? "Bulk Reinvest & Restock" : "Bulk Reinvest & Create") : "Confirm Reinvestment"}
                 </span>
               </>
             )}
