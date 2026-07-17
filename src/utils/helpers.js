@@ -75,3 +75,49 @@ export const getTimeAgo = (date) => {
   
   return start.toLocaleDateString('en-GH', { day: 'numeric', month: 'short' });
 };
+
+/**
+ * Validates a list of variant objects for Cartly Hub stock guidelines.
+ * Strict "NO MEDIUMS" rule.
+ * Large sizes must be kept to a minimum compared to XL/XXL.
+ * Primary focus is XL and XXL.
+ * @param {Array} variants - Array of variant objects { size, stock, qty, ... }
+ * @returns {Object} - Sizing analysis details.
+ */
+export const validateInventorySizes = (variants) => {
+  if (!variants || !Array.isArray(variants)) {
+    return { hasMedium: false, hasLarge: false, largeQty: 0, xlXxlQty: 0, isWeightedXlXxl: true };
+  }
+
+  let hasMedium = false;
+  let hasLarge = false;
+  let largeQty = 0;
+  let xlXxlQty = 0;
+
+  for (const v of variants) {
+    const sizeUpper = (v.size || "").trim().toUpperCase();
+    const qty = Number(v.stock !== undefined ? v.stock : (v.qty !== undefined ? v.qty : 0));
+
+    // Check for Medium: exact matches for "M", "MED", "MEDIUM"
+    if (sizeUpper === "M" || sizeUpper === "MED" || sizeUpper === "MEDIUM") {
+      hasMedium = true;
+    }
+    // Check for Large: exact matches for "L", "LARGE" (avoiding matching XL/XXL)
+    if (sizeUpper === "L" || sizeUpper === "LARGE") {
+      hasLarge = true;
+      largeQty += qty;
+    }
+    // Check for XL/XXL focus
+    if (["XL", "XXL", "2XL", "XXXL", "3XL", "X-LARGE", "XX-LARGE", "XXX-LARGE"].includes(sizeUpper)) {
+      xlXxlQty += qty;
+    }
+  }
+
+  return {
+    hasMedium,
+    hasLarge,
+    largeQty,
+    xlXxlQty,
+    isWeightedXlXxl: xlXxlQty >= largeQty
+  };
+};

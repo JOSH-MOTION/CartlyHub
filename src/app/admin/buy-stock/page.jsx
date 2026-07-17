@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { getProducts, getCategories } from "@/utils/firebaseData";
 import { useRouter } from "next/navigation";
+import { validateInventorySizes } from "@/utils/helpers";
 
 export default function AdminBuyStockPage() {
   const router = useRouter();
@@ -184,6 +185,21 @@ export default function AdminBuyStockPage() {
           return;
         }
 
+        const variantObj = selectedProduct?.variants?.find(v => v.vId === selectedVariantId);
+        const sizeUpper = (variantObj?.size || "").trim().toUpperCase();
+        if (sizeUpper === "M" || sizeUpper === "MED" || sizeUpper === "MEDIUM") {
+          toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+          setIsLoading(false);
+          return;
+        }
+        if (sizeUpper === "L" || sizeUpper === "LARGE") {
+          const proceed = confirm("Large (L) sizes must be kept to a strict minimum under the Cartly Hub policy. Do you have explicit authorization to proceed with restocking Large sizes?");
+          if (!proceed) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
         const qty = Number(restockQty);
         const costPrice = Number(selectedProduct.costPrice || 0);
         const amount = costPrice * qty;
@@ -234,6 +250,20 @@ export default function AdminBuyStockPage() {
           toast.error("Please fill in all required product details and variant quantities");
           setIsLoading(false);
           return;
+        }
+
+        const sizeCheck = validateInventorySizes(newVariants);
+        if (sizeCheck.hasMedium) {
+          toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+          setIsLoading(false);
+          return;
+        }
+        if (sizeCheck.hasLarge && !sizeCheck.isWeightedXlXxl) {
+          const proceed = confirm(`Large (L) sizes are set to ${sizeCheck.largeQty} units, but XL & XXL are only ${sizeCheck.xlXxlQty} units. Under Cartly Hub policies, Large (L) sizes must be kept to a strict minimum and stock focus must be heavily weighted toward XL & XXL. Do you have explicit permission to proceed with this sizing ratio?`);
+          if (!proceed) {
+            setIsLoading(false);
+            return;
+          }
         }
 
         const cost = Number(newProductCostPrice);
@@ -393,6 +423,20 @@ export default function AdminBuyStockPage() {
       toast.error("Could not parse any variants. Please make sure the format is correct (e.g., 'Black: 5 Large, 3 XL').");
       setIsLoading(false);
       return;
+    }
+
+    const sizeCheck = validateInventorySizes(parsedVariants);
+    if (sizeCheck.hasMedium) {
+      toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+      setIsLoading(false);
+      return;
+    }
+    if (sizeCheck.hasLarge && !sizeCheck.isWeightedXlXxl) {
+      const proceed = confirm(`Large (L) sizes are set to ${sizeCheck.largeQty} units, but XL & XXL are only ${sizeCheck.xlXxlQty} units. Under Cartly Hub policies, Large (L) sizes must be kept to a strict minimum and stock focus must be heavily weighted toward XL & XXL. Do you have explicit permission to proceed with this sizing ratio?`);
+      if (!proceed) {
+        setIsLoading(false);
+        return;
+      }
     }
 
     try {

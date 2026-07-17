@@ -32,6 +32,23 @@ export default function AdminFinancialsPage() {
 
 
   const queryClient = useQueryClient();
+  const [simUnitCost, setSimUnitCost] = useState("");
+  const [simQty, setSimQty] = useState("");
+  const [allowProfitDeduction, setAllowProfitDeduction] = useState(false);
+  const [companySavingsStr, setCompanySavingsStr] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("cartly-savings") || "0";
+    }
+    return "0";
+  });
+  const companySavings = Number(companySavingsStr) || 0;
+
+  const handleSavingsChange = (val) => {
+    setCompanySavingsStr(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cartly-savings", val);
+    }
+  };
 
   // Delete ledger entry mutation
   const deleteLedgerEntryMutation = useMutation({
@@ -362,13 +379,67 @@ export default function AdminFinancialsPage() {
     .reduce((sum, re) => sum + re.totalAmount, 0);
 
   const netBalance = grossProfit - totalExpenses;
-  const remainingProfit = totalCapital - totalReinvested;
+  const cogs = totalRevenue - grossProfit;
+
+  // Cartly Hub Custom Accounting Double-Pot Calculations
+  const rawCostCapitalPool = totalCapital + cogs - totalReinvested;
+  const costCapitalPool = Math.max(0, rawCostCapitalPool);
+
+  const restockDeficit = Math.max(0, totalReinvested - (totalCapital + cogs));
+  const savingsUsed = Math.min(restockDeficit, companySavings);
+  const remainingDeficitAfterSavings = Math.max(0, restockDeficit - savingsUsed);
+  const borrowedFromProfit = remainingDeficitAfterSavings;
+
+  const pureProfitPool = grossProfit - totalExpenses - borrowedFromProfit;
   
-  // Current Company Cash Balance = Initial Capital + Net Balance - Capital spent on stock
+  // Current Company Cash Balance = Initial Capital + Net Profit - Capital spent on stock
   const totalCompanyCash = totalCapital + netBalance - totalReinvested;
   
-  const cogs = totalRevenue - grossProfit;
+  // Remaining profit displays the Pure Profit Pool balance under Cartly Hub rules
+  const remainingProfit = pureProfitPool;
+  
   const avgMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : 0;
+
+  // Simulator Calculations
+  const simCost = Number(simUnitCost) || 0;
+  const simTargetQty = Number(simQty) || 0;
+  const simTargetTotal = simCost * simTargetQty;
+  
+  let simCalculatedQty = 0;
+  let simTotalCost = 0;
+  let simDrawnCapital = 0;
+  let simDrawnSavings = 0;
+  let simDrawnProfit = 0;
+
+  if (simCost > 0 && simTargetQty > 0) {
+    if (allowProfitDeduction) {
+      simCalculatedQty = simTargetQty;
+      simTotalCost = simTargetTotal;
+      simDrawnCapital = Math.min(simTotalCost, costCapitalPool);
+      const remainingAfterCapital = Math.max(0, simTotalCost - simDrawnCapital);
+      simDrawnSavings = Math.min(remainingAfterCapital, companySavings);
+      simDrawnProfit = Math.max(0, remainingAfterCapital - simDrawnSavings);
+    } else {
+      const maxSafeBudget = costCapitalPool + companySavings;
+      if (simTargetTotal <= maxSafeBudget) {
+        simCalculatedQty = simTargetQty;
+        simTotalCost = simTargetTotal;
+        simDrawnCapital = Math.min(simTotalCost, costCapitalPool);
+        const remainingAfterCapital = Math.max(0, simTotalCost - simDrawnCapital);
+        simDrawnSavings = Math.min(remainingAfterCapital, companySavings);
+        simDrawnProfit = 0;
+      } else {
+        simCalculatedQty = Math.floor(maxSafeBudget / simCost);
+        simTotalCost = simCalculatedQty * simCost;
+        simDrawnCapital = Math.min(simTotalCost, costCapitalPool);
+        const remainingAfterCapital = Math.max(0, simTotalCost - simDrawnCapital);
+        simDrawnSavings = Math.min(remainingAfterCapital, companySavings);
+        simDrawnProfit = 0;
+      }
+    }
+  }
+
+  const simIsSafe = simDrawnProfit === 0;
 
   // Expense Pi Chart Data
   const expenseBreakdown = filteredExpenses.reduce((acc, exp) => {
@@ -697,12 +768,33 @@ export default function AdminFinancialsPage() {
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
-              <div className="p-3 bg-red-50 rounded-xl text-red-600 w-max">
+              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 w-max">
                 <Layers className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost of Goods (COGS)</p>
-                <h3 className="text-2xl font-black text-red-600 tracking-tighter">GH¢{cogs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
+                <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">GH¢{costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Locked restock pot</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-600 w-max">
+                <ArrowUpRight className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Savings</p>
+                <div className="flex items-center space-x-1 border-b border-transparent hover:border-gray-200 focus-within:border-black transition-colors pb-0.5 mt-1">
+                  <span className="text-2xl font-black text-blue-600">₵</span>
+                  <input
+                    type="number"
+                    className="text-2xl font-black text-blue-600 bg-transparent outline-none w-full p-0 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={companySavingsStr}
+                    onChange={(e) => handleSavingsChange(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-[9px] text-gray-400 font-bold uppercase">Priority 2 backup pot</p>
               </div>
             </div>
 
@@ -711,22 +803,11 @@ export default function AdminFinancialsPage() {
                 <TrendingUp className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Actual Net Balance</p>
-                <h3 className={`text-2xl font-black tracking-tighter ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  GH¢{netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
+                <h3 className={`text-2xl font-black tracking-tighter ${pureProfitPool >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  GH¢{pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
-              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 w-max">
-                <ArrowUpRight className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
-                <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">
-                  GH¢{totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Safe profit earnings</p>
               </div>
             </div>
 
@@ -739,6 +820,7 @@ export default function AdminFinancialsPage() {
                 <h3 className={`text-2xl font-black tracking-tighter ${totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   GH¢{totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Total liquid company cash</p>
               </div>
             </div>
           </div>
@@ -799,6 +881,162 @@ export default function AdminFinancialsPage() {
                   </div>
                 )}
               </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Restock Funding Calculator & Guardrail */}
+          <div className="bg-white p-8 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-indigo-100 bg-gradient-to-r from-indigo-50/20 via-white to-white space-y-6">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-500 mb-1 block">
+                Simulator
+              </span>
+              <h4 className="text-lg font-black uppercase tracking-tighter text-gray-900">
+                Restock Funding Calculator & Profit Guardrail
+              </h4>
+              <p className="text-xs text-gray-500 font-medium">
+                Simulate bulk restocking orders under the Cartly Hub Double-Pot sequential priority rules.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Simulator Inputs */}
+              <div className="space-y-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Order Parameters</h5>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-600">Unit Cost (GH₵)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-black"
+                    value={simUnitCost}
+                    onChange={(e) => setSimUnitCost(e.target.value)}
+                    placeholder="e.g. 35"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-600">Target Quantity (pcs)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-black"
+                    value={simQty}
+                    onChange={(e) => setSimQty(e.target.value)}
+                    placeholder="e.g. 100"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700">Allow Profit Deduction</label>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">Priority 3 Pool usage</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAllowProfitDeduction(!allowProfitDeduction)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${allowProfitDeduction ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowProfitDeduction ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Calculator Output */}
+              <div className="lg:col-span-2 space-y-6">
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Restock Funding Analysis</h5>
+                {(!simUnitCost || !simQty || Number(simUnitCost) <= 0 || Number(simQty) <= 0) ? (
+                  <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-100 rounded-2xl text-gray-400 text-xs font-bold uppercase">
+                    Enter positive unit cost and quantity to run simulation
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Funding Allocation Details */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                        <span className="text-xs font-bold text-gray-500 uppercase">Simulated Quantity:</span>
+                        <span className="text-sm font-black text-black">{simCalculatedQty} units</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                        <span className="text-xs font-bold text-gray-500 uppercase">Total Cash Required:</span>
+                        <span className="text-sm font-black text-black">GH₵{simTotalCost.toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-bold text-indigo-600 uppercase">1. Cost Capital Pool:</span>
+                          <span className="font-black text-black">GH₵{simDrawnCapital.toFixed(2)}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-indigo-600 h-full" style={{ width: `${simTotalCost > 0 ? (simDrawnCapital / simTotalCost) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-bold text-blue-600 uppercase">2. Company Savings Pot:</span>
+                          <span className="font-black text-black">GH₵{simDrawnSavings.toFixed(2)}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-blue-600 h-full" style={{ width: `${simTotalCost > 0 ? (simDrawnSavings / simTotalCost) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-bold text-violet-600 uppercase">3. Pure Profit Pool:</span>
+                          <span className="font-black text-black">GH₵{simDrawnProfit.toFixed(2)}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-violet-600 h-full" style={{ width: `${simTotalCost > 0 ? (simDrawnProfit / simTotalCost) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Guardrail Decisions Card */}
+                    <div className="bg-gray-50 p-6 rounded-2xl flex flex-col justify-between border border-gray-100" style={{ backgroundColor: '#F9FAFB' }}>
+                      <div>
+                        <h6 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Guardrail Evaluation</h6>
+                        {simIsSafe ? (
+                          <div className="space-y-2">
+                            <span className="inline-flex px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded-full text-[9px] font-black uppercase tracking-widest">
+                              Fully Funded (Safe)
+                            </span>
+                            <p className="text-xs font-bold text-gray-600 leading-relaxed uppercase">
+                              This restock is fully covered by your Cost Capital Pool and Company Savings. Your Pure Profit Pool is completely untouched!
+                            </p>
+                          </div>
+                        ) : allowProfitDeduction ? (
+                          <div className="space-y-2">
+                            <span className="inline-flex px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-widest">
+                              Profit Deducted (Allowed)
+                            </span>
+                            <p className="text-xs font-bold text-gray-600 leading-relaxed uppercase">
+                              Funding exceeded Capital and Savings. Borrowing <span className="text-amber-600 font-black">GH₵{simDrawnProfit.toFixed(2)}</span> from your Pure Profit Pool to cover the remaining balance.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <span className="inline-flex px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
+                              Guardrail Triggered
+                            </span>
+                            <p className="text-[11px] font-black text-red-600 leading-tight uppercase">
+                              Scaled down order from {simQty} to {simCalculatedQty} units.
+                            </p>
+                            <p className="text-xs font-bold text-gray-500 leading-normal uppercase">
+                              Profit guardrail prevents borrowing from the Pure Profit Pool. The order has been dynamically resized to fit available safe funds (GH₵{(costCapitalPool + companySavings).toFixed(2)}).
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Display Safe Funding Total */}
+                      <div className="pt-4 border-t border-gray-200/50 mt-4 flex justify-between items-baseline">
+                        <span className="text-[9px] font-black text-gray-400 uppercase">Effective Spend:</span>
+                        <span className="text-lg font-black text-black">GH₵{(simCalculatedQty * Number(simUnitCost)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

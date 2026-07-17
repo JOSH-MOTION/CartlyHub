@@ -7,6 +7,7 @@ import { collection, addDoc, Timestamp, doc, getDoc, updateDoc } from "firebase/
 import { db } from "../lib/firebase";
 import { toast } from "sonner";
 import { getProducts, getCategories } from "@/utils/firebaseData";
+import { validateInventorySizes } from "@/utils/helpers";
 
 export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
   const queryClient = useQueryClient();
@@ -167,6 +168,21 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           return;
         }
 
+        const variantObj = selectedProduct?.variants?.find(v => v.vId === selectedVariantId);
+        const sizeUpper = (variantObj?.size || "").trim().toUpperCase();
+        if (sizeUpper === "M" || sizeUpper === "MED" || sizeUpper === "MEDIUM") {
+          toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+          setIsLoading(false);
+          return;
+        }
+        if (sizeUpper === "L" || sizeUpper === "LARGE") {
+          const proceed = confirm("Large (L) sizes must be kept to a strict minimum under the Cartly Hub policy. Do you have explicit authorization to proceed with restocking Large sizes?");
+          if (!proceed) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
         const qty = Number(restockQty);
         const costPrice = Number(selectedProduct.costPrice || 0);
         const totalCost = costPrice * qty;
@@ -215,6 +231,20 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           toast.error("Please fill in all required fields for the new product");
           setIsLoading(false);
           return;
+        }
+
+        const sizeUpper = (newProductSize || "").trim().toUpperCase();
+        if (sizeUpper === "M" || sizeUpper === "MED" || sizeUpper === "MEDIUM") {
+          toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+          setIsLoading(false);
+          return;
+        }
+        if (sizeUpper === "L" || sizeUpper === "LARGE") {
+          const proceed = confirm("Large (L) sizes must be kept to a strict minimum under the Cartly Hub policy. Do you have explicit authorization to proceed with restocking Large sizes?");
+          if (!proceed) {
+            setIsLoading(false);
+            return;
+          }
         }
 
         const qty = Number(newProductQty);
@@ -337,6 +367,20 @@ export default function ReinvestmentModal({ isOpen, onClose, onSuccess }) {
           toast.error("Could not parse any variants.");
           setIsLoading(false);
           return;
+        }
+
+        const sizeCheck = validateInventorySizes(parsedVariants);
+        if (sizeCheck.hasMedium) {
+          toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+          setIsLoading(false);
+          return;
+        }
+        if (sizeCheck.hasLarge && !sizeCheck.isWeightedXlXxl) {
+          const proceed = confirm(`Large (L) sizes are set to ${sizeCheck.largeQty} units, but XL & XXL are only ${sizeCheck.xlXxlQty} units. Under Cartly Hub policies, Large (L) sizes must be kept to a strict minimum and stock focus must be heavily weighted toward XL & XXL. Do you have explicit permission to proceed with this sizing ratio?`);
+          if (!proceed) {
+            setIsLoading(false);
+            return;
+          }
         }
 
         if (bulkActionType === "restock") {

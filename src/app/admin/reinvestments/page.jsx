@@ -192,6 +192,12 @@ export default function AdminReinvestmentsPage() {
     return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
   };
 
+  // Get Company Savings from localStorage (client-side only)
+  let companySavings = 0;
+  if (typeof window !== "undefined") {
+    companySavings = Number(localStorage.getItem("cartly-savings") || "0");
+  }
+
   // Financial Computations
   const grossProfit = filteredTransactions.reduce((sum, tx) => sum + tx.totalProfit, 0);
   const totalExpenses = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
@@ -207,12 +213,23 @@ export default function AdminReinvestmentsPage() {
     .reduce((sum, re) => sum + re.amount, 0);
 
   const netProfit = grossProfit - totalExpenses;
-  
-  // Remaining Profit = Capital Injected - Capital spent on stock
-  const remainingProfit = totalCapital - totalReinvested;
+  const cogs = filteredTransactions.reduce((sum, tx) => sum + (tx.totalAmount - tx.totalProfit), 0);
 
+  // Cartly Hub Custom Accounting Double-Pot Calculations
+  const rawCostCapitalPool = totalCapital + cogs - totalReinvested;
+  const costCapitalPool = Math.max(0, rawCostCapitalPool);
+
+  const restockDeficit = Math.max(0, totalReinvested - (totalCapital + cogs));
+  const savingsUsed = Math.min(restockDeficit, companySavings);
+  const remainingDeficitAfterSavings = Math.max(0, restockDeficit - savingsUsed);
+  const borrowedFromProfit = remainingDeficitAfterSavings;
+
+  const pureProfitPool = grossProfit - totalExpenses - borrowedFromProfit;
+  
   // Current Company Cash Balance = Initial Capital + Net Profit - Capital spent on stock
   const totalCompanyCash = totalCapital + netProfit - totalReinvested;
+  
+  const remainingProfit = pureProfitPool;
 
   const handleRefetch = () => {
     refetchTransactions();
@@ -466,41 +483,41 @@ export default function AdminReinvestmentsPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl w-max">
-                <TrendingUp className="h-6 w-6" />
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl w-max">
+                <Layers className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Net profit</p>
-                <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">
-                  GH¢{netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
+                <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">
+                  GH¢{costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Sales profit minus expenses</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Locked restock reserve</p>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl w-max">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl w-max">
                 <ArrowUpRight className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Initial Capital</p>
-                <h3 className="text-2xl font-black text-indigo-600 tracking-tighter">
-                  GH¢{totalCapital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Savings</p>
+                <h3 className="text-2xl font-black text-blue-600 tracking-tighter">
+                  GH¢{companySavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Total capital injected</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Priority 2 backup pot</p>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.03)] border border-gray-100 space-y-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-xl w-max">
-                <TrendingDown className="h-6 w-6" />
+              <div className="p-3 bg-green-50 text-green-600 rounded-xl w-max">
+                <TrendingUp className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
-                <h3 className="text-2xl font-black text-red-600 tracking-tighter">
-                  GH¢{totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
+                <h3 className="text-2xl font-black text-green-600 tracking-tighter">
+                  GH¢{pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Capital spent on stock</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Safe profit earnings</p>
               </div>
             </div>
 
@@ -513,7 +530,7 @@ export default function AdminReinvestmentsPage() {
                 <h3 className={`text-2xl font-black tracking-tighter ${totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   GH¢{totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Funds available in company</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Total liquid company cash</p>
               </div>
             </div>
           </div>

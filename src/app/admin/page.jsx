@@ -198,6 +198,12 @@ export default function AdminDashboard() {
     return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
   };
 
+  // Get Company Savings from localStorage (client-side only)
+  let companySavings = 0;
+  if (typeof window !== "undefined") {
+    companySavings = Number(localStorage.getItem("cartly-savings") || "0");
+  }
+
   const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const actualNetBalance = totalGrossProfit - totalExpenses;
 
@@ -209,7 +215,23 @@ export default function AdminDashboard() {
     .filter(r => !isCapitalInflow(r))
     .reduce((sum, r) => sum + (r.amount || 0), 0);
 
-  const remainingProfit = totalCapital - totalReinvested;
+  // COGS for admin items
+  const cogs = totalRevenue - totalGrossProfit;
+
+  // Cost Capital Pool
+  const rawCostCapitalPool = totalCapital + cogs - totalReinvested;
+  const costCapitalPool = Math.max(0, rawCostCapitalPool);
+
+  // Deficit calculation
+  const restockDeficit = Math.max(0, totalReinvested - (totalCapital + cogs));
+  const savingsUsed = Math.min(restockDeficit, companySavings);
+  const remainingDeficitAfterSavings = Math.max(0, restockDeficit - savingsUsed);
+  const borrowedFromProfit = remainingDeficitAfterSavings;
+
+  // Pure Profit Pool
+  const pureProfitPool = totalGrossProfit - totalExpenses - borrowedFromProfit;
+
+  const remainingProfit = pureProfitPool;
   const totalCompanyCash = totalCapital + actualNetBalance - totalReinvested;
   const pendingSellers = sellers.filter(s => !s.isVerified);
 
@@ -296,6 +318,9 @@ export default function AdminDashboard() {
     totalReinvested: totalReinvested,
     remainingProfit: remainingProfit,
     totalCompanyCash: totalCompanyCash,
+    costCapitalPool: costCapitalPool,
+    companySavings: companySavings,
+    pureProfitPool: pureProfitPool,
     totalOrders: totalOrders,
     totalInventory: products.filter(p => !p.sellerId).length,
     onlineCount: adminOnlineOrders.length,
@@ -366,7 +391,7 @@ export default function AdminDashboard() {
 
       <div className="space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-7 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-8 gap-4 md:gap-8">
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
               <div className="p-3 bg-gray-50 rounded-xl text-black">
@@ -393,25 +418,37 @@ export default function AdminDashboard() {
 
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-green-50 rounded-xl text-green-600">
-                <DollarSign className="h-6 w-6" />
+              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+                <Package className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Actual Net Balance</p>
-              <h3 className="text-2xl md:text-3xl font-black text-green-600 tracking-tighter">GH₵{stats.actualNetBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
+              <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">GH₵{stats.costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
                 <ArrowUpRight className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reinvested in Stock</p>
-              <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">GH₵{stats.totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Savings</p>
+              <h3 className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">GH₵{stats.companySavings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-green-50 rounded-xl text-green-600">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
+              <h3 className="text-2xl md:text-3xl font-black text-green-600 tracking-tighter">GH₵{stats.pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 

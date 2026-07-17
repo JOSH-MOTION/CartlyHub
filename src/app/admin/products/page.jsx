@@ -21,10 +21,13 @@ import {
 } from "lucide-react";
 import useUpload from "@/utils/useUpload";
 import { toast } from "sonner";
-import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getAllSellers } from "@/utils/firebaseData";
+import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getAllSellers, getOrders, getManualSales, createManualSale } from "@/utils/firebaseData";
 import ColorPicker from "@/components/ColorPicker";
 import CustomSelect from "@/components/CustomSelect";
 import { PRODUCT_SIZES, GHANA_REGIONS } from "@/utils/constants";
+import { validateInventorySizes } from "@/utils/helpers";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -72,6 +75,159 @@ export default function AdminProductsPage() {
     queryFn: async () => {
       return await getCategories();
     },
+  });
+
+  // Fetch expenses
+  const { data: expenses = [] } = useQuery({
+    queryKey: ["expenses"],
+    queryFn: async () => {
+      const querySnapshot = await getDocs(collection(db, 'expenses'));
+      return querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        amount: Number(doc.data().amount || 0)
+      }));
+    },
+  });
+
+  // Fetch reinvestments
+  const { data: reinvestments = [] } = useQuery({
+    queryKey: ["reinvestments"],
+    queryFn: async () => {
+      const querySnapshot = await getDocs(collection(db, 'reinvestments'));
+      return querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        amount: Number(doc.data().amount || 0)
+      }));
+    },
+  });
+
+  // Fetch consolidated transactions
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["admin-financials"],
+    queryFn: async () => {
+      try {
+        const [onlineOrders, manualSales] = await Promise.all([
+          getOrders(),
+          getManualSales()
+        ]);
+        
+        const processedOnline = onlineOrders.map(o => ({ 
+          ...o, 
+          source: 'online',
+          type: 'revenue',
+          totalAmount: Number(o.totalAmount || 0),
+          totalProfit: Number(o.totalProfit || 0)
+        }));
+        
+        const processedManual = manualSales.map(m => ({
+          ...m,
+          source: 'manual',
+          type: 'revenue',
+          totalAmount: Number(m.totalAmount || 0),
+          totalProfit: Number(m.totalProfit || 0)
+        }));
+        
+        return [...processedOnline, ...processedManual];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const sellOneMutation = useMutation({
+    mutationFn: async ({ product, variant }) => {
+      const cost = Number(product.costPrice || 0);
+      const price = Number(variant.price || product.basePrice || 0);
+      const profit = price - cost;
+
+      const salePayload = {
+        customerName: "Quick POS Tick-to-Sell",
+        customerPhone: "N/A",
+        totalAmount: price,
+        totalProfit: profit,
+        saleType: "manual",
+        items: [
+          {
+            productId: product.id,
+            productName: product.name,
+            variantId: variant.vId,
+            variantInfo: {
+              size: variant.size || "Standard",
+              color: variant.color || "Standard",
+            },
+            price: price,
+            quantity: 1,
+            costPrice: cost,
+            profit: profit,
+          }
+        ]
+      };
+
+      return await createManualSale(salePayload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["admin", "products"]);
+      queryClient.invalidateQueries(["admin-financials"]);
+      queryClient.invalidateQueries(["reinvestments"]);
+      queryClient.invalidateQueries(["expenses"]);
+      toast.success("POS sale recorded instantly!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to record POS sale");
+    }
+  });
+
+  const adjustStockMutation = useMutation({
+    mutationFn: async ({ product, variant, adjustment }) => {
+      const productRef = doc(db, "products", product.id);
+      const productSnap = await getDoc(productRef);
+      if (!productSnap.exists()) {
+        throw new Error("Product not found");
+      }
+
+      const productData = productSnap.data();
+      const updatedVariants = productData.variants.map(v => {
+        if (v.vId === variant.vId) {
+          return {
+            ...v,
+            stock: Math.max(0, (Number(v.stock) || 0) + adjustment)
+          };
+        }
+        return v;
+      });
+
+      await updateDoc(productRef, {
+        variants: updatedVariants,
+        updatedAt: Timestamp.now()
+      });
+
+      if (adjustment > 0) {
+        const cost = Number(product.costPrice || 0);
+        const desc = `Adjusted stock (+1): ${product.name} (Size: ${variant.size || "Standard"}, Color: ${variant.color || "Standard"})`;
+        await addDoc(collection(db, "reinvestments"), {
+          description: desc,
+          amount: cost,
+          date: Timestamp.now(),
+          createdAt: Timestamp.now(),
+          type: "reinvestment",
+          reinvestmentType: "restock",
+          linkedProductId: product.id,
+          linkedVariantId: variant.vId,
+          linkedQty: 1
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["admin", "products"]);
+      queryClient.invalidateQueries(["reinvestments"]);
+      queryClient.invalidateQueries(["admin-financials"]);
+      toast.success("Stock count adjusted!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to adjust stock");
+    }
   });
 
   const mainCategories = categories?.filter(c => !c.parentId) || [];
@@ -148,6 +304,25 @@ export default function AdminProductsPage() {
     if (data.basePrice <= 0) {
       toast.error('Price must be greater than 0');
       return false;
+    }
+
+    // Cartly Hub Custom Stock Restrictions
+    if (data.hasVariants && data.variants && data.variants.length > 0) {
+      const { hasMedium, hasLarge, largeQty, xlXxlQty, isWeightedXlXxl } = validateInventorySizes(data.variants);
+
+      if (hasMedium) {
+        toast.error("Medium (M) sizes are strictly forbidden under the Cartly Hub policy.");
+        return false;
+      }
+
+      if (hasLarge) {
+        if (!isWeightedXlXxl) {
+          const proceed = confirm(`Large (L) sizes are set to ${largeQty} units, but XL & XXL are only ${xlXxlQty} units. Under Cartly Hub policies, Large (L) sizes must be kept to a strict minimum and stock focus must be heavily weighted toward XL & XXL. Do you have explicit permission to proceed with this sizing ratio?`);
+          if (!proceed) {
+            return false;
+          }
+        }
+      }
     }
     return true;
   };
@@ -250,6 +425,12 @@ export default function AdminProductsPage() {
     setForm({ ...form, variants: form.variants.filter((v) => v.vId !== vId) });
   };
 
+  // Get Company Savings from localStorage (client-side only)
+  let companySavings = 0;
+  if (typeof window !== "undefined") {
+    companySavings = Number(localStorage.getItem("cartly-savings") || "0");
+  }
+
   // Calculate inventory stats
   const targetProducts = products?.filter(p => sellerIdFilter ? p.sellerId === sellerIdFilter : !p.sellerId) || [];
   const activeProducts = targetProducts.filter(p => p.isActive !== false);
@@ -258,21 +439,54 @@ export default function AdminProductsPage() {
     return sum + (p.variants?.reduce((acc, v) => acc + (Number(v.stock) || 0), 0) || 0);
   }, 0);
 
-  const capitalTiedUp = activeProducts.reduce((sum, p) => {
-    const cost = Number(p.costPrice || 0);
-    const productStock = p.variants?.reduce((acc, v) => acc + (Number(v.stock) || 0), 0) || 0;
-    return sum + (cost * productStock);
-  }, 0);
+  // Helper to identify capital inflows
+  const chronologicalReinvestments = [...reinvestments].sort((a, b) => {
+    const dateA = a.date?.toDate ? a.date.toDate() : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date || a.createdAt));
+    const dateB = b.date?.toDate ? b.date.toDate() : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date || b.createdAt));
+    return dateA - dateB;
+  });
+  const oldestReinvestmentId = chronologicalReinvestments[0]?.id;
 
-  const expectedSellingValue = activeProducts.reduce((sum, p) => {
-    const variantsValue = p.variants?.reduce((acc, v) => {
-      const price = Number(v.price || p.basePrice || 0);
-      return acc + (price * (Number(v.stock) || 0));
-    }, 0) || 0;
-    return sum + variantsValue;
-  }, 0);
+  const isCapitalInflow = (r) => {
+    if (r.id && r.id === oldestReinvestmentId) return true;
+    if (r.reinvestmentType === "capital" || r.entryType === "inflow" || r.reinvestmentType === "simple") return true;
+    const desc = (r.description || "").toLowerCase();
+    return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
+  };
 
-  const expectedProfitMargin = expectedSellingValue - capitalTiedUp;
+  const adminProductIds = new Set(targetProducts.map(p => p.id));
+  
+  const adminTransactions = transactions.map(tx => {
+    const adminItems = tx.items?.filter(item => adminProductIds.has(item.productId)) || [];
+    const totalAmount = adminItems.reduce((acc, item) => acc + (Number(item.price) * Number(item.quantity || 1)), 0);
+    const totalProfit = adminItems.reduce((acc, item) => acc + (Number(item.profit) || 0), 0);
+    return { ...tx, totalAmount, totalProfit, items: adminItems };
+  }).filter(tx => tx.items.length > 0);
+
+  const totalRevenue = adminTransactions.reduce((sum, tx) => sum + tx.totalAmount, 0);
+  const grossProfit = adminTransactions.reduce((sum, tx) => sum + tx.totalProfit, 0);
+  const totalExpenses = expenses.reduce((sum, ex) => sum + (ex.amount || 0), 0);
+  
+  const totalCapital = reinvestments
+    .filter(isCapitalInflow)
+    .reduce((sum, re) => sum + re.amount, 0);
+
+  const totalReinvested = reinvestments
+    .filter(re => !isCapitalInflow(re))
+    .reduce((sum, re) => sum + re.amount, 0);
+
+  const cogs = totalRevenue - grossProfit;
+
+  // Cartly Hub Custom Accounting Double-Pot Calculations
+  const rawCostCapitalPool = totalCapital + cogs - totalReinvested;
+  const costCapitalPool = Math.max(0, rawCostCapitalPool);
+
+  const restockDeficit = Math.max(0, totalReinvested - (totalCapital + cogs));
+  const savingsUsed = Math.min(restockDeficit, companySavings);
+  const remainingDeficitAfterSavings = Math.max(0, restockDeficit - savingsUsed);
+  const borrowedFromProfit = remainingDeficitAfterSavings;
+
+  const pureProfitPool = grossProfit - totalExpenses - borrowedFromProfit;
 
   return (
     <div className="space-y-4">
@@ -838,207 +1052,262 @@ export default function AdminProductsPage() {
               !form.name ||
               !form.categoryId
             }
-            className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
+className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 disabled:opacity-50"
           >
             {(createProductMutation.isLoading || updateProductMutation.isLoading) ? "Saving..." : editingId ? "Update Product" : "Create Product"}
           </button>
         </div>
-      ) : (
-        <div className="space-y-6">
+      ) : (        <div className="space-y-6">
           {/* Inventory Health Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Items in Stock</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
+              <h3 className="text-3xl font-black text-indigo-600 tracking-tighter">
+                GH¢{costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Locked restocking funds</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
+              <h3 className="text-3xl font-black text-green-600 tracking-tighter">
+                GH¢{pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Safe accumulated profits</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Items Left</p>
               <h3 className="text-3xl font-black text-black tracking-tighter">
                 {totalStock.toLocaleString()}
               </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Across all variants</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Capital Tied Up (Cost Value)</p>
-              <h3 className="text-3xl font-black text-black tracking-tighter">
-                GH¢{capitalTiedUp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Investment in active stock</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Expected Profit Margin</p>
-              <h3 className="text-3xl font-black text-green-600 tracking-tighter">
-                GH¢{expectedProfitMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Expected profit if all items sell</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Across all product variants</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Product
-                </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Category
-                </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Inventory
-                </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Price
-                </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Seller
-                </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredProducts?.map((p) => {
-                const totalStock =
-                  p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) ||
-                  0;
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 font-bold text-sm focus:ring-2 focus:ring-black outline-none transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Filter className="h-4 w-4 text-gray-400 hidden sm:inline" />
+              <select
+                className="appearance-none bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-black outline-none w-full sm:w-40"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Interactive POS Grid */}
+          <div className="space-y-6">
+            {filteredProducts?.length === 0 ? (
+              <div className="bg-white p-16 text-center text-gray-400 font-bold uppercase border border-gray-100 rounded-3xl">
+                No products found
+              </div>
+            ) : (
+              filteredProducts?.map((product) => {
                 return (
-                  <tr
-                    key={p.id}
-                    className="hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="px-8 py-6">
+                  <div key={product.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    {/* Product Header */}
+                    <div className="p-6 bg-gray-50/50 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                       <div className="flex items-center space-x-4">
-                        <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
-                          {p.images?.[0] ? (
-                            <img
-                              src={p.images[0]}
-                              className="w-full h-full object-cover"
-                              alt={p.name}
-                            />
+                        <div className="h-16 w-16 bg-white border border-gray-100 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center shadow-sm">
+                          {product.images?.[0] ? (
+                            <img src={product.images[0]} className="w-full h-full object-cover" alt={product.name} />
                           ) : (
-                            <ImageIcon className="h-5 w-5 text-gray-400" />
+                            <ImageIcon className="h-6 w-6 text-gray-300" />
                           )}
                         </div>
                         <div>
-                          <p className="font-black text-sm uppercase tracking-tight">
-                            {p.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
-                            <span>#{p.slug}</span>
-                            {p.supplier && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-black text-base uppercase tracking-tight text-gray-900">{product.name}</h4>
+                            <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${product.isActive !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                              {product.isActive !== false ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span>#{product.slug}</span>
+                            <span className="text-gray-300">•</span>
+                            <span>Category: {getCategoryName(product.categoryId, product.subcategoryId)}</span>
+                            {product.supplier && (
                               <>
                                 <span className="text-gray-300">•</span>
-                                <span className="text-gray-500 font-black">Supplier: {p.supplier}</span>
+                                <span>Supplier: {product.supplier}</span>
                               </>
                             )}
                           </p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-8 py-6 text-sm font-bold text-gray-500 uppercase tracking-widest">
-                      {getCategoryName(p.categoryId, p.subcategoryId)}
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="space-y-2">
-                        <div
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${totalStock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
-                        >
-                          {totalStock} in stock
+                      
+                      {/* Product details & Actions */}
+                      <div className="flex flex-col xs:flex-row items-start xs:items-center gap-4 w-full md:w-auto justify-end">
+                        <div className="text-left xs:text-right">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Pricing Parameters</p>
+                          <p className="text-xs font-bold text-gray-600">
+                            Cost: <span className="text-black font-black">GH₵{Number(product.costPrice || 0).toFixed(2)}</span>
+                            <span className="mx-2 text-gray-300">|</span>
+                            Retail: <span className="text-emerald-600 font-black">GH₵{Number(product.basePrice || 0).toFixed(2)}</span>
+                          </p>
                         </div>
-                        {p.variants && p.variants.length > 0 && (
-                          <div className="mt-2 space-y-1 bg-gray-50/50 p-2 rounded-xl border border-gray-100/50 max-w-[200px]">
-                            {p.variants.slice(0, 4).map((variant, idx) => (
-                              <div key={idx} className="text-[9px] text-gray-500 font-bold uppercase flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <span 
-                                    className="w-2 h-2 rounded-full border border-gray-200 flex-shrink-0"
-                                    style={{
-                                      backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc'
-                                    }}
-                                  />
-                                  <span className="truncate max-w-[100px]">{variant.color || 'Std'} / {variant.size || 'M'}</span>
-                                </div>
-                                <span className="font-black text-black">{variant.stock} left</span>
-                              </div>
-                            ))}
-                            {p.variants.length > 4 && (
-                              <div className="text-[8px] text-gray-400 font-black uppercase text-center pt-1 border-t border-gray-100">
-                                +{p.variants.length - 4} more variants
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingId(product.id);
+                              setForm({
+                                name: product.name,
+                                description: product.description,
+                                categoryId: product.categoryId,
+                                subcategoryId: product.subcategoryId || "",
+                                basePrice: product.basePrice,
+                                costPrice: product.costPrice || "",
+                                supplier: product.supplier || "",
+                                isFeatured: product.isFeatured,
+                                isRental: product.isRental || false,
+                                isBulk: product.isBulk || false,
+                                hasVariants: product.variants ? product.variants.some(v => v.size || v.color || v.hexColor) : false,
+                                totalStock: product.variants ? product.variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 0,
+                                packSize: product.packSize || 1,
+                                images: product.images || [],
+                                variants: product.variants?.map((v, idx) => ({
+                                  vId: v.vId || (Date.now() + idx).toString(),
+                                  size: v.size || "",
+                                  color: v.colorName || v.color || "",
+                                  stock: v.stock || 0,
+                                  price: v.price || "",
+                                  sku: v.sku || "",
+                                  hexColor: v.hexColor || ""
+                                })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+                                region: product.region || "",
+                                location: product.location || "",
+                                sellerName: product.sellerName || "cartly Hub Admin",
+                                sellerPhone: product.sellerPhone || "",
+                                isService: product.isService || false,
+                              });
+                              setIsAdding(true);
+                            }}
+                            className="p-2.5 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 text-gray-500 hover:text-black shadow-sm"
+                            title="Edit Product Settings"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm('Delete this product permanently? This action cannot be undone.')) return;
+                              deleteProductMutation.mutate(product.id);
+                            }}
+                            disabled={deleteProductMutation.isLoading}
+                            className="p-2.5 hover:bg-red-50 rounded-xl transition-all border border-gray-200 text-red-500 hover:text-red-600 shadow-sm disabled:opacity-50"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-8 py-6 font-black text-sm">
-                      ₵{Number(p.basePrice).toLocaleString()}
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center space-x-2">
-                        <Store className="h-3 w-3 text-gray-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">
-                          {p.sellerName || sellers?.find(s => s.id === p.sellerId)?.storeName || "Admin"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-right space-x-2 whitespace-nowrap">
-                      <button
-                        onClick={() => {
-                          setEditingId(p.id);
-                          setForm({
-                            name: p.name,
-                            description: p.description,
-                            categoryId: p.categoryId,
-                            subcategoryId: p.subcategoryId || "",
-                            basePrice: p.basePrice,
-                            costPrice: p.costPrice || "",
-                            supplier: p.supplier || "",
-                            isFeatured: p.isFeatured,
-                            isRental: p.isRental || false,
-                            isBulk: p.isBulk || false,
-                            hasVariants: p.variants ? p.variants.some(v => v.size || v.color || v.hexColor) : false,
-                            totalStock: p.variants ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 0,
-                            packSize: p.packSize || 1,
-                            images: p.images || [],
-                            variants: p.variants?.map((v, idx) => ({
-                              vId: v.vId || (Date.now() + idx).toString(),
-                              size: v.size || "",
-                              color: v.colorName || v.color || "",
-                              stock: v.stock || 0,
-                              price: v.price || "",
-                              sku: v.sku || "",
-                              hexColor: v.hexColor || ""
-                            })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
-                            region: p.region || "",
-                            location: p.location || "",
-                            sellerName: p.sellerName || "cartly Hub Admin",
-                            sellerPhone: p.sellerPhone || "",
-                            isService: p.isService || false,
-                          });
-                          setIsAdding(true);
-                        }}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (!confirm('Are you sure? This action cannot be undone.')) {
-                            return;
-                          }
-                          deleteProductMutation.mutate(p.id);
-                        }}
-                        disabled={deleteProductMutation.isLoading}
-                        className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
+                    </div>
+
+                    {/* Variants list (Tick-to-Sell Grid) */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead className="bg-gray-50/30 border-b border-gray-100">
+                          <tr>
+                            <th className="px-8 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Color</th>
+                            <th className="px-8 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Size</th>
+                            <th className="px-8 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Stock Qty</th>
+                            <th className="px-8 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400 text-center">Stock Control</th>
+                            <th className="px-8 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right">POS Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {product.variants?.map((variant) => {
+                            const stock = Number(variant.stock) || 0;
+                            const isOutOfStock = stock <= 0;
+                            const isSellingThis = sellOneMutation.isLoading && sellOneMutation.variables?.variant.vId === variant.vId;
+                            const isAdjustingThis = adjustStockMutation.isLoading && adjustStockMutation.variables?.variant.vId === variant.vId;
+                            
+                            return (
+                              <tr key={variant.vId} className="hover:bg-gray-50/30 transition-colors">
+                                <td className="px-8 py-4 whitespace-nowrap">
+                                  <div className="flex items-center space-x-2">
+                                    <span 
+                                      className="w-3 h-3 rounded-full border border-gray-200 flex-shrink-0"
+                                      style={{ backgroundColor: variant.hexColor || variant.color || variant.colorName?.toLowerCase() || '#ccc' }}
+                                    />
+                                    <span className="text-xs font-bold text-gray-900">{variant.color || "Standard"}</span>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-4 whitespace-nowrap">
+                                  <span className="inline-flex px-2 py-0.5 bg-gray-100 text-gray-800 text-[10px] font-black rounded uppercase">
+                                    {variant.size || "Standard"}
+                                  </span>
+                                </td>
+                                <td className="px-8 py-4 whitespace-nowrap">
+                                  <span className={`text-xs font-black px-2 py-0.5 rounded ${isOutOfStock ? 'bg-red-50 text-red-600' : 'bg-gray-900'}`}>
+                                    {stock} left
+                                  </span>
+                                </td>
+                                <td className="px-8 py-4 whitespace-nowrap text-center">
+                                  <div className="inline-flex items-center space-x-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => adjustStockMutation.mutate({ product, variant, adjustment: -1 })}
+                                      disabled={isOutOfStock || isAdjustingThis}
+                                      className="w-8 h-8 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center font-black text-gray-600 hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Adjust Stock Down (-1)"
+                                    >
+                                      -
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => adjustStockMutation.mutate({ product, variant, adjustment: 1 })}
+                                      disabled={isAdjustingThis}
+                                      className="w-8 h-8 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center font-black text-gray-600 hover:text-black transition-all disabled:opacity-50"
+                                      title="Adjust Stock Up (+1, Logs Reinvestment)"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-4 whitespace-nowrap text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => sellOneMutation.mutate({ product, variant })}
+                                    disabled={isOutOfStock || isSellingThis}
+                                    className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm ${
+                                      isOutOfStock 
+                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
+                                        : 'bg-black text-white hover:bg-gray-800 hover:scale-[1.02] shadow-black/10'
+                                    }`}
+                                  >
+                                    {isSellingThis ? (
+                                      <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                                    ) : (
+                                      "Sell 1"
+                                    )}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              })
+            )}
+          </div>
+        </div>  </div>
       )}
 
       {productsLoading && (
