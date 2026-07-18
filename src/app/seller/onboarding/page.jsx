@@ -3,7 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Store, Phone, Mail, FileText, ArrowRight, Loader2, CheckCircle2, User, MapPin, MessageCircle } from "lucide-react";
+import { 
+  Store, 
+  Phone, 
+  Mail, 
+  FileText, 
+  ArrowRight, 
+  Loader2, 
+  CheckCircle2, 
+  User, 
+  MapPin, 
+  MessageCircle,
+  Lightbulb,
+  ShieldCheck,
+  TrendingUp,
+  Globe
+} from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 
@@ -33,25 +48,28 @@ export default function SellerOnboardingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="h-10 w-10 animate-spin text-black" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
         <Navbar />
-        <div className="text-center space-y-6 max-w-md">
-          <div className="bg-gray-50 h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-8">
-            <Store className="h-10 w-10 text-gray-400" />
+        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
+          <div className="bg-gray-50 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto">
+            <Store className="h-8 w-8 text-black" />
           </div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter">Login Required</h1>
-          <p className="text-gray-500 font-medium">Please log in to your cartlyHub account to start your selling journey.</p>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black uppercase tracking-tight text-gray-900">Login Required</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Access Seller Merchant Center</p>
+          </div>
+          <p className="text-gray-500 text-sm">Please sign in to your Cartly Hub account to set up your marketplace store.</p>
           <button
             onClick={() => router.push("/account/signin")}
-            className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all"
+            className="w-full bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-lg"
           >
             Go to Login
           </button>
@@ -62,19 +80,22 @@ export default function SellerOnboardingPage() {
 
   if (sellerProfile) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
         <Navbar />
-        <div className="text-center space-y-6 max-w-md">
-          <div className="bg-green-50 h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-8">
-            <CheckCircle2 className="h-10 w-10 text-green-500" />
+        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
+          <div className="bg-emerald-50 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto text-emerald-500">
+            <CheckCircle2 className="h-8 w-8 fill-current" />
           </div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter">Already a Seller</h1>
-          <p className="text-gray-500 font-medium">You already have an active store: <span className="font-bold text-black">{sellerProfile.storeName}</span></p>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black uppercase tracking-tight text-gray-900">Active Merchant</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{sellerProfile.storeName}</p>
+          </div>
+          <p className="text-gray-500 text-sm">You are already registered. Click below to manage your products and views.</p>
           <button
             onClick={() => router.push("/seller")}
-            className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
+            className="w-full bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
           >
-            Go to Seller Dashboard
+            Enter Dashboard
           </button>
         </div>
       </div>
@@ -84,7 +105,7 @@ export default function SellerOnboardingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.region || !form.whatsappNumber) {
-      toast.error("Please fill in all required fields (Name, Store, Location, Region, WhatsApp)");
+      toast.error("Required fields missing");
       return;
     }
 
@@ -102,51 +123,68 @@ export default function SellerOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-6 pt-32 pb-20">
-        <div className="mb-16">
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-2 block">
-            Phase 1: Multi-Vendor
-          </span>
-          <h1 className="text-4xl font-black tracking-tighter uppercase leading-[0.9]">
-            Become a <br /> <span className="text-gray-300">cartlyHub</span> Seller
-          </h1>
-          <p className="mt-6 text-gray-500 max-w-lg font-medium">
-            Join Ghana's premium marketplace. Reach thousands of customers and manage your business with our professional tools.
-          </p>
-        </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-6 pt-32 pb-20 flex flex-col justify-center">
+        
+        {/* Step Indicator */}
+        {step < 3 && (
+          <div className="flex items-center space-x-3 mb-10 w-fit mx-auto lg:mx-0 bg-white border border-gray-100 px-4 py-2 rounded-full shadow-sm">
+            <span className={`h-2 w-2 rounded-full ${step >= 1 ? "bg-black" : "bg-gray-200"}`} />
+            <span className={`h-2 w-2 rounded-full ${step >= 2 ? "bg-black" : "bg-gray-200"}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Step {step} of 2</span>
+          </div>
+        )}
 
         {step === 1 && (
-          <div className="grid md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-gray-50 p-8 rounded-3xl space-y-4">
-              <div className="h-14 w-14 bg-white rounded-2xl shadow-sm flex items-center justify-center">
-                <Store className="h-6 w-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Left Value Prop */}
+            <div className="lg:col-span-5 bg-gradient-to-br from-gray-900 to-black text-white p-8 md:p-10 rounded-[2.5rem] shadow-xl flex flex-col justify-between border border-gray-800">
+              <div className="space-y-8">
+                <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-yellow-400">
+                  <Lightbulb className="h-5 w-5" />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black uppercase tracking-tight leading-tight">Partner Program</h3>
+                  <p className="text-gray-400 text-xs leading-relaxed">Join Ghana's premier fashion and apparel marketplace. Scale your brand catalog and receive direct WhatsApp redirects.</p>
+                </div>
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight">Professional Store</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Get a dedicated store page, custom branding, and professional inventory management tools.</p>
-              <ul className="space-y-3">
-                {['Unlimited Products', 'Sales Analytics', 'Direct Customer Contact', 'Order Management'].map((item) => (
-                  <li key={item} className="flex items-center space-x-3 text-xs font-bold uppercase tracking-wider text-gray-600">
-                    <CheckCircle2 className="h-4 w-4 text-black" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+
+              <div className="space-y-4 mt-8 pt-8 border-t border-white/5">
+                <div className="flex items-center space-x-3 text-xs font-bold uppercase tracking-wider text-gray-200">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Trusted Store Badge</span>
+                </div>
+                <div className="flex items-center space-x-3 text-xs font-bold uppercase tracking-wider text-gray-200">
+                  <TrendingUp className="h-4 w-4 text-indigo-400 shrink-0" />
+                  <span>Reach Sales Analytics</span>
+                </div>
+                <div className="flex items-center space-x-3 text-xs font-bold uppercase tracking-wider text-gray-200">
+                  <Globe className="h-4 w-4 text-blue-400 shrink-0" />
+                  <span>Unlimited Listings</span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col justify-center space-y-8 p-6">
+            {/* Right Welcome Action */}
+            <div className="lg:col-span-7 bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-between space-y-8">
               <div className="space-y-4">
-                <h2 className="text-4xl font-black uppercase tracking-tighter">Ready to start?</h2>
-                <p className="text-gray-400 font-medium">Setting up your store takes less than 2 minutes.</p>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 block">Start Selling</span>
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-gray-900 leading-tight">
+                  Launch Your Store storefront
+                </h2>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Provide your store details to instantiate your merchant dashboard. Setting up takes less than 2 minutes.
+                </p>
               </div>
+
               <button
                 onClick={() => setStep(2)}
-                className="flex items-center justify-between w-full bg-black text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-black/20"
+                className="flex items-center justify-between w-full bg-black text-white hover:bg-gray-800 p-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10"
               >
-                <span>Setup My Store</span>
-                <ArrowRight className="h-5 w-5" />
+                <span>Instantiate Store Profile</span>
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -154,61 +192,51 @@ export default function SellerOnboardingPage() {
 
         {step === 2 && (
           <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="bg-white border border-gray-100 p-8 rounded-3xl shadow-sm space-y-6">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+            <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+              <div className="border-b border-gray-100 pb-4 mb-4">
+                <h3 className="font-black text-sm uppercase tracking-tight text-gray-900">Merchant Registration</h3>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Please provide valid credentials</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                     <User className="h-3 w-3" />
-                    <span>Owner's Full Name *</span>
+                    <span>Owner Name *</span>
                   </label>
                   <input
                     required
                     type="text"
-                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
-                    placeholder="E.g. John Doe"
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    placeholder="E.g. Kojo Mensah"
                     value={form.ownerName}
                     onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                     <Store className="h-3 w-3" />
                     <span>Store Name *</span>
                   </label>
                   <input
                     required
                     type="text"
-                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
-                    placeholder="E.g. Urban Threads Ghana"
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    placeholder="E.g. Urban Threads GH"
                     value={form.storeName}
                     onChange={(e) => setForm({ ...form, storeName: e.target.value })}
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
-                    <MapPin className="h-3 w-3" />
-                    <span>Location *</span>
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
-                    placeholder="E.g. East Legon, Accra"
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                     <MapPin className="h-3 w-3" />
                     <span>Region *</span>
                   </label>
                   <select
                     required
-                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all appearance-none text-sm"
+                    className="w-full px-5 py-3.5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold appearance-none text-sm"
                     value={form.region}
                     onChange={(e) => setForm({ ...form, region: e.target.value })}
                   >
@@ -219,23 +247,38 @@ export default function SellerOnboardingPage() {
                   </select>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                    <MapPin className="h-3 w-3" />
+                    <span>Location *</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    placeholder="E.g. East Legon, Accra"
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                     <Phone className="h-3 w-3" />
                     <span>Contact Phone *</span>
                   </label>
                   <input
                     required
                     type="tel"
-                    className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                     placeholder="E.g. 0241234567"
                     value={form.contactPhone}
                     onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                     <MessageCircle className="h-3 w-3" />
                     <span>WhatsApp Number *</span>
                   </label>
@@ -243,7 +286,7 @@ export default function SellerOnboardingPage() {
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
-                      className="px-3 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all w-[90px] flex-shrink-0 text-sm"
+                      className="px-3 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold w-[90px] flex-shrink-0 text-sm"
                     >
                       <option value="+233">GH (+233)</option>
                       <option value="+234">NG (+234)</option>
@@ -251,7 +294,7 @@ export default function SellerOnboardingPage() {
                     <input
                       required
                       type="tel"
-                      className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
+                      className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                       placeholder="E.g. 241234567"
                       value={form.whatsappNumber}
                       onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
@@ -260,28 +303,28 @@ export default function SellerOnboardingPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                   <Mail className="h-3 w-3" />
-                  <span>Public Contact Email (Optional)</span>
+                  <span>Public Store Email (Optional)</span>
                 </label>
                 <input
                   type="email"
-                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all text-sm"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
                   placeholder="hello@yourstore.com"
                   value={form.contactEmail}
                   onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
                 />
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center space-x-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                   <FileText className="h-3 w-3" />
                   <span>Store Description</span>
                 </label>
                 <textarea
-                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold transition-all min-h-[100px] resize-none text-sm"
-                  placeholder="Tell customers what makes your products special..."
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold min-h-[100px] resize-none text-sm"
+                  placeholder="Introduce your clothing brand, collections, and materials to customers..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
@@ -292,20 +335,20 @@ export default function SellerOnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="px-6 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all"
+                className="px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-100 transition-all"
               >
                 Back
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
+                className="flex-1 bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <span>Activate Seller Profile</span>
+                    <span>Activate Store Profile</span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -315,31 +358,31 @@ export default function SellerOnboardingPage() {
         )}
 
         {step === 3 && (
-          <div className="text-center space-y-8 animate-in zoom-in duration-500 bg-black text-white p-12 rounded-[2rem] shadow-2xl">
-            <div className="bg-white/10 h-24 w-24 rounded-full flex items-center justify-center mx-auto border-4 border-white/20">
-              <CheckCircle2 className="h-10 w-10 text-white" />
+          <div className="text-center space-y-8 animate-in zoom-in duration-500 bg-black text-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl max-w-xl mx-auto border border-gray-800">
+            <div className="bg-white/10 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto border border-white/10 text-white">
+              <CheckCircle2 className="h-8 w-8 fill-current" />
             </div>
             <div className="space-y-3">
-              <h2 className="text-3xl font-black uppercase tracking-tighter">Registration Received!</h2>
-              <p className="text-gray-400 font-medium text-sm max-w-md mx-auto">
-                Your store <span className="text-white font-bold">{form.storeName}</span> has been created and is now <span className="text-orange-400 font-bold">Pending Verification</span>.
+              <h2 className="text-2xl font-black uppercase tracking-tighter">Registration Complete!</h2>
+              <p className="text-gray-400 text-xs leading-relaxed max-w-sm mx-auto">
+                Your store <span className="text-white font-bold">{form.storeName}</span> is now active. Your dashboard review status is <span className="text-orange-400 font-bold">Pending Verification</span>.
               </p>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                Our team will review your profile and you'll receive an email once approved.
+              <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                Our verification team is reviewing your details to assign your trust badge.
               </p>
             </div>
-            <div className="flex flex-col space-y-3 max-w-sm mx-auto">
+            <div className="flex flex-col space-y-3 max-w-xs mx-auto">
               <button
                 onClick={() => router.push("/seller")}
-                className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all shadow-xl"
+                className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-100 transition-all shadow-xl"
               >
-                Enter Seller Dashboard
+                Enter Dashboard
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="w-full py-3 text-gray-400 font-black uppercase tracking-widest text-[9px] hover:text-white transition-all"
+                className="w-full py-3 text-gray-500 font-black uppercase tracking-widest text-[8px] hover:text-white transition-all"
               >
-                Back to Marketplace
+                Return to Shop
               </button>
             </div>
           </div>

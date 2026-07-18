@@ -138,11 +138,11 @@ export default function SellerEditProductPage({ params }) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
     const hasLargeFiles = files.some(file => file.size > MAX_FILE_SIZE);
     
     if (hasLargeFiles) {
-      toast.error("Image too large. Please upload files smaller than 2MB.");
+      toast.error("Image too large. Please upload files smaller than 3MB.");
       e.target.value = null;
       return;
     }
@@ -175,8 +175,8 @@ export default function SellerEditProductPage({ params }) {
   };
 
   const validate = () => {
-    if (!form.name || !form.categoryId || !form.basePrice || form.images.length === 0) {
-      toast.error("Please fill in all required fields (Name, Category, Selling Price, Images)");
+    if (!form.name || !form.categoryId || form.images.length === 0) {
+      toast.error("Please fill in all required fields (Name, Category, Images)");
       return false;
     }
     return true;
@@ -376,9 +376,10 @@ export default function SellerEditProductPage({ params }) {
                   </button>
                 </div>
               ))}
-              <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
+              <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors p-4 text-center">
                 {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-black" /> : <ImageIcon className="h-8 w-8 text-gray-300" />}
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
+                <span className="text-[8px] font-bold text-gray-400 mt-1">MAX SIZE: 3MB</span>
                 <input type="file" multiple className="hidden" onChange={handleImageUpload} />
               </label>
             </div>
@@ -543,23 +544,7 @@ export default function SellerEditProductPage({ params }) {
                 />
               </div>
 
-               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Selling Price (GHS) *</label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-black text-lg"
-                  value={form.basePrice}
-                  onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-
-              {(form.basePrice && form.costPrice) ? (
-                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Estimated Profit</span>
-                  <span className="font-black text-emerald-600">GHS {Number(form.basePrice - form.costPrice).toLocaleString()}</span>
-                </div>
-              ) : null}
+              {/* Selling price removed */}
 
             </div>
 

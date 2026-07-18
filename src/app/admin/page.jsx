@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,12 +16,14 @@ import {
   Store,
   ChevronRight,
   Tag,
-  Users
+  Users,
+  Send
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getCategories } from "@/utils/firebaseData";
+import { toast } from "sonner";
 import { 
   BarChart, 
   Bar, 
@@ -36,6 +38,12 @@ import {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    message: "",
+    isActive: false
+  });
 
   // Real product and category queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -100,6 +108,31 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: announcement, refetch: refetchAnnouncement } = useQuery({
+    queryKey: ["admin", "announcement"],
+    queryFn: async () => {
+      try {
+        const docSnap = await getDoc(doc(db, "settings", "seller_broadcast"));
+        if (docSnap.exists()) {
+          return docSnap.data();
+        }
+        return { title: "", message: "", isActive: false };
+      } catch (e) {
+        return { title: "", message: "", isActive: false };
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (announcement) {
+      setAnnouncementForm({
+        title: announcement.title || "",
+        message: announcement.message || "",
+        isActive: !!announcement.isActive
+      });
+    }
+  }, [announcement]);
+
   // Calculate marketplace statistics
   const totalMarketplaceOrders = orders.length;
   const totalMarketplaceGMV = orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0);
@@ -163,6 +196,24 @@ export default function AdminDashboard() {
   };
 
   const chartData = getMonthlyData();
+
+  const handlePublishAnnouncement = async (e) => {
+    e.preventDefault();
+    setIsPublishing(true);
+    try {
+      await setDoc(doc(db, "settings", "seller_broadcast"), {
+        ...announcementForm,
+        updatedAt: new Date()
+      });
+      toast.success("Broadcast announcement updated!");
+      refetchAnnouncement();
+    } catch (err) {
+      console.error("Failed to publish announcement:", err);
+      toast.error(`Failed to publish announcement: ${err.message || err}`);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const stats = {
     totalRevenue: totalMarketplaceGMV,
@@ -350,8 +401,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Vendors and Reviews Breakdown */}
+        {/* Vendors, Broadcast, and Reviews Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+          
+          {/* Column 1: Top Active Sellers */}
           <div className="lg:col-span-1 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px]">
              <h4 className="text-xs font-black uppercase tracking-widest mb-8">
               Top Active Sellers
@@ -387,7 +440,52 @@ export default function AdminDashboard() {
             </div>
           </div>
           
-          <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px]">
+          {/* Column 2: Seller Alert Broadcast Center */}
+          <div className="lg:col-span-1 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px] flex flex-col justify-between">
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center space-x-2">
+                <Store className="h-4 w-4 text-orange-500" />
+                <span>Seller Broadcast</span>
+              </h4>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Send in-app/web notification alert</p>
+              
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Alert Title (e.g. DB Sync Update)"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold outline-none focus:border-black transition-all"
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+                />
+                <textarea
+                  placeholder="Alert Message..."
+                  className="w-full h-24 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none focus:border-black transition-all resize-none"
+                  value={announcementForm.message}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+                />
+                <label className="flex items-center space-x-3 cursor-pointer p-1">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded bg-gray-50 border-gray-100 text-black accent-black"
+                    checked={announcementForm.isActive}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, isActive: e.target.checked })}
+                  />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">Publish Alert Status</span>
+                </label>
+              </div>
+            </div>
+            
+            <button
+              onClick={handlePublishAnnouncement}
+              disabled={isPublishing}
+              className="w-full bg-black text-white hover:bg-gray-800 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            >
+              {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>Broadcast Alert</span><Send className="h-3 w-3" /></>}
+            </button>
+          </div>
+
+          {/* Column 3: Marketplace Feedback */}
+          <div className="lg:col-span-1 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px]">
             <h4 className="text-xs font-black uppercase tracking-widest mb-8 flex justify-between items-center">
               Marketplace Feedback
               <span className="text-[10px] text-gray-400">Latest {reviews.length} entries</span>
@@ -422,6 +520,7 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>

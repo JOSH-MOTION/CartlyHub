@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { 
   Store, 
@@ -11,7 +11,8 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  MapPin
+  MapPin,
+  User
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
@@ -23,6 +24,7 @@ export default function SellerSettingsPage() {
 
   const [form, setForm] = useState({
     storeName: sellerProfile?.storeName || "",
+    ownerName: sellerProfile?.ownerName || "",
     description: sellerProfile?.description || "",
     contactPhone: sellerProfile?.contactPhone || "",
     whatsappNumber: sellerProfile?.whatsappNumber || "",
@@ -30,6 +32,21 @@ export default function SellerSettingsPage() {
     region: sellerProfile?.region || "",
     location: sellerProfile?.location || "",
   });
+
+  useEffect(() => {
+    if (sellerProfile) {
+      setForm({
+        storeName: sellerProfile.storeName || "",
+        ownerName: sellerProfile.ownerName || "",
+        description: sellerProfile.description || "",
+        contactPhone: sellerProfile.contactPhone || "",
+        whatsappNumber: sellerProfile.whatsappNumber || "",
+        contactEmail: sellerProfile.contactEmail || "",
+        region: sellerProfile.region || "",
+        location: sellerProfile.location || "",
+      });
+    }
+  }, [sellerProfile]);
 
   const GHANA_REGIONS = [
     "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
@@ -39,7 +56,7 @@ export default function SellerSettingsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.storeName || !form.contactPhone) {
+    if (!form.storeName || !form.ownerName || !form.contactPhone) {
       toast.error("Required fields missing");
       return;
     }
@@ -85,6 +102,20 @@ export default function SellerSettingsPage() {
                   onChange={(e) => setForm({ ...form, storeName: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <User className="h-3 w-3" />
+                  <span>Owner Name *</span>
+                </label>
+                <input
+                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
+                  value={form.ownerName}
+                  onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                   <Phone className="h-3 w-3" />

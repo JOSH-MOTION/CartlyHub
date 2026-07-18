@@ -13,7 +13,8 @@ import {
   LogOut,
   Store,
   Loader2,
-  MessageCircle
+  MessageCircle,
+  ShieldCheck
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
@@ -45,7 +46,6 @@ export default function SellerLayout({ children }) {
     );
   }
 
-  // If we are on the onboarding page, just render it without the sidebar
   if (pathname === "/seller/onboarding") {
     return <>{children}</>;
   }
@@ -57,6 +57,7 @@ export default function SellerLayout({ children }) {
       </div>
     );
   }
+
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/seller" },
     { name: "Inventory", icon: Package, href: "/seller/products" },
@@ -65,92 +66,109 @@ export default function SellerLayout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Navbar />
       
       <div className="flex-1 flex pt-20">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-100 hidden lg:flex flex-col fixed h-full pt-10">
-          <div className="px-6 mb-8">
-            <div className="bg-black p-4 rounded-[1.5rem] text-white space-y-3">
-              <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
-                <Store className="h-5 w-5" />
+        {/* PC Sidebar Navigation */}
+        <aside className="w-64 bg-white border-r border-gray-100 hidden lg:flex flex-col fixed h-[calc(100vh-80px)] pt-8">
+          {/* Store Profile Card */}
+          <div className="px-4 mb-6">
+            <div className="bg-gradient-to-br from-gray-900 to-black p-5 rounded-[1.75rem] text-white space-y-3 border border-gray-800 shadow-lg">
+              <div className="flex justify-between items-start">
+                <div className="h-9 w-9 bg-white/10 rounded-xl flex items-center justify-center text-white border border-white/5">
+                  <Store className="h-4.5 w-4.5" />
+                </div>
+                {sellerProfile.isVerified && (
+                  <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border border-emerald-500/10">
+                    <ShieldCheck className="h-2.5 w-2.5 fill-current" />
+                    <span>Verified</span>
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Seller Mode</p>
-                <h2 className="text-lg font-black truncate">{sellerProfile.storeName}</h2>
+              <div className="min-w-0">
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500">Merchant Account</p>
+                <h2 className="text-sm font-black truncate mt-0.5 uppercase tracking-tight">{sellerProfile.storeName}</h2>
               </div>
             </div>
           </div>
 
-          <nav className="flex-1 px-4 space-y-2">
+          {/* Links */}
+          <nav className="flex-grow px-3 space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <a
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
+                  className={`flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
                     isActive 
-                      ? "bg-gray-50 text-black shadow-sm" 
+                      ? "bg-black text-white shadow-md shadow-black/5" 
                       : "text-gray-400 hover:bg-gray-50 hover:text-black"
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <item.icon className={`h-4 w-4 ${isActive ? "text-black" : "text-gray-300 group-hover:text-black"}`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{item.name}</span>
+                    <item.icon className={`h-4.5 w-4.5 ${isActive ? "text-white" : "text-gray-400 group-hover:text-black"}`} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.1em]">{item.name}</span>
                     {item.name === "Feedback" && (
-                      <span className="text-[10px] font-bold text-emerald-600 ml-1">({reviews?.length || 0})</span>
+                      <span className={`text-[9px] font-black ml-1.5 px-2 py-0.5 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {reviews?.length || 0}
+                      </span>
                     )}
                   </div>
-                  {isActive && <ChevronRight className="h-3 w-3" />}
+                  {isActive && <ChevronRight className="h-3 w-3 text-white" />}
                 </a>
               );
             })}
           </nav>
 
-          <div className="p-6 border-t border-gray-50">
+          {/* Logout Section */}
+          <div className="p-4 border-t border-gray-50">
             <button 
               onClick={signOut}
-              className="flex items-center space-x-3 text-gray-400 hover:text-red-500 transition-colors px-4"
+              className="w-full flex items-center space-x-3 text-gray-400 hover:text-red-500 hover:bg-red-50/50 py-3 px-4 rounded-xl transition-all font-black"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4.5 w-4.5" />
               <span className="text-[10px] font-black uppercase tracking-widest">Logout</span>
             </button>
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 lg:ml-64 p-6 lg:p-10 overflow-y-auto pb-32 lg:pb-10">
+        {/* Main Workspace */}
+        <main className="flex-grow lg:ml-64 p-6 lg:p-10 overflow-y-auto pb-32 lg:pb-10">
           {children}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-2.5 flex items-center justify-around z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        {menuItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <a
-              key={item.name}
-              href={item.href}
-              className={`flex flex-col items-center space-y-0.5 transition-all ${
-                isActive ? "text-black" : "text-gray-300"
-              }`}
-            >
-              <div className="relative">
-                <item.icon className={`h-5 w-5 ${isActive ? "text-black" : "text-gray-300"}`} />
-                {item.name === "Feedback" && (
-                  <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[7px] font-black h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center">
-                    {reviews?.length || 0}
-                  </span>
-                )}
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-widest">{item.name}</span>
-            </a>
-          );
-        })}
-      </nav>
+      {/* Floating Bottom Navigation Bar (Mobile View) */}
+      <div className="lg:hidden fixed bottom-6 left-6 right-6 z-50">
+        <nav className="bg-black/95 backdrop-blur-md px-6 py-3 rounded-full flex items-center justify-around shadow-2xl border border-white/10">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <a
+                key={item.name}
+                href={item.href}
+                className={`flex flex-col items-center space-y-1 transition-all ${
+                  isActive ? "text-white scale-105" : "text-gray-400"
+                }`}
+              >
+                <div className="relative">
+                  <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />
+                  {item.name === "Feedback" && reviews && reviews.length > 0 && (
+                    <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[7px] font-black h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center">
+                      {reviews.length}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[8px] font-black uppercase tracking-wider">{item.name}</span>
+                {isActive && <span className="h-1 w-1 bg-white rounded-full mt-0.5 animate-pulse" />}
+              </a>
+            );
+          })}
+        </nav>
+      </div>
+
     </div>
   );
 }
