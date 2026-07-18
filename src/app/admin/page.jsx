@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Tag,
   Users,
-  Send
+  Send,
+  Mail
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -212,6 +213,43 @@ export default function AdminDashboard() {
       toast.error(`Failed to publish announcement: ${err.message || err}`);
     } finally {
       setIsPublishing(false);
+    }
+  };
+
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const handleEmailBroadcast = async (e) => {
+    e.preventDefault();
+    if (!announcementForm.title || !announcementForm.message) {
+      toast.error("Please fill in Alert Title and Message first.");
+      return;
+    }
+    if (!confirm("Are you sure you want to send this update email to all registered sellers?")) {
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const response = await fetch('/api/admin/broadcast-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: announcementForm.title,
+          message: announcementForm.message
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        toast.success(`Successfully sent ${data.sent} emails! (${data.failed} failed)`);
+      } else {
+        throw new Error(data.error || "Broadcast failed");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(`Email broadcast failed: ${err.message || err}`);
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -475,13 +513,23 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <button
-              onClick={handlePublishAnnouncement}
-              disabled={isPublishing}
-              className="w-full bg-black text-white hover:bg-gray-800 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
-            >
-              {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>Broadcast Alert</span><Send className="h-3 w-3" /></>}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePublishAnnouncement}
+                disabled={isPublishing}
+                className="flex-grow bg-black text-white hover:bg-gray-800 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {isPublishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><span>Alert</span><Send className="h-3 w-3" /></>}
+              </button>
+              
+              <button
+                onClick={handleEmailBroadcast}
+                disabled={isSendingEmail}
+                className="flex-grow bg-white text-black border-2 border-black hover:bg-gray-50 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {isSendingEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><span>Send Email</span><Mail className="h-3.5 w-3.5" /></>}
+              </button>
+            </div>
           </div>
 
           {/* Column 3: Marketplace Feedback */}

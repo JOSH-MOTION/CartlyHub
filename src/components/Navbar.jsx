@@ -29,6 +29,8 @@ const Tiktok = ({ className }) => (
 import { useApp } from '../context/AppContext';
 import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
+import { db } from "../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Navbar() {
   const router = useRouter();
@@ -39,6 +41,22 @@ export default function Navbar() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const [announcement, setAnnouncement] = useState(null);
+
+  useEffect(() => {
+    const fetchAnnouncement = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, "settings", "seller_broadcast"));
+        if (docSnap.exists() && docSnap.data().isActive) {
+          setAnnouncement(docSnap.data());
+        }
+      } catch (e) {
+        console.error("Error fetching announcement in navbar:", e);
+      }
+    };
+    fetchAnnouncement();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -74,9 +92,42 @@ export default function Navbar() {
   };
 
   return (
-    <nav
-      className="w-full z-50 bg-white border-b border-gray-100 py-4"
-    >
+    <>
+      {announcement && sellerProfile && (() => {
+        const alertText = `⚠️ ${announcement.title}: ${announcement.message} \u00a0\u00a0\u00a0\u00a0 • \u00a0\u00a0\u00a0\u00a0 ⚡ ${announcement.title}: ${announcement.message} \u00a0\u00a0\u00a0\u00a0 • \u00a0\u00a0\u00a0\u00a0`;
+        return (
+          <div className="w-full bg-black text-white border-b border-white/10 py-2.5 px-4 text-[9px] font-black uppercase tracking-widest relative overflow-hidden flex items-center z-[100] shadow-sm">
+            <style>{`
+              @keyframes marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-100%); }
+              }
+              .custom-marquee {
+                display: inline-block;
+                animation: marquee 120s linear infinite;
+                white-space: nowrap;
+              }
+            `}</style>
+            <div className="relative w-full overflow-hidden flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <span className="bg-red-600 text-white px-2 py-0.5 rounded text-[8px] font-black mr-4 shrink-0 z-10 uppercase tracking-tight flex items-center gap-1 shadow-sm">
+                <span className="h-1.5 w-1.5 bg-white rounded-full animate-ping" />
+                Alert
+              </span>
+              <div className="w-full overflow-hidden relative flex gap-8">
+                <div className="custom-marquee text-gray-200 shrink-0">
+                  {alertText} {alertText}
+                </div>
+                <div className="custom-marquee text-gray-200 shrink-0" aria-hidden="true">
+                  {alertText} {alertText}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      <nav
+        className="w-full z-50 bg-white border-b border-gray-100 py-4"
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -382,5 +433,6 @@ export default function Navbar() {
       {/* Cart Sidebar */}
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>
+    </>
   );
 }
