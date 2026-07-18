@@ -228,8 +228,8 @@ export default function AdminBuyStockPage() {
         });
 
         // 2. Log reinvestment
-        const variantObj = productData.variants.find(v => v.vId === selectedVariantId);
-        const desc = `Restocked ${qty}x ${selectedProduct.name} ${variantObj?.size ? `(Size: ${variantObj.size})` : ""} ${variantObj?.color ? `(Color: ${variantObj.color})` : ""}`;
+        const restockedVariant = productData.variants.find(v => v.vId === selectedVariantId);
+        const desc = `Restocked ${qty}x ${selectedProduct.name} ${restockedVariant?.size ? `(Size: ${restockedVariant.size})` : ""} ${restockedVariant?.color ? `(Color: ${restockedVariant.color})` : ""}`;
         
         await addDoc(collection(db, "reinvestments"), {
           description: desc,

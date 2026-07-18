@@ -248,12 +248,18 @@ export default function AdminProductsPage() {
     queryKey: ["admin", "sellers"],
     queryFn: getAllSellers,
   });
-
+  const viewFilter = searchParams.get("view") || "all";
   const filteredProducts = products?.filter(p => {
     const matchesSearch = (p.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (p.slug || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSeller = sellerIdFilter ? p.sellerId === sellerIdFilter : !p.sellerId;
     const matchesStatus = filterStatus === "all" || (filterStatus === "active" ? p.isActive !== false : p.isActive === false);
+    
+    let matchesSeller = true;
+    if (sellerIdFilter) {
+      matchesSeller = p.sellerId === sellerIdFilter;
+    } else if (viewFilter === "admin") {
+      matchesSeller = !p.sellerId;
+    }
     
     return matchesSearch && matchesSeller && matchesStatus;
   });
@@ -1061,25 +1067,25 @@ className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase trac
           {/* Inventory Health Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
-              <h3 className="text-3xl font-black text-indigo-600 tracking-tighter">
-                GH¢{costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Locked restocking funds</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
-              <h3 className="text-3xl font-black text-green-600 tracking-tighter">
-                GH¢{pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Safe accumulated profits</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Items Left</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Listings</p>
               <h3 className="text-3xl font-black text-black tracking-tighter">
-                {totalStock.toLocaleString()}
+                {products?.length || 0}
               </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Across all product variants</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">All marketplace products</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Active Listings</p>
+              <h3 className="text-3xl font-black text-green-600 tracking-tighter">
+                {products?.filter(p => p.isActive !== false).length || 0}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Visible to buyers online</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inactive Listings</p>
+              <h3 className="text-3xl font-black text-red-600 tracking-tighter">
+                {products?.filter(p => p.isActive === false).length || 0}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Hidden or draft items</p>
             </div>
           </div>
 
@@ -1095,8 +1101,28 @@ className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase trac
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <Filter className="h-4 w-4 text-gray-400 hidden sm:inline" />
+              <select
+                className="appearance-none bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-black outline-none w-full sm:w-48 text-ellipsis overflow-hidden"
+                value={sellerIdFilter || viewFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "all") {
+                    router.push('/admin/products');
+                  } else if (val === "admin") {
+                    router.push('/admin/products?view=admin');
+                  } else {
+                    router.push(`/admin/products?sellerId=${val}`);
+                  }
+                }}
+              >
+                <option value="all">All Products (Marketplace)</option>
+                <option value="admin">Admin Products Only</option>
+                {sellers?.map(s => (
+                  <option key={s.id} value={s.id}>{s.storeName || `Seller (${s.id.substring(0, 5)})`}</option>
+                ))}
+              </select>
               <select
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-black outline-none w-full sm:w-40"
                 value={filterStatus}
@@ -1307,7 +1333,7 @@ className="w-full bg-black text-white py-6 rounded-3xl font-black uppercase trac
               })
             )}
           </div>
-        </div>  </div>
+        </div>
       )}
 
       {productsLoading && (

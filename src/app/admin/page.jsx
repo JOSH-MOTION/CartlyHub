@@ -16,13 +16,11 @@ import {
   Store,
   ChevronRight,
   Tag,
-  ArrowUpRight
+  Users
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import ExpenseModal from "../../components/ExpenseModal";
-import ReinvestmentModal from "../../components/ReinvestmentModal";
 import { getCategories } from "@/utils/firebaseData";
 import { 
   BarChart, 
@@ -33,18 +31,11 @@ import {
   Tooltip, 
   ResponsiveContainer, 
   LineChart, 
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+  Line
 } from "recharts";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [isReinvestmentModalOpen, setIsReinvestmentModalOpen] = useState(false);
-
 
   // Real product and category queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -52,9 +43,7 @@ export default function AdminDashboard() {
     queryFn: async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'products'));
-        return querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(p => p.isActive !== false || p.isPrivate === true);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (error) {
         return [];
       }
@@ -75,53 +64,6 @@ export default function AdminDashboard() {
         const querySnapshot = await getDocs(collection(db, 'orders'));
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (error) {
-        return [];
-      }
-    },
-  });
-
-  const { data: manualSales = [], isLoading: manualSalesLoading } = useQuery({
-    queryKey: ["manualSales"],
-    queryFn: async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'manualSales'));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      } catch (error) {
-        console.error("Error fetching manual sales for overview:", error);
-        return [];
-      }
-    },
-  });
-
-  const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'expenses'));
-        return querySnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          amount: Number(doc.data().amount || 0)
-        }));
-      } catch (error) {
-        console.error("Error fetching expenses:", error);
-        return [];
-      }
-    },
-  });
-
-  const { data: reinvestments = [], isLoading: reinvestmentsLoading, refetch: refetchReinvestments } = useQuery({
-    queryKey: ["reinvestments"],
-    queryFn: async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'reinvestments'));
-        return querySnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          amount: Number(doc.data().amount || 0)
-        }));
-      } catch (error) {
-        console.error("Error fetching reinvestments:", error);
         return [];
       }
     },
@@ -158,101 +100,32 @@ export default function AdminDashboard() {
     },
   });
 
-  // Calculate live stats - Admin-only product metrics
-  const adminProductIds = new Set(products.filter(p => !p.sellerId).map(p => p.id));
-
-  // Helper to extract revenue and profit from items belonging only to the admin
-  const getAdminOrderStats = (items) => {
-    const adminItems = items?.filter(item => adminProductIds.has(item.productId)) || [];
-    const revenue = adminItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0);
-    const profit = adminItems.reduce((sum, item) => sum + (Number(item.profit) || 0), 0);
-    return { revenue, profit, count: adminItems.length };
-  };
-
-  const onlineRevenue = orders.reduce((sum, order) => sum + getAdminOrderStats(order.items).revenue, 0);
-  const manualRevenue = manualSales.reduce((sum, sale) => sum + getAdminOrderStats(sale.items).revenue, 0);
-  
-  const onlineProfit = orders.reduce((sum, order) => sum + getAdminOrderStats(order.items).profit, 0);
-  const manualProfit = manualSales.reduce((sum, sale) => sum + getAdminOrderStats(sale.items).profit, 0);
-  
-  const totalRevenue = onlineRevenue + manualRevenue;
-  const totalGrossProfit = onlineProfit + manualProfit;
-
-  // Only count orders/sales containing admin products
-  const adminOnlineOrders = orders.filter(o => o.items?.some(item => adminProductIds.has(item.productId)));
-  const adminManualSales = manualSales.filter(s => s.items?.some(item => adminProductIds.has(item.productId)));
-  const totalOrders = adminOnlineOrders.length + adminManualSales.length;
-
-  // Sort reinvestments to find the oldest entry dynamically
-  const chronologicalReinvestments = [...reinvestments].sort((a, b) => {
-    const dateA = a.date?.toDate ? a.date.toDate() : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date || a.createdAt));
-    const dateB = b.date?.toDate ? b.date.toDate() : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date || b.createdAt));
-    return dateA - dateB;
-  });
-  const oldestReinvestmentId = chronologicalReinvestments[0]?.id;
-
-  const isCapitalInflow = (r) => {
-    if (r.id && r.id === oldestReinvestmentId) return true;
-    if (r.reinvestmentType === "capital" || r.entryType === "inflow" || r.reinvestmentType === "simple") return true;
-    const desc = (r.description || "").toLowerCase();
-    return desc.includes("initial") || desc.includes("capital") || desc.includes("injection") || desc.includes("starting");
-  };
-
-  // Get Company Savings from localStorage (client-side only)
-  let companySavings = 0;
-  if (typeof window !== "undefined") {
-    companySavings = Number(localStorage.getItem("cartly-savings") || "0");
-  }
-
-  const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
-  const actualNetBalance = totalGrossProfit - totalExpenses;
-
-  const totalCapital = reinvestments
-    .filter(isCapitalInflow)
-    .reduce((sum, r) => sum + (r.amount || 0), 0);
-
-  const totalReinvested = reinvestments
-    .filter(r => !isCapitalInflow(r))
-    .reduce((sum, r) => sum + (r.amount || 0), 0);
-
-  // COGS for admin items
-  const cogs = totalRevenue - totalGrossProfit;
-
-  // Cost Capital Pool
-  const rawCostCapitalPool = totalCapital + cogs - totalReinvested;
-  const costCapitalPool = Math.max(0, rawCostCapitalPool);
-
-  // Deficit calculation
-  const restockDeficit = Math.max(0, totalReinvested - (totalCapital + cogs));
-  const savingsUsed = Math.min(restockDeficit, companySavings);
-  const remainingDeficitAfterSavings = Math.max(0, restockDeficit - savingsUsed);
-  const borrowedFromProfit = remainingDeficitAfterSavings;
-
-  // Pure Profit Pool
-  const pureProfitPool = totalGrossProfit - totalExpenses - borrowedFromProfit;
-
-  const remainingProfit = pureProfitPool;
-  const totalCompanyCash = totalCapital + actualNetBalance - totalReinvested;
+  // Calculate marketplace statistics
+  const totalMarketplaceOrders = orders.length;
+  const totalMarketplaceGMV = orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0);
+  const totalRegisteredSellers = sellers.length;
+  const totalMarketplaceListings = products.length;
   const pendingSellers = sellers.filter(s => !s.isVerified);
 
   // Marketplace Reputation
   const avgRating = reviews.length > 0 
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : "NA";
+    : "N/A";
 
-  // Pie chart data for expenses
-  const expenseBreakdown = expenses.reduce((acc, exp) => {
-    const category = exp.category || 'other';
-    acc[category] = (acc[category] || 0) + exp.amount;
+  // Aggregate Top Sellers based on listing count
+  const sellerProductCounts = products.reduce((acc, p) => {
+    const sId = p.sellerId || "admin";
+    const sName = p.sellerName || "Admin / Internal";
+    if (!acc[sId]) {
+      acc[sId] = { id: sId, name: sName, count: 0 };
+    }
+    acc[sId].count += 1;
     return acc;
   }, {});
 
-  const pieData = Object.entries(expenseBreakdown).map(([name, value]) => ({
-    name: name.toUpperCase(),
-    value: value
-  })).sort((a, b) => b.value - a.value);
-
-  const COLORS = ['#000000', '#4B5563', '#9CA3AF', '#D1D5DB', '#E5E7EB', '#F3F4F6'];
+  const topSellers = Object.values(sellerProductCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
   // Aggregate sales data for charts
   const getMonthlyData = () => {
@@ -272,35 +145,16 @@ export default function AdminDashboard() {
       });
     }
 
-    // Accumulate only admin items sales in chart
+    // Accumulate all marketplace orders in chart
     orders.forEach(t => {
       if (!t.createdAt) return;
-      const adminStats = getAdminOrderStats(t.items);
-      if (adminStats.count === 0) return;
-
       const date = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
       const m = date.getMonth();
       const y = date.getFullYear();
 
       const dataPoint = lastSixMonths.find(p => p.month === m && p.year === y);
       if (dataPoint) {
-        dataPoint.revenue += adminStats.revenue;
-        dataPoint.orders += 1;
-      }
-    });
-
-    manualSales.forEach(t => {
-      if (!t.createdAt) return;
-      const adminStats = getAdminOrderStats(t.items);
-      if (adminStats.count === 0) return;
-
-      const date = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
-      const m = date.getMonth();
-      const y = date.getFullYear();
-
-      const dataPoint = lastSixMonths.find(p => p.month === m && p.year === y);
-      if (dataPoint) {
-        dataPoint.revenue += adminStats.revenue;
+        dataPoint.revenue += Number(t.totalAmount || 0);
         dataPoint.orders += 1;
       }
     });
@@ -311,25 +165,15 @@ export default function AdminDashboard() {
   const chartData = getMonthlyData();
 
   const stats = {
-    totalRevenue: totalRevenue,
-    totalProfit: totalGrossProfit, 
-    totalExpenses: totalExpenses,
-    actualNetBalance: actualNetBalance,
-    totalReinvested: totalReinvested,
-    remainingProfit: remainingProfit,
-    totalCompanyCash: totalCompanyCash,
-    costCapitalPool: costCapitalPool,
-    companySavings: companySavings,
-    pureProfitPool: pureProfitPool,
-    totalOrders: totalOrders,
-    totalInventory: products.filter(p => !p.sellerId).length,
-    onlineCount: adminOnlineOrders.length,
-    manualCount: adminManualSales.length,
+    totalRevenue: totalMarketplaceGMV,
+    totalOrders: totalMarketplaceOrders,
+    totalSellers: totalRegisteredSellers,
+    totalListings: totalMarketplaceListings,
     salesData: chartData,
-    pieData: pieData
+    topSellers: topSellers
   };
 
-  const isLoading = productsLoading || categoriesLoading || ordersLoading || expensesLoading || sellersLoading || reinvestmentsLoading;
+  const isLoading = productsLoading || categoriesLoading || ordersLoading || sellersLoading || reviewsLoading;
 
   if (isLoading) {
     return (
@@ -350,25 +194,17 @@ export default function AdminDashboard() {
             System
           </span>
           <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase">
-            Performance Overview
+            Marketplace Overview
           </h1>
         </div>
         <div className="flex w-full sm:w-auto space-x-2 md:space-x-4">
           <button
-            onClick={() => setIsExpenseModalOpen(true)}
+            onClick={() => router.push('/admin/sellers')}
             className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-white text-black border-2 border-black px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-gray-50 transition-all"
           >
-            <DollarSign className="h-4 w-4" />
-            <span className="hidden xs:inline">Log Expense</span>
-            <span className="xs:hidden">Expense</span>
-          </button>
-          <button
-            onClick={() => setIsReinvestmentModalOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-white text-indigo-600 border-2 border-indigo-600 px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-indigo-50 transition-all"
-          >
-            <ArrowUpRight className="h-4 w-4" />
-            <span className="hidden xs:inline">Log Reinvestment</span>
-            <span className="xs:hidden">Reinvest</span>
+            <Store className="h-4 w-4" />
+            <span className="hidden xs:inline">Manage Sellers</span>
+            <span className="xs:hidden">Sellers</span>
           </button>
           <button
             onClick={() => router.push('/admin/promotions')}
@@ -383,36 +219,36 @@ export default function AdminDashboard() {
             className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-black text-white px-4 md:px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-gray-800 transition-all"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden xs:inline">Add Product</span>
-            <span className="xs:hidden">Product</span>
+            <span className="hidden xs:inline">Catalog List</span>
+            <span className="xs:hidden">Catalog</span>
           </button>
         </div>
       </header>
 
       <div className="space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-8 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
               <div className="p-3 bg-gray-50 rounded-xl text-black">
-                <TrendingUp className="h-6 w-6" />
+                <DollarSign className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Gross Revenue</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Marketplace GMV</p>
               <h3 className="text-2xl md:text-3xl font-black text-black tracking-tighter">GH₵{stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
             </div>
           </div>
 
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-red-50 rounded-xl text-red-600">
-                <TrendingDown className="h-6 w-6" />
+              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+                <ShoppingCart className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Business Expenses</p>
-              <h3 className="text-2xl md:text-3xl font-black text-red-600 tracking-tighter">GH₵{stats.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer Orders</p>
+              <h3 className="text-2xl md:text-3xl font-black text-emerald-600 tracking-tighter">{stats.totalOrders.toLocaleString()}</h3>
             </div>
           </div>
 
@@ -423,56 +259,20 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cost Capital Pool</p>
-              <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">GH₵{stats.costCapitalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Marketplace Listings</p>
+              <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tighter">{stats.totalListings.toLocaleString()}</h3>
             </div>
           </div>
 
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex justify-between items-start">
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
-                <ArrowUpRight className="h-6 w-6" />
+              <div className="p-3 bg-violet-50 rounded-xl text-violet-600">
+                <Store className="h-6 w-6" />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Savings</p>
-              <h3 className="text-2xl md:text-3xl font-black text-blue-600 tracking-tighter">GH₵{stats.companySavings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-green-50 rounded-xl text-green-600">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pure Profit Pool</p>
-              <h3 className="text-2xl md:text-3xl font-black text-green-600 tracking-tighter">GH₵{stats.pureProfitPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-green-50 rounded-xl text-green-600">
-                <DollarSign className="h-6 w-6" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Company Cash Balance</p>
-              <h3 className={`text-2xl md:text-3xl font-black tracking-tighter ${stats.totalCompanyCash >= 0 ? 'text-green-600' : 'text-red-600'}`}>GH₵{stats.totalCompanyCash.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-4">
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-gray-50 rounded-xl text-black">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Active Orders</p>
-              <h3 className="text-2xl md:text-3xl font-black text-black tracking-tighter">{stats.totalOrders}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Active Vendors</p>
+              <h3 className="text-2xl md:text-3xl font-black text-violet-600 tracking-tighter">{stats.totalSellers.toLocaleString()}</h3>
             </div>
           </div>
 
@@ -511,7 +311,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px]">
             <h4 className="text-xs font-black uppercase tracking-widest mb-8">
-              Monthly Sales Revenue
+              Monthly Sales Volume (GMV)
             </h4>
             <div className="h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -521,7 +321,7 @@ export default function AdminDashboard() {
                   <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
                   <Tooltip 
                     cursor={{ fill: "#f9f9f9" }} 
-                    formatter={(value) => [`GH₵${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value) => [`GH₵${value.toLocaleString()}`, "GMV"]}
                     contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} 
                   />
                   <Bar dataKey="revenue" fill="#000000" radius={[8, 8, 0, 0]} />
@@ -550,41 +350,40 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Expense Breakdown */}
+        {/* Vendors and Reviews Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           <div className="lg:col-span-1 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[350px] md:h-[400px]">
              <h4 className="text-xs font-black uppercase tracking-widest mb-8">
-              Expense Allocation
+              Top Active Sellers
             </h4>
-            <div className="h-[250px] md:h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                {stats.pieData.length > 0 ? (
-                  <PieChart>
-                    <Pie
-                      data={stats.pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {stats.pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => [`GH₵${value.toLocaleString()}`, "Amount"]}
-                      contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
-                    />
-                    <Legend verticalAlign="bottom" height={36}/>
-                  </PieChart>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400 text-xs font-bold uppercase tracking-widest">
-                    No expenses recorded
+            <div className="space-y-4 h-[250px] md:h-[280px] overflow-y-auto pr-2">
+              {stats.topSellers.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-400 text-xs font-bold uppercase tracking-widest">
+                  No sellers listed yet
+                </div>
+              ) : (
+                stats.topSellers.map((seller, idx) => (
+                  <div 
+                    key={seller.id} 
+                    onClick={() => router.push(seller.id === "admin" ? "/admin/products" : `/admin/products?sellerId=${seller.id}`)}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-black text-xs">
+                        #{idx + 1}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-tight text-gray-900 truncate max-w-[120px]">{seller.name}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Store Profile</p>
+                      </div>
+                    </div>
+                    <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-100 text-right">
+                      <p className="text-xs font-black">{seller.count}</p>
+                      <p className="text-[8px] text-gray-400 font-bold uppercase">Items</p>
+                    </div>
                   </div>
-                )}
-              </ResponsiveContainer>
+                ))
+              )}
             </div>
           </div>
           
@@ -625,17 +424,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-
-      <ExpenseModal 
-        isOpen={isExpenseModalOpen} 
-        onClose={() => setIsExpenseModalOpen(false)} 
-        onSuccess={refetchExpenses}
-      />
-      <ReinvestmentModal 
-        isOpen={isReinvestmentModalOpen} 
-        onClose={() => setIsReinvestmentModalOpen(false)} 
-        onSuccess={refetchReinvestments}
-      />
     </div>
   );
 }
