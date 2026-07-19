@@ -122,6 +122,10 @@ export default function SellerAddProductPage() {
       toast.error("Please fill in all required fields (Name, Category, Images)");
       return false;
     }
+    if (!form.hasVariants && !form.basePrice) {
+      toast.error("Please enter a Selling Price");
+      return false;
+    }
     return true;
   };
 
@@ -479,9 +483,17 @@ export default function SellerAddProductPage() {
                 />
               </div>
 
-               <div className="space-y-2">
-                 {/* Selling price removed */}
-               </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Retail / Selling Price *</label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    value={form.basePrice}
+                    onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
 
             </div>
 

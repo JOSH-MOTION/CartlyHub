@@ -15,7 +15,7 @@ import {
   User
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { toast } from "sonner";
 
 export default function SellerSettingsPage() {
@@ -63,13 +63,40 @@ export default function SellerSettingsPage() {
 
     setIsSubmitting(true);
     try {
+      // 1. Update seller profile
       const sellerRef = doc(db, "sellers", user.id);
       await updateDoc(sellerRef, {
         ...form,
         updatedAt: Timestamp.now(),
       });
-      toast.success("Store profile updated!");
+
+      // 2. Query and update all products belonging to this seller
+      const productsQuery = query(collection(db, "products"), where("sellerId", "==", user.id));
+      const productsSnap = await getDocs(productsQuery);
+      const productPromises = productsSnap.docs.map((docSnap) => 
+        updateDoc(docSnap.ref, {
+          sellerName: form.storeName,
+          sellerPhone: form.contactPhone,
+          sellerEmail: form.contactEmail || "",
+          region: form.region,
+          location: form.location
+        })
+      );
+
+      // 3. Query and update all reviews referencing this seller
+      const reviewsQuery = query(collection(db, "reviews"), where("sellerId", "==", user.id));
+      const reviewsSnap = await getDocs(reviewsQuery);
+      const reviewPromises = reviewsSnap.docs.map((docSnap) =>
+        updateDoc(docSnap.ref, {
+          sellerName: form.storeName
+        })
+      );
+
+      await Promise.all([...productPromises, ...reviewPromises]);
+
+      toast.success("Store profile and linked records updated!");
     } catch (error) {
+      console.error("Error updating profile and linked records:", error);
       toast.error("Failed to update profile");
     } finally {
       setIsSubmitting(false);
