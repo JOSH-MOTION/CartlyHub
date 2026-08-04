@@ -178,10 +178,18 @@ export default function SellerAddProductPage() {
     if (payload.variants) {
       payload.variants = payload.variants.map(v => {
         const { discountPrice, ...rest } = v;
-        const priced = normaliseDiscount(
-          v.price || form.basePrice,
-          discountPrice ?? form.discountPrice,
-        );
+
+        // Rows generated above are already normalised — re-running the
+        // discount on them would compare the sale price against itself and
+        // silently drop compareAtPrice. Only rows the seller typed into carry
+        // a discountPrice, and only those still need applying.
+        const priced =
+          discountPrice === undefined
+            ? {
+                price: Number(rest.price) || base.price,
+                compareAtPrice: rest.compareAtPrice ?? null,
+              }
+            : normaliseDiscount(rest.price || form.basePrice, discountPrice);
 
         return {
           ...rest,
