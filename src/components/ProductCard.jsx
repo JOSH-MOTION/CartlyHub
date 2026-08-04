@@ -4,12 +4,14 @@ import { ShoppingCart, Heart, Star, MapPin, Store, MessageCircle, Share2 } from 
 import useCart from '../store/useCart';
 import { useApp } from '../context/AppContext';
 import { toast } from "sonner";
+import { resolveListPricing } from "@/lib/pricing";
 
 export default function ProductCard({ product, categories = [] }) {
   const { addItem } = useCart();
   const { toggleWishlist, wishlist } = useApp();
   const firstInStockVariant = product.variants?.[0];
-  const price = firstInStockVariant?.price || product.basePrice;
+  const pricing = resolveListPricing(product);
+  const price = pricing.price;
   const isOutOfStock = false;
   const totalStock = 999999;
 
@@ -66,6 +68,11 @@ export default function ProductCard({ product, categories = [] }) {
         </a>
         
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-col gap-1 sm:gap-2">
+          {pricing.isDiscounted && (
+            <span className="bg-red-600 text-white border border-red-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(220,38,38,0.25)] mb-1 sm:mb-2">
+              -{pricing.percentOff}%
+            </span>
+          )}
           {product.isFeatured && (
             <span className="bg-white/80 backdrop-blur-md text-gray-900 border border-white/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)] mb-1 sm:mb-2">
               Featured
@@ -182,13 +189,19 @@ export default function ProductCard({ product, categories = [] }) {
           <div className="flex flex-col">
             {isOutOfStock && <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-widest mb-0.5 sm:mb-1">Sold Out</span>}
             <div className="flex items-baseline gap-1">
-              <span className={`text-xs sm:text-sm font-bold ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`text-xs sm:text-sm font-bold ${isOutOfStock ? 'text-gray-400' : pricing.isDiscounted ? 'text-red-600' : 'text-gray-900'}`}>
                 {process.env.NEXT_PUBLIC_STORE_CURRENCY || '₵'}
               </span>
-              <p className={`text-lg sm:text-xl font-black tracking-tighter ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
+              <p className={`text-lg sm:text-xl font-black tracking-tighter ${isOutOfStock ? 'text-gray-400' : pricing.isDiscounted ? 'text-red-600' : 'text-gray-900'}`}>
                 {Number(price).toLocaleString()}
               </p>
             </div>
+            {pricing.isDiscounted && (
+              <span className="text-[10px] sm:text-xs font-bold text-gray-400 line-through leading-none">
+                {process.env.NEXT_PUBLIC_STORE_CURRENCY || '₵'}
+                {Number(pricing.compareAtPrice).toLocaleString()}
+              </span>
+            )}
           </div>
           
           {(product.isRental || product.isService || !!product.sellerId) ? (

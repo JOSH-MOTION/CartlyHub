@@ -13,10 +13,13 @@ import {
   Store,
   ChevronLeft,
   CheckCircle2,
-  Info
+  Info,
+  Tag
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCategories, updateProduct, getProductById } from "@/utils/firebaseData";
+import { normaliseDiscount } from "@/lib/pricing";
+import DiscountHint from "@/components/marketplace/DiscountHint";
 import { useApp } from "@/context/AppContext";
 import { PRODUCT_SIZES, GHANA_REGIONS, PRODUCT_GENDERS, PRODUCT_CONDITIONS } from "@/utils/constants";
 import ColorPicker from "@/components/ColorPicker";
@@ -36,11 +39,12 @@ export default function SellerEditProductPage({ params }) {
     subcategoryId: "",
     costPrice: "",
     basePrice: "",
+    discountPrice: "",
     isFeatured: false,
     hasVariants: false,
     totalStock: "",
     images: [],
-    variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+    variants: [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", discountPrice: "", sku: "", hexColor: "" }],
     region: "",
     location: "",
     sellerId: sellerProfile?.uid,
@@ -80,7 +84,10 @@ export default function SellerEditProductPage({ params }) {
         categoryId: productData.categoryId || "",
         subcategoryId: productData.subcategoryId || "",
         costPrice: productData.costPrice || "",
-        basePrice: productData.basePrice || "",
+        // Stored as price + compareAtPrice; the form thinks in normal price +
+        // discount, so unwind it back into those two boxes.
+        basePrice: productData.compareAtPrice || productData.basePrice || "",
+        discountPrice: productData.compareAtPrice ? productData.basePrice || "" : "",
         isFeatured: productData.isFeatured || false,
         hasVariants: hasMeaningfulVariants,
         totalStock: totalStock,
@@ -91,10 +98,11 @@ export default function SellerEditProductPage({ params }) {
           size: v.size || "",
           color: v.colorName || v.color || "",
           stock: v.stock || 0,
-          price: v.price || "",
+          price: v.compareAtPrice || v.price || "",
+          discountPrice: v.compareAtPrice ? v.price || "" : "",
           sku: v.sku || "",
           hexColor: v.hexColor || ""
-        })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }],
+        })) || [{ vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", discountPrice: "", sku: "", hexColor: "" }],
         region: productData.region || "",
         location: productData.location || "",
         sellerId: productData.sellerId,
@@ -190,9 +198,15 @@ export default function SellerEditProductPage({ params }) {
     if (!validate()) return;
     
     // Construct payload
-    let payload = { ...form };
+    const { discountPrice: _discountEntry, ...formFields } = form;
+    let payload = { ...formFields };
     
-    // If no variants but multiple sizes selected, generate them
+    // A discount is stored as a lower `price` plus a `compareAtPrice` holding
+    // the original, so the checkout keeps charging from `price` unchanged.
+    const base = normaliseDiscount(form.basePrice, form.discountPrice);
+    payload.basePrice = base.price;
+    payload.compareAtPrice = base.compareAtPrice;
+
     if (!form.hasVariants && form.selectedSizes.length > 0) {
       payload.variants = form.selectedSizes.map(size => ({
         vId: `size-${size}-${Date.now()}`,
@@ -200,7 +214,8 @@ export default function SellerEditProductPage({ params }) {
         color: "",
         colorName: "",
         stock: 999999,
-        price: Number(form.basePrice) || 0,
+        price: base.price,
+        compareAtPrice: base.compareAtPrice,
         sku: "",
         hexColor: ""
       }));
@@ -212,7 +227,8 @@ export default function SellerEditProductPage({ params }) {
         color: "",
         colorName: "",
         stock: 999999,
-        price: Number(form.basePrice) || 0,
+        price: base.price,
+        compareAtPrice: base.compareAtPrice,
         sku: "",
         hexColor: ""
       }];
@@ -220,12 +236,22 @@ export default function SellerEditProductPage({ params }) {
 
     // Set stock for variants if they don't have it (fallback)
     if (payload.variants) {
-      payload.variants = payload.variants.map(v => ({
-        ...v,
-        stock: v.stock || 999999
-      }));
+      payload.variants = payload.variants.map(v => {
+        const { discountPrice, ...rest } = v;
+        const priced = normaliseDiscount(
+          v.price || form.basePrice,
+          discountPrice ?? form.discountPrice,
+        );
+
+        return {
+          ...rest,
+          stock: v.stock || 999999,
+          price: priced.price,
+          compareAtPrice: priced.compareAtPrice,
+        };
+      });
     }
-    
+
     updateProductMutation.mutate(payload);
   };
 
@@ -483,7 +509,7 @@ export default function SellerEditProductPage({ params }) {
             <div className="flex justify-between items-center pb-4 border-b border-gray-50">
               <h2 className="text-xl font-black uppercase tracking-tight">Variants</h2>
               <button
-                onClick={() => setForm({ ...form, variants: [...form.variants, { vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", sku: "", hexColor: "" }] })}
+                onClick={() => setForm({ ...form, variants: [...form.variants, { vId: Date.now().toString(), size: "", color: "", stock: 0, price: "", discountPrice: "", sku: "", hexColor: "" }] })}
                 className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-gray-50 rounded-xl hover:bg-black hover:text-white transition-all"
               >
                 Add Variant
@@ -514,6 +540,13 @@ export default function SellerEditProductPage({ params }) {
                       />
                     )}
                     <input
+                      placeholder="Discount (optional)"
+                      type="number"
+                      className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black order-last"
+                      value={v.discountPrice ?? ""}
+                      onChange={(e) => setForm({ ...form, variants: form.variants.map((varItem, idx) => idx === i ? { ...varItem, discountPrice: e.target.value } : varItem) })}
+                    />
+                    <input
                       placeholder="Price"
                       type="number"
                       className="bg-white px-4 py-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-black"
@@ -537,17 +570,6 @@ export default function SellerEditProductPage({ params }) {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publish Details</h3>
             
              <div className="space-y-4">
-               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Wholesale / Cost Price (Optional)</label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
-                  value={form.costPrice}
-                  onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Retail / Selling Price *</label>
                   <input
@@ -558,6 +580,21 @@ export default function SellerEditProductPage({ params }) {
                     placeholder="0.00"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                    <Tag className="h-3 w-3" />
+                    <span>Discount Price (optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    value={form.discountPrice}
+                    onChange={(e) => setForm({ ...form, discountPrice: e.target.value })}
+                    placeholder="Leave blank to end the sale"
+                  />
+                  <DiscountHint original={form.basePrice} discount={form.discountPrice} />
                 </div>
 
             </div>

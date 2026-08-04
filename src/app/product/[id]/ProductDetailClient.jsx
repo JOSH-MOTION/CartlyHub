@@ -40,6 +40,8 @@ import {
   acceptsOnlinePayments,
   acceptsWhatsappOrders,
 } from "@/services/marketplace/constants";
+import { resolvePricing } from "@/lib/pricing";
+import ReviewsSection from "@/components/marketplace/ReviewsSection";
 
 export default function ProductDetailClient({ params }) {
   const { id } = params;
@@ -139,7 +141,8 @@ export default function ProductDetailClient({ params }) {
       (!selectedColor || (v.color || v.colorName) === selectedColor),
   );
 
-  const price = selectedVariant?.price || product.basePrice;
+  const pricing = resolvePricing(product, selectedVariant);
+  const price = pricing.price;
 
   const handleSizeSelect = (size) => {
     setSelectedSize(size === selectedSize ? "" : size);
@@ -343,7 +346,23 @@ export default function ProductDetailClient({ params }) {
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
               <div className="flex items-baseline justify-between mb-4">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-3xl font-black text-black tracking-tight">GH₵ {price?.toLocaleString()}</span>
+                  <span
+                    className={`text-3xl font-black tracking-tight ${
+                      pricing.isDiscounted ? "text-red-600" : "text-black"
+                    }`}
+                  >
+                    GH₵ {price?.toLocaleString()}
+                  </span>
+                  {pricing.isDiscounted && (
+                    <>
+                      <span className="text-base font-bold text-gray-400 line-through">
+                        GH₵ {pricing.compareAtPrice.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600 px-2 py-1 rounded-full">
+                        -{pricing.percentOff}%
+                      </span>
+                    </>
+                  )}
                 </div>
                 <button className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:underline">
                   Price History
@@ -540,6 +559,13 @@ export default function ProductDetailClient({ params }) {
             {product.description || "No description available for this premium piece."}
           </div>
         </div>
+
+        {/* Public feedback — visible to everyone, signed in or not */}
+        <ReviewsSection
+          reviews={sellerReviews || []}
+          sellerId={product.sellerId || sellerInfo?.id}
+          sellerName={product.sellerName || sellerInfo?.storeName}
+        />
 
         {/* More from Seller Section */}
         {moreFromSeller.length > 0 && (

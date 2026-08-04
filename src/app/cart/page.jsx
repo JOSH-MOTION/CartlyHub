@@ -131,13 +131,24 @@ export default function CartPage() {
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="text-2xl font-black">
-                        ₵
-                        {Number(
-                          (item.variant.price || item.product.basePrice) *
-                            item.quantity,
-                        ).toLocaleString()}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-2xl font-black">
+                          ₵
+                          {Number(
+                            (item.variant.price || item.product.basePrice) *
+                              item.quantity,
+                          ).toLocaleString()}
+                        </p>
+                        {Number(item.variant.compareAtPrice) >
+                          Number(item.variant.price || item.product.basePrice) && (
+                          <p className="text-xs font-bold text-gray-400 line-through">
+                            ₵
+                            {Number(
+                              item.variant.compareAtPrice * item.quantity,
+                            ).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

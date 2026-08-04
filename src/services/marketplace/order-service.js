@@ -31,6 +31,11 @@ import {
   notifyVendorOfWhatsappOrder,
 } from './notification-service';
 import { buildOrderWhatsappLink } from './whatsapp';
+import {
+  sendCustomerOrderEmail,
+  sendVendorOrderEmail,
+  sendVendorWhatsappOrderEmail,
+} from './email-service';
 import { getPaymentProvider } from '../payments';
 import { round2, splitCommission, toMinor } from '../payments/money';
 
@@ -132,8 +137,14 @@ export const buildOrderGroups = async (cartItems) => {
       );
     }
 
+    // `price` is always the payable amount, discounted or not, so commission
+    // and wallet credit need no discount awareness. `compareAtPrice` is kept
+    // only as a record of what the item normally sells for.
     const unitPrice = round2(Number(variant.price || product.basePrice || 0));
     if (unitPrice <= 0) throw new Error(`${product.name} is not priced correctly`);
+
+    const listPrice = Number(variant.compareAtPrice || product.compareAtPrice || 0);
+    const compareAtPrice = listPrice > unitPrice ? round2(listPrice) : null;
 
     const vendor = await loadVendor(product.sellerId, vendorCache);
     if (vendor.isSuspended) {
@@ -148,6 +159,8 @@ export const buildOrderGroups = async (cartItems) => {
       variantIndex: index,
       quantity,
       price: unitPrice,
+      compareAtPrice,
+      savedAmount: compareAtPrice ? round2((compareAtPrice - unitPrice) * quantity) : 0,
       lineTotal: round2(unitPrice * quantity),
       selections: raw.selections || [],
       variantInfo: {
@@ -164,6 +177,9 @@ export const buildOrderGroups = async (cartItems) => {
         vendorId: vendor.id,
         vendorStoreName: vendor.storeName || 'Cartly Hub',
         vendorWhatsapp: vendor.whatsappNumber || null,
+        // Captured at order time so fulfilment can email the vendor without
+        // a second lookup, and so the address is the one they had then.
+        vendorEmail: vendor.contactEmail || vendor.email || null,
         supportsOnline: vendor.isPlatform ? true : acceptsOnlinePayments(vendor),
         supportsWhatsapp: acceptsWhatsappOrders(vendor),
         items: [],
@@ -209,6 +225,7 @@ const buildOrderDocument = ({
     vendorId: group.vendorId,
     vendorStoreName: group.vendorStoreName,
     vendorWhatsapp: group.vendorWhatsapp,
+    vendorEmail: group.vendorEmail || null,
 
     customerId: customer.id || null,
     customerName: customer.name || null,
@@ -299,6 +316,12 @@ export const createWhatsappOrder = async ({ group, customer, delivery, groupId }
   const order = hydrate(ref.id, payload);
 
   await notifyVendorOfWhatsappOrder(order);
+
+  if (order.vendorEmail) {
+    await sendVendorWhatsappOrderEmail(order, order.vendorEmail).catch((error) =>
+      console.error('[orders] WhatsApp order email failed', error),
+    );
+  }
 
   return { order, whatsappUrl: buildOrderWhatsappLink(order) };
 };
@@ -534,6 +557,16 @@ export const fulfilPaidOrders = async (reference, { providerId } = {}) => {
     if (order.customerId) {
       await notifyCustomerOfPaidOrder(notifiable);
     }
+
+    // Email sits alongside the in-app notification, never instead of it, and
+    // is best-effort — the payment has already succeeded, so a mail failure
+    // must not surface as a failed order.
+    await Promise.all([
+      order.vendorEmail && order.vendorId !== HOUSE_VENDOR.id
+        ? sendVendorOrderEmail(notifiable, order.vendorEmail)
+        : Promise.resolve(),
+      order.customerEmail ? sendCustomerOrderEmail(notifiable) : Promise.resolve(),
+    ]).catch((error) => console.error('[orders] notification email failed', error));
 
     fulfilled.push({ ...paidOrder, walletCredited: true, stockDeducted: true });
   }

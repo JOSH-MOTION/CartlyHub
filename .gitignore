@@ -10,3 +10,8 @@
 .env.local
 .env.*
 .next/
+
+# Firebase Admin SDK service-account keys — full admin credentials, never commit
+*firebase-adminsdk*.json
+service-account*.json
+serviceAccount*.json

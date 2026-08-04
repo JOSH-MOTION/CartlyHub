@@ -435,8 +435,15 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-black whitespace-nowrap">
-                      {formatCurrency(item.lineTotal, quote.currency)}
+                    <span className="text-right whitespace-nowrap">
+                      <span className="block text-xs font-black">
+                        {formatCurrency(item.lineTotal, quote.currency)}
+                      </span>
+                      {item.compareAtPrice && (
+                        <span className="block text-[10px] font-bold text-gray-400 line-through">
+                          {formatCurrency(item.compareAtPrice * item.quantity, quote.currency)}
+                        </span>
+                      )}
                     </span>
                   </div>
                 ))}
