@@ -61,7 +61,7 @@ export default function MyOrdersPage() {
     <div className="min-h-screen bg-gray-50 font-sans">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 pt-28 pb-24 space-y-10">
+      <main className="max-w-4xl mx-auto px-4 pt-10 pb-24 space-y-10">
         <header className="space-y-2">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 block">
             Your account

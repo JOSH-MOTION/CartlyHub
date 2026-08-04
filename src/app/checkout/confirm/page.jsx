@@ -207,7 +207,7 @@ function CheckoutConfirmContent() {
 const Shell = ({ children }) => (
   <div className="min-h-screen bg-white font-sans">
     <Navbar />
-    <main className="max-w-3xl mx-auto px-4 pt-28 pb-24">{children}</main>
+    <main className="max-w-3xl mx-auto px-4 pt-10 pb-24">{children}</main>
   </div>
 );
 

@@ -55,7 +55,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-white font-sans">
       <Navbar />
 
-      <main className="py-8 pt-28">
+      <main className="py-10">
         <MarketplaceCheckout
           cart={items}
           userProfile={user || {}}

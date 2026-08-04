@@ -173,16 +173,19 @@ export default function SellerLayout({ children }) {
     <div className="min-h-screen bg-gray-50 font-sans">
       <Navbar />
 
-      <div className="flex pt-20">
+      {/* Navbar is a normal in-flow element (position: static), so nothing here
+          offsets for it — the sidebar and mobile bar simply stick to the top of
+          the viewport once it scrolls away. */}
+      <div className="flex">
         {/* ---------------- Desktop sidebar ---------------- */}
-        <aside className="hidden lg:flex w-72 shrink-0 flex-col fixed left-0 top-20 bottom-0 bg-white border-r border-gray-100">
+        <aside className="hidden lg:flex w-72 shrink-0 flex-col sticky top-0 h-screen bg-white border-r border-gray-100">
           {navigation}
         </aside>
 
         {/* ---------------- Workspace ---------------- */}
-        <div className="flex-1 min-w-0 lg:ml-72">
+        <div className="flex-1 min-w-0">
           {/* Mobile bar: menu on the left, context in the middle, alerts right */}
-          <div className="lg:hidden sticky top-20 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-3 py-2.5 flex items-center gap-3">
+          <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100 px-3 py-2.5 flex items-center gap-3">
             <button
               onClick={() => setDrawerOpen(true)}
               className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 active:bg-gray-100"
