@@ -57,7 +57,7 @@ export default function SellerFeedbackPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Average Rating</p>
             <h3 className="text-3xl font-black">{averageRating.toFixed(1)}</h3>
@@ -72,7 +72,7 @@ export default function SellerFeedbackPage() {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Total Opinions</p>
             <h3 className="text-3xl font-black">{reviews.length}</h3>
@@ -83,7 +83,7 @@ export default function SellerFeedbackPage() {
           </div>
         </div>
 
-        <div className="bg-gray-900 p-8 rounded-[2.5rem] shadow-xl text-white flex items-center justify-between">
+        <div className="bg-gray-900 p-8 rounded-2xl shadow-xl text-white flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Seller Rank</p>
             <h3 className="text-2xl font-black uppercase tracking-tight">Pro Seller</h3>

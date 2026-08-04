@@ -13,7 +13,6 @@ import {
   CheckCircle2, 
   User, 
   MapPin, 
-  MessageCircle,
   Lightbulb,
   ShieldCheck,
   TrendingUp,
@@ -21,6 +20,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import SellingPreferences from "@/components/marketplace/SellingPreferences";
+import { SELLING_MODES } from "@/services/marketplace/constants";
 
 export default function SellerOnboardingPage() {
   const router = useRouter();
@@ -38,6 +39,8 @@ export default function SellerOnboardingPage() {
     contactEmail: user?.email || "",
     location: "",
     region: "",
+    // Both is recommended: vendors get online payments and keep WhatsApp.
+    sellingMode: SELLING_MODES.BOTH,
   });
 
   const GHANA_REGIONS = [
@@ -58,7 +61,7 @@ export default function SellerOnboardingPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
         <Navbar />
-        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
+        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
           <div className="bg-gray-50 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto">
             <Store className="h-8 w-8 text-black" />
           </div>
@@ -69,7 +72,7 @@ export default function SellerOnboardingPage() {
           <p className="text-gray-500 text-sm">Please sign in to your Cartly Hub account to set up your marketplace store.</p>
           <button
             onClick={() => router.push("/account/signin")}
-            className="w-full bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-lg"
+            className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-lg"
           >
             Go to Login
           </button>
@@ -82,7 +85,7 @@ export default function SellerOnboardingPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
         <Navbar />
-        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
+        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 text-center space-y-6 max-w-md w-full">
           <div className="bg-emerald-50 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto text-emerald-500">
             <CheckCircle2 className="h-8 w-8 fill-current" />
           </div>
@@ -93,7 +96,7 @@ export default function SellerOnboardingPage() {
           <p className="text-gray-500 text-sm">You are already registered. Click below to manage your products and views.</p>
           <button
             onClick={() => router.push("/seller")}
-            className="w-full bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
+            className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
           >
             Enter Dashboard
           </button>
@@ -104,14 +107,19 @@ export default function SellerOnboardingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.region || !form.whatsappNumber) {
+    if (!form.storeName || !form.contactPhone || !form.ownerName || !form.location || !form.region) {
       toast.error("Required fields missing");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const formattedWhatsapp = `${countryCode}${form.whatsappNumber.replace(/^0+/, '')}`;
+      // activateSeller re-validates this pairing; sending the number in full
+      // international form keeps the WhatsApp deep links working.
+      const formattedWhatsapp = form.whatsappNumber
+        ? `${countryCode}${form.whatsappNumber.replace(/^0+/, "")}`
+        : "";
+
       await activateSeller({ ...form, whatsappNumber: formattedWhatsapp });
       toast.success("Store created successfully!");
       setStep(3); // Show success state
@@ -140,7 +148,7 @@ export default function SellerOnboardingPage() {
         {step === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Left Value Prop */}
-            <div className="lg:col-span-5 bg-gradient-to-br from-gray-900 to-black text-white p-8 md:p-10 rounded-[2.5rem] shadow-xl flex flex-col justify-between border border-gray-800">
+            <div className="lg:col-span-5 bg-gradient-to-br from-gray-900 to-black text-white p-8 md:p-10 rounded-2xl shadow-xl flex flex-col justify-between border border-gray-800">
               <div className="space-y-8">
                 <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-yellow-400">
                   <Lightbulb className="h-5 w-5" />
@@ -168,7 +176,7 @@ export default function SellerOnboardingPage() {
             </div>
 
             {/* Right Welcome Action */}
-            <div className="lg:col-span-7 bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-between space-y-8">
+            <div className="lg:col-span-7 bg-white p-8 md:p-10 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between space-y-8">
               <div className="space-y-4">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 block">Start Selling</span>
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-gray-900 leading-tight">
@@ -192,7 +200,7 @@ export default function SellerOnboardingPage() {
 
         {step === 2 && (
           <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+            <div className="bg-white border border-gray-100 p-8 rounded-2xl shadow-sm space-y-6">
               <div className="border-b border-gray-100 pb-4 mb-4">
                 <h3 className="font-black text-sm uppercase tracking-tight text-gray-900">Merchant Registration</h3>
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Please provide valid credentials</p>
@@ -277,30 +285,6 @@ export default function SellerOnboardingPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
-                    <MessageCircle className="h-3 w-3" />
-                    <span>WhatsApp Number *</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
-                      className="px-3 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold w-[90px] flex-shrink-0 text-sm"
-                    >
-                      <option value="+233">GH (+233)</option>
-                      <option value="+234">NG (+234)</option>
-                    </select>
-                    <input
-                      required
-                      type="tel"
-                      className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
-                      placeholder="E.g. 241234567"
-                      value={form.whatsappNumber}
-                      onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
-                    />
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -331,6 +315,19 @@ export default function SellerOnboardingPage() {
               </div>
             </div>
 
+            <div className="bg-white border border-gray-100 p-8 rounded-2xl shadow-sm">
+              <SellingPreferences
+                value={form.sellingMode}
+                onChange={(sellingMode) => setForm({ ...form, sellingMode })}
+                countryCode={countryCode}
+                onCountryCodeChange={setCountryCode}
+                whatsappNumber={form.whatsappNumber}
+                onWhatsappNumberChange={(whatsappNumber) =>
+                  setForm({ ...form, whatsappNumber })
+                }
+              />
+            </div>
+
             <div className="flex items-center space-x-4">
               <button
                 type="button"
@@ -342,7 +339,7 @@ export default function SellerOnboardingPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-black text-white py-4.5 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
+                className="flex-1 bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center space-x-2"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -358,7 +355,7 @@ export default function SellerOnboardingPage() {
         )}
 
         {step === 3 && (
-          <div className="text-center space-y-8 animate-in zoom-in duration-500 bg-black text-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl max-w-xl mx-auto border border-gray-800">
+          <div className="text-center space-y-8 animate-in zoom-in duration-500 bg-black text-white p-8 md:p-12 rounded-2xl shadow-2xl max-w-xl mx-auto border border-gray-800">
             <div className="bg-white/10 h-20 w-20 rounded-2xl flex items-center justify-center mx-auto border border-white/10 text-white">
               <CheckCircle2 className="h-8 w-8 fill-current" />
             </div>

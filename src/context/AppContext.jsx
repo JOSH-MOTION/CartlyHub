@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
+import { validateSellingPreferences } from '../services/marketplace/selling-preferences';
 
 const AppContext = createContext(undefined);
 
@@ -293,10 +294,20 @@ export const AppProvider = ({ children }) => {
     if (!user) throw new Error('Must be logged in to activate seller profile');
 
     try {
+      // Selling & Payment Preferences decide whether this vendor gets a
+      // "Pay Now" or an "Order on WhatsApp" button at checkout, so they are
+      // validated with the same rules the API uses.
+      const preferences = validateSellingPreferences({
+        sellingMode: storeData.sellingMode,
+        whatsappNumber: storeData.whatsappNumber,
+      });
+
       const sellerData = {
         uid: user.id,
         ...storeData,
+        ...preferences,
         isVerified: false,
+        isSuspended: false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -315,6 +326,24 @@ export const AppProvider = ({ children }) => {
       console.error('Error activating seller profile:', error);
       throw error;
     }
+  };
+
+  /** Re-reads the seller document after settings or preference changes. */
+  const refreshSellerProfile = async () => {
+    if (!user) return null;
+
+    const sellerSnap = await getDoc(doc(db, 'sellers', user.id));
+    if (!sellerSnap.exists()) return null;
+
+    const sellerData = sellerSnap.data();
+    const hydrated = {
+      ...sellerData,
+      createdAt: sellerData.createdAt?.toDate ? sellerData.createdAt.toDate() : new Date(),
+      updatedAt: sellerData.updatedAt?.toDate ? sellerData.updatedAt.toDate() : new Date(),
+    };
+
+    setSellerProfile(hydrated);
+    return hydrated;
   };
 
   const contextValue = {
@@ -356,6 +385,7 @@ export const AppProvider = ({ children }) => {
     signOut: signOutUser,
     setAuthOpen,
     activateSeller,
+    refreshSellerProfile,
 
     addToCart,
     removeFromCart,

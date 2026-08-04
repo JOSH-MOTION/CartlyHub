@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { categoryService } from '../../../services/firestore';
+import { categoryService } from '@/services/firestore';
 
 export async function GET() {
   try {

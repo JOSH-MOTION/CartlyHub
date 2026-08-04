@@ -4,17 +4,20 @@ import { useRouter } from "next/navigation";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import useCart from "@/store/useCart";
 import useUser from "@/utils/useUser";
-import PaystackCheckout from "@/components/PaystackCheckout";
+import MarketplaceCheckout from "@/components/marketplace/MarketplaceCheckout";
 import Navbar from "@/components/Navbar";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotal, clearCart } = useCart();
+  const { items, clearCart } = useCart();
   const { user } = useUser?.() || { user: null }; // Fallback in case hook isn't fully implemented
 
-  const handleComplete = () => {
+  // A WhatsApp order is complete the moment it is saved, so the bag is cleared
+  // here. Online payments clear theirs on /checkout/confirm, after the gateway
+  // confirms the money.
+  const handleOrdered = (order) => {
     clearCart();
-    router.push('/');
+    router.push(`/orders/${order.orderNumber}`);
   };
 
   const handleCancel = () => {
@@ -46,17 +49,17 @@ export default function CheckoutPage() {
     );
   }
 
-  // Pure clean wrapper, delegating the complex UI securely to the Paystack Checkout component
+  // Pricing, vendor selling modes and payment routing all live behind the API,
+  // so this page is a thin wrapper around the checkout component.
   return (
     <div className="min-h-screen bg-white font-sans">
       <Navbar />
-      
-      <main className="py-8">
-        <PaystackCheckout 
+
+      <main className="py-8 pt-28">
+        <MarketplaceCheckout
           cart={items}
-          total={getTotal()}
           userProfile={user || {}}
-          onComplete={handleComplete}
+          onOrdered={handleOrdered}
           onCancel={handleCancel}
         />
       </main>

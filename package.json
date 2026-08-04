@@ -36,6 +36,7 @@
 		"date-fns": "^4.1.0",
 		"downshift": "^9.0.9",
 		"firebase": "^12.11.0",
+		"firebase-admin": "^14.2.0",
 		"framer-motion": "^11.5.4",
 		"hono": "^4.12.12",
 		"html-to-image": "^1.11.13",

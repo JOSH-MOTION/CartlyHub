@@ -12,7 +12,11 @@ import {
   Menu,
   X,
   Store,
-  Phone
+  Phone,
+  CreditCard,
+  Wallet,
+  Banknote,
+  SlidersHorizontal
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -48,6 +52,12 @@ export default function AdminLayout({ children }) {
       </div>
     );
   }
+
+  const SectionLabel = ({ children }) => (
+    <p className="px-6 pt-6 pb-2 text-[8px] font-black uppercase tracking-[0.3em] text-gray-300">
+      {children}
+    </p>
+  );
 
   const SidebarItem = ({ icon: Icon, label, route }) => {
     const isActive = pathname === route ||
@@ -103,6 +113,15 @@ export default function AdminLayout({ children }) {
           <SidebarItem icon={Package} label="Inventory" route="/admin/products" />
           <SidebarItem icon={ShoppingCart} label="Orders" route="/admin/orders" />
           <SidebarItem icon={Users} label="Customers" route="/admin/customers" />
+
+          <SectionLabel>Marketplace</SectionLabel>
+          <SidebarItem icon={Store} label="Vendors" route="/admin/vendors" />
+          <SidebarItem icon={CreditCard} label="Payments" route="/admin/payments" />
+          <SidebarItem icon={Wallet} label="Wallets" route="/admin/wallets" />
+          <SidebarItem icon={Banknote} label="Withdrawals" route="/admin/withdrawals" />
+          <SidebarItem icon={SlidersHorizontal} label="Settings" route="/admin/marketplace" />
+
+          <SectionLabel>Legacy</SectionLabel>
           <SidebarItem icon={Store} label="Sellers" route="/admin/sellers" />
           <SidebarItem icon={Phone} label="Seller Contacts" route="/admin/sellers/contacts" />
         </nav>

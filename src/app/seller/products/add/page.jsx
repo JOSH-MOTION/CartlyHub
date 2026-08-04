@@ -196,7 +196,7 @@ export default function SellerAddProductPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Info */}
-          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50 flex items-center space-x-2">
               <Info className="h-5 w-5 text-gray-300" />
               <span>Basic Information</span>
@@ -246,7 +246,7 @@ export default function SellerAddProductPage() {
           </section>
 
           {/* Specifications */}
-          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50 flex items-center space-x-2">
                <Plus className="h-5 w-5 text-gray-300" />
                <span>Product Specifications (Optional)</span>
@@ -301,7 +301,7 @@ export default function SellerAddProductPage() {
           </section>
 
           {/* Media */}
-          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50">Product Images</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {form.images.map((img, i) => (
@@ -325,7 +325,7 @@ export default function SellerAddProductPage() {
           </section>
 
           {/* Simple Inventory vs Variants Toggle */}
-          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                 <div>
@@ -414,7 +414,7 @@ export default function SellerAddProductPage() {
 
           {/* Variants */}
           {form.hasVariants && (
-            <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
+            <section className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex justify-between items-center pb-4 border-b border-gray-50">
               <h2 className="text-xl font-black uppercase tracking-tight">Variants</h2>
               <button
@@ -468,7 +468,7 @@ export default function SellerAddProductPage() {
 
         {/* Sidebar / Quick Actions */}
         <div className="space-y-4">
-          <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publish Details</h3>
             
              <div className="space-y-4">
@@ -506,7 +506,7 @@ export default function SellerAddProductPage() {
             </button>
           </section>
 
-          <section className="bg-gray-900 p-8 rounded-[2.5rem] shadow-sm text-white space-y-4">
+          <section className="bg-gray-900 p-8 rounded-2xl shadow-sm text-white space-y-4">
              <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
                 <Store className="h-5 w-5 text-white" />
              </div>

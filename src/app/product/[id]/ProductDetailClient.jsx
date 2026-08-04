@@ -35,9 +35,15 @@ import { getTimeOnPlatform, getTimeAgo } from "@/utils/helpers";
 import FilterSidebar from "@/components/FilterSidebar";
 import { categories } from "@/utils/categories";
 import { MessageSquare, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  acceptsOnlinePayments,
+  acceptsWhatsappOrders,
+} from "@/services/marketplace/constants";
 
 export default function ProductDetailClient({ params }) {
   const { id } = params;
+  const router = useRouter();
   const { addItem } = useCart();
   const { toggleWishlist, wishlist } = useApp();
   const [selectedSize, setSelectedSize] = useState("");
@@ -143,10 +149,23 @@ export default function ProductDetailClient({ params }) {
     setSelectedColor(color === selectedColor ? "" : color);
   };
 
-  const handleWhatsAppOrder = () => {
-    const text = `Hi Cartly Hub, I want to order:\nProduct: ${product.name}\n${selectedSize ? `Size: ${selectedSize}` : ""}\n${selectedColor ? `Color: ${selectedColor}` : ""}\nQuantity: ${quantity}\nPrice: GH₵${Number(price * quantity).toLocaleString()}\nURL: ${window.location.href}`;
-    const phone = sellerInfo?.whatsappNumber || sellerInfo?.contactPhone || product.sellerPhone || "233242403450";
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  // What this vendor accepts decides the primary button. WhatsApp-only vendors
+  // get "Order on WhatsApp"; everyone else gets the Pay Now path.
+  const vendorAcceptsOnline = sellerInfo
+    ? acceptsOnlinePayments(sellerInfo)
+    : !product.sellerId; // Cartly Hub's own listings are always payable online
+  const vendorAcceptsWhatsapp = acceptsWhatsappOrders(sellerInfo);
+
+  // Both routes go through checkout, where the order is saved to Cartly Hub
+  // before anything is handed to WhatsApp or the payment gateway.
+  const handleStartOrder = () => {
+    if (!selectedVariant) {
+      toast.error("Choose the options you want first");
+      return;
+    }
+
+    addItem(product, selectedVariant, quantity, []);
+    router.push("/checkout");
   };
 
   const handleToggleWishlist = () => {
@@ -332,12 +351,31 @@ export default function ProductDetailClient({ params }) {
               </div>
 
               <button
-                onClick={handleWhatsAppOrder}
-                className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-6 py-3.5 rounded-xl font-black uppercase tracking-widest text-[11px] hover:bg-green-700 transition-all transform hover:-translate-y-0.5 shadow-md shadow-green-600/10 mb-4"
+                onClick={handleStartOrder}
+                className={`w-full flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl font-black uppercase tracking-widest text-[11px] transition-all transform hover:-translate-y-0.5 shadow-md mb-4 ${
+                  vendorAcceptsOnline
+                    ? "bg-black text-white hover:bg-gray-800 shadow-black/10"
+                    : "bg-[#25D366] text-white hover:bg-[#1da851] shadow-[#25D366]/20"
+                }`}
               >
-                <MessageCircle className="h-4 w-4 fill-current" />
-                <span>Chat on WhatsApp</span>
+                {vendorAcceptsOnline ? (
+                  <>
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Pay now</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-4 w-4 fill-current" />
+                    <span>Order on WhatsApp</span>
+                  </>
+                )}
               </button>
+
+              {vendorAcceptsOnline && vendorAcceptsWhatsapp && (
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 text-center -mt-2 mb-4">
+                  Or chat with {sellerInfo?.storeName || "the vendor"} after ordering
+                </p>
+              )}
 
               {/* Size & Color Selectors (Integrated) */}
               {(allSizes.length > 0 || allColors.length > 0) && (

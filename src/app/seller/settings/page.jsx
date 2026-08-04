@@ -17,10 +17,22 @@ import {
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { toast } from "sonner";
+import SellingPreferences from "@/components/marketplace/SellingPreferences";
+import { SELLING_MODES } from "@/services/marketplace/constants";
+import { apiFetch } from "@/utils/apiClient";
 
 export default function SellerSettingsPage() {
-  const { sellerProfile, user } = useApp();
+  const { sellerProfile, user, refreshSellerProfile } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [countryCode, setCountryCode] = useState("+233");
+
+  // Selling preferences are saved separately from the store profile because
+  // they go through the API, which re-validates the mode/number pairing.
+  const [preferences, setPreferences] = useState({
+    sellingMode: sellerProfile?.sellingMode || SELLING_MODES.BOTH,
+    whatsappNumber: sellerProfile?.whatsappNumber || "",
+  });
 
   const [form, setForm] = useState({
     storeName: sellerProfile?.storeName || "",
@@ -45,8 +57,37 @@ export default function SellerSettingsPage() {
         region: sellerProfile.region || "",
         location: sellerProfile.location || "",
       });
+      setPreferences({
+        sellingMode: sellerProfile.sellingMode || SELLING_MODES.BOTH,
+        whatsappNumber: sellerProfile.whatsappNumber || "",
+      });
     }
   }, [sellerProfile]);
+
+  const handleSavePreferences = async () => {
+    setIsSavingPreferences(true);
+    try {
+      // A stored number is already in international form; a freshly typed
+      // local number still needs its country code.
+      const number = preferences.whatsappNumber?.trim() || "";
+      const whatsappNumber =
+        number && !number.startsWith("+") && !number.startsWith("233") && !number.startsWith("234")
+          ? `${countryCode}${number.replace(/^0+/, "")}`
+          : number;
+
+      await apiFetch("/api/vendor/preferences", {
+        method: "PUT",
+        body: { sellingMode: preferences.sellingMode, whatsappNumber },
+      });
+
+      await refreshSellerProfile?.();
+      toast.success("Selling preferences updated");
+    } catch (error) {
+      toast.error(error.message || "Could not update selling preferences");
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
 
   const GHANA_REGIONS = [
     "Greater Accra", "Ashanti", "Central", "Eastern", "Western", 
@@ -63,10 +104,12 @@ export default function SellerSettingsPage() {
 
     setIsSubmitting(true);
     try {
-      // 1. Update seller profile
+      // 1. Update seller profile. The WhatsApp number is owned by the
+      // Selling & Payment Preferences card above, so it is not written here.
+      const { whatsappNumber: _managedSeparately, ...profileFields } = form;
       const sellerRef = doc(db, "sellers", user.id);
       await updateDoc(sellerRef, {
-        ...form,
+        ...profileFields,
         updatedAt: Timestamp.now(),
       });
 
@@ -114,9 +157,39 @@ export default function SellerSettingsPage() {
         </h1>
       </header>
 
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+        <SellingPreferences
+          value={preferences.sellingMode}
+          onChange={(sellingMode) => setPreferences({ ...preferences, sellingMode })}
+          whatsappNumber={preferences.whatsappNumber}
+          onWhatsappNumberChange={(whatsappNumber) =>
+            setPreferences({ ...preferences, whatsappNumber })
+          }
+          countryCode={countryCode}
+          onCountryCodeChange={setCountryCode}
+          disabled={isSavingPreferences}
+        />
+
+        <button
+          type="button"
+          onClick={handleSavePreferences}
+          disabled={isSavingPreferences}
+          className="w-full md:w-auto bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSavingPreferences ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              <span>Save selling preferences</span>
+            </>
+          )}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
@@ -157,18 +230,6 @@ export default function SellerSettingsPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
-                  <Phone className="h-3 w-3" />
-                  <span>WhatsApp Number</span>
-                </label>
-                <input
-                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold"
-                  value={form.whatsappNumber}
-                  onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
-                  placeholder="e.g. +233241234567"
-                />
-              </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
                   <Mail className="h-3 w-3" />
@@ -236,7 +297,7 @@ export default function SellerSettingsPage() {
         </div>
 
         <div className="space-y-6">
-          <section className={`p-6 rounded-3xl border ${sellerProfile?.isVerified ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"} space-y-3`}>
+          <section className={`p-6 rounded-2xl border ${sellerProfile?.isVerified ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"} space-y-3`}>
              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${sellerProfile?.isVerified ? "bg-green-500 text-white" : "bg-orange-500 text-white"}`}>
                 {sellerProfile?.isVerified ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
              </div>
@@ -252,7 +313,7 @@ export default function SellerSettingsPage() {
              </div>
           </section>
 
-          <section className="bg-gray-900 p-6 rounded-3xl text-white space-y-3">
+          <section className="bg-gray-900 p-6 rounded-2xl text-white space-y-3">
              <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Public Storefront</h3>
              <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
                View how customers see your store profile.

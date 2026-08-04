@@ -71,17 +71,17 @@ export default function SellerProductsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Total Listings</p>
           <h3 className="text-2xl font-black text-gray-900 tracking-tighter">{products.length}</h3>
           <p className="text-[9px] text-gray-400 font-bold uppercase">All uploaded products</p>
         </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Active Listings</p>
           <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">{activeCount}</h3>
           <p className="text-[9px] text-gray-400 font-bold uppercase">Visible to online buyers</p>
         </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Inactive Listings</p>
           <h3 className="text-2xl font-black text-red-600 tracking-tighter">{inactiveCount}</h3>
           <p className="text-[9px] text-gray-400 font-bold uppercase">Hidden draft items</p>
@@ -103,7 +103,7 @@ export default function SellerProductsPage() {
       </div>
 
       {/* Table Container */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-20 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-black" />
