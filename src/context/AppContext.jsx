@@ -221,6 +221,22 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  /**
+   * Best-effort welcome mail. Signup must never fail because email did, so
+   * this swallows its own errors rather than propagating them.
+   */
+  const sendWelcomeEmail = async (firebaseUser) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      await fetch('/api/account/welcome', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error('Welcome email could not be sent:', error);
+    }
+  };
+
   // Auth Actions
   const signIn = async (email, password) => {
     try {
@@ -245,6 +261,8 @@ export const AppProvider = ({ children }) => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+
+      await sendWelcomeEmail(user);
     } catch (error) {
       throw error;
     }
@@ -272,6 +290,10 @@ export const AppProvider = ({ children }) => {
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
         });
+
+        // Only for a genuinely new account — returning Google users must not
+        // be welcomed again on every sign-in.
+        await sendWelcomeEmail(user);
       }
     } catch (error) {
       throw error;

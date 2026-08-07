@@ -42,37 +42,89 @@ const logoAttachment = () => {
   return logoCache;
 };
 
-const transporter = () => {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  if (!user || !pass) return null;
+/**
+ * Delivery.
+ *
+ * Resend is used when RESEND_API_KEY is set, and Gmail SMTP is the fallback.
+ *
+ * The distinction matters for the inbox, not for volume. Gmail SMTP sends
+ * *from a @gmail.com address*, and receiving servers heavily penalise
+ * transactional mail from free webmail — it is the classic phishing shape, and
+ * nothing signs the mail as genuinely from cartlyhubgh.com. Resend sends from
+ * your own verified domain with SPF and DKIM, which is what actually keeps
+ * these out of spam.
+ */
+const usingResend = () => Boolean(process.env.RESEND_API_KEY);
 
-  return nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
-};
+/** e.g. `Cartly Hub <orders@cartlyhubgh.com>` */
+const fromAddress = () =>
+  process.env.EMAIL_FROM ||
+  (usingResend()
+    ? `${FROM_NAME} <onboarding@resend.dev>`
+    : `"${FROM_NAME}" <${process.env.EMAIL_USER}>`);
 
 const siteUrl = () =>
   (process.env.NEXT_PUBLIC_SITE_URL || 'https://cartlyhubgh.com').replace(/\/+$/, '');
 
+/**
+ * Resend attachments are not addressable by cid, so on that path the logo is
+ * loaded from the site over https instead of embedded.
+ */
+export const logoSrc = () =>
+  usingResend() ? `${siteUrl()}/cartly-logo-email.png` : `cid:${LOGO_CID}`;
+
+const sendViaResend = async ({ to, subject, html }) => {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: fromAddress(), to: [to], subject, html }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Resend ${response.status}: ${detail.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+  return data.id;
+};
+
+const sendViaGmail = async ({ to, subject, html }) => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  if (!user || !pass) throw new Error('not configured');
+
+  const mailer = nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+  const logo = logoAttachment();
+
+  const info = await mailer.sendMail({
+    from: fromAddress(),
+    to,
+    subject,
+    html,
+    attachments: logo ? [logo] : [],
+  });
+
+  return info.messageId;
+};
+
 const send = async ({ to, subject, html }) => {
   if (!to) return { sent: false, error: 'no recipient' };
 
-  const mailer = transporter();
-  if (!mailer) {
-    console.warn('[email] EMAIL_USER/EMAIL_PASS not set — skipping', subject);
+  if (!usingResend() && !process.env.EMAIL_USER) {
+    console.warn('[email] no provider configured — skipping', subject);
     return { sent: false, error: 'not configured' };
   }
 
-  const logo = logoAttachment();
-
   try {
-    const info = await mailer.sendMail({
-      from: `"${FROM_NAME}" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-      attachments: logo ? [logo] : [],
-    });
-    return { sent: true, messageId: info.messageId };
+    const messageId = usingResend()
+      ? await sendViaResend({ to, subject, html })
+      : await sendViaGmail({ to, subject, html });
+
+    return { sent: true, messageId };
   } catch (error) {
     console.error('[email] failed to send', subject, error?.message);
     return { sent: false, error: error?.message };
@@ -89,8 +141,8 @@ const send = async ({ to, subject, html }) => {
  * in a client that strips images entirely.
  */
 const masthead = () =>
-  logoAttachment()
-    ? `<img src="cid:${LOGO_CID}" alt="Cartly Hub" width="150"
+  usingResend() || logoAttachment()
+    ? `<img src="${logoSrc()}" alt="Cartly Hub" width="150"
          style="display:block;margin:0 auto;width:150px;max-width:60%;height:auto;border:0;" />`
     : `<p style="margin:0;text-align:center;color:#0f172a;font-size:20px;font-weight:800;letter-spacing:-0.5px;">
          Cartly<span style="color:#2563eb;">Hub</span>
@@ -150,6 +202,38 @@ const button = (href, label) => `
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+/**
+ * New customer: welcome.
+ *
+ * Deliberately plain — no offers, no marketing. A welcome email is
+ * transactional because the person just signed up and expects it, and keeping
+ * promotional content out of it is part of why it reaches the inbox.
+ */
+export const sendWelcomeEmail = async ({ email, name }) => {
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
+      Your Cartly Hub account is ready. You can now buy from verified Ghanaian
+      sellers, track every order from your account, and save items you like for later.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      ${row('Signed up with', email)}
+    </table>
+    ${button(`${siteUrl()}/products`, 'Start shopping')}
+    <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;line-height:1.6;">
+      Selling something? You can open a store from your account at any time.
+    </p>`;
+
+  return send({
+    to: email,
+    subject: 'Welcome to Cartly Hub',
+    html: shell(
+      `Welcome${name ? `, ${String(name).split(' ')[0]}` : ''}`,
+      'Your account is ready',
+      body,
+    ),
+  });
+};
 
 /** Vendor: you have a new paid order. */
 export const sendVendorOrderEmail = async (order, vendorEmail) => {

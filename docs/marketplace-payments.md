@@ -127,6 +127,47 @@ flag for it. The accounting does not change.
 Point the Paystack dashboard webhook at
 `https://<your-domain>/api/payments/webhook/paystack`.
 
+### Email delivery, and why mail lands in spam
+
+`src/services/marketplace/email-service.js` sends through **Resend** when
+`RESEND_API_KEY` is set, and falls back to Gmail SMTP otherwise.
+
+Gmail SMTP is why mail goes to spam. It sends *from a `@gmail.com` address*,
+and receiving servers penalise transactional mail from free webmail heavily —
+it is the shape phishing takes, and nothing in the message proves it came from
+cartlyhubgh.com. No amount of template work fixes that; the From domain is the
+problem.
+
+To fix it:
+
+1. Create a Resend account and add `cartlyhubgh.com` as a domain.
+2. Add the DNS records Resend gives you — an **SPF** TXT record and a **DKIM**
+   CNAME/TXT record — at your domain registrar. Verification is usually minutes.
+3. Set both variables:
+
+```
+RESEND_API_KEY=re_...
+EMAIL_FROM=Cartly Hub <orders@cartlyhubgh.com>
+```
+
+`EMAIL_FROM` must be on the domain you verified, or Resend rejects the send.
+
+Optional but worth doing once SPF and DKIM pass: add a DMARC record
+(`_dmarc.cartlyhubgh.com` TXT `v=DMARC1; p=none; rua=mailto:you@cartlyhubgh.com`).
+It tells receivers you authenticate your mail and gives you reports on who is
+sending as you.
+
+Without `RESEND_API_KEY` everything still sends via Gmail — it works, it just
+keeps landing in spam.
+
+The Resend free tier is 3,000 emails/month with a **100/day cap**. Each paid
+order sends two (vendor and customer), so that is roughly 50 orders a day.
+
+The logo is embedded as a `cid:` attachment on the Gmail path, but Resend
+cannot address attachments by cid, so on that path it is loaded from
+`/cartly-logo-email.png` over https. Add that file to `public/` — a ~40KB
+version of the logo — or the masthead will show a broken image.
+
 ### FIREBASE_SERVICE_ACCOUNT
 
 `firestore.rules` makes every money collection read-only from a browser and
