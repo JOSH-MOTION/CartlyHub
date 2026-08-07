@@ -42,6 +42,7 @@ import {
 } from "@/services/marketplace/constants";
 import { resolvePricing } from "@/lib/pricing";
 import ReviewsSection from "@/components/marketplace/ReviewsSection";
+import SellerContactModal from "@/components/marketplace/SellerContactModal";
 
 export default function ProductDetailClient({ params, productId }) {
   // The URL segment is a slug (`name-words-<id>`), so the resolved document id
@@ -56,6 +57,8 @@ export default function ProductDetailClient({ params, productId }) {
   const [activeImage, setActiveImage] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
+  // null | "offer" | "callback"
+  const [contactMode, setContactMode] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -491,12 +494,14 @@ export default function ProductDetailClient({ params, productId }) {
                   <Phone className="h-3 w-3" />
                   <span>{showPhone ? (product.sellerPhone || "No Number") : "Show contact"}</span>
                 </button>
-                <button 
+                <button
+                  onClick={() => setContactMode("offer")}
                   className="w-full bg-white text-black border border-black py-3 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all"
                 >
                   Make an offer
                 </button>
-                <button 
+                <button
+                  onClick={() => setContactMode("callback")}
                   className="w-full flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 py-3 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-emerald-100 transition-all border border-emerald-100"
                 >
                   <PhoneCall className="h-3 w-3" />
@@ -597,6 +602,13 @@ export default function ProductDetailClient({ params, productId }) {
         setSelectedRegion={() => {}}
         priceRange={{ min: "", max: "" }}
         setPriceRange={() => {}}
+      />
+      <SellerContactModal
+        mode={contactMode}
+        product={product}
+        pricing={pricing}
+        sellerInfo={sellerInfo}
+        onClose={() => setContactMode(null)}
       />
       <Footer />
     </div>

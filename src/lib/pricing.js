@@ -62,7 +62,12 @@ export const resolvePricing = (product, variant) => {
       : { price: product?.basePrice, compareAtPrice: product?.compareAtPrice };
 
   const price = Number(source?.price) || Number(product?.basePrice) || 0;
-  const compareAtPrice = Number(source?.compareAtPrice) || null;
+
+  // Fall back to the product-level original when the variant has none. Several
+  // save paths only ever wrote compareAtPrice at product level, so without this
+  // a discounted product with variants shows no struck-through price at all.
+  const compareAtPrice =
+    Number(source?.compareAtPrice) || Number(product?.compareAtPrice) || null;
 
   const onSale = compareAtPrice != null && compareAtPrice > price && price > 0;
 
