@@ -13,12 +13,39 @@ export const metadata = {
   description:
     "Cartly Hub is Ghana's trusted online shopping marketplace. Buy or sell fashion, clothing, bags, electronics, phones & more with fast delivery in Accra, Kumasi and across Ghana.",
   keywords: [
+    // Brand
+    "Cartly", "Cartly Hub", "CartlyHub", "Cartly Hub Ghana",
+    // Core marketplace terms
     "online shopping Ghana", "buy and sell Ghana", "Ghana marketplace",
-    "Accra online store", "electronics Ghana", "phones Ghana",
-    "fashion Ghana", "home appliances Ghana", "vehicles Ghana",
+    "Ghana ecommerce", "Ghana classifieds", "verified sellers Ghana",
     "Jiji Ghana", "Tonaton alternative", "cheap deals Ghana",
-    "Cartly", "Cartly Hub", "Ghana ecommerce", "shopping in Kumasi",
-    "Ghana classifieds", "verified sellers Ghana",
+    "online marketplace Ghana", "trusted online store Ghana",
+    "buy online Ghana", "sell online Ghana",
+    // Categories
+    "electronics Ghana", "phones Ghana", "buy laptops Ghana",
+    "fashion Ghana", "shoes Ghana", "bags Ghana",
+    "home appliances Ghana", "furniture Ghana", "home and garden Ghana",
+    "beauty products Ghana", "groceries delivery Ghana",
+    "health and wellness Ghana", "sports equipment Ghana",
+    "baby products Ghana", "kids items Ghana",
+    "vehicles Ghana", "cars for sale Ghana", "motorbikes Ghana",
+    "land for sale Ghana", "property Ghana", "real estate Ghana",
+    "jobs in Ghana", "services in Ghana",
+    "farming supplies Ghana", "agriculture Ghana",
+    "solar panels Ghana", "power equipment Ghana",
+    "books Ghana", "office supplies Ghana", "pet supplies Ghana",
+    "industrial tools Ghana", "digital goods Ghana",
+    "wholesale Ghana", "bulk buying Ghana",
+    "musical instruments Ghana", "perfumes Ghana",
+    "car parts Ghana", "event tickets Ghana",
+    // Locations
+    "Accra online store", "shopping in Accra", "delivery in Accra",
+    "shopping in Kumasi", "buy online Kumasi",
+    "shopping in Tema", "shopping in Takoradi", "shopping in Tamale",
+    "shopping in Cape Coast", "shopping in Koforidua",
+    "shopping in Sunyani", "shopping in Ho",
+    "Greater Accra shopping", "Ashanti Region shopping",
+    "nationwide delivery Ghana",
   ],
   authors: [{ name: "Cartly Hub" }],
   alternates: {
@@ -89,18 +116,31 @@ const jsonLd = {
     "@type": "PostalAddress",
     addressCountry: "GH",
     addressRegion: "Greater Accra",
+    addressLocality: "Accra",
   },
-  areaServed: {
-    "@type": "Country",
-    name: "Ghana",
-  },
+  areaServed: [
+    { "@type": "Country", name: "Ghana" },
+    { "@type": "City", name: "Accra" },
+    { "@type": "City", name: "Kumasi" },
+    { "@type": "City", name: "Tema" },
+    { "@type": "City", name: "Takoradi" },
+    { "@type": "City", name: "Tamale" },
+    { "@type": "City", name: "Cape Coast" },
+    { "@type": "City", name: "Koforidua" },
+    { "@type": "City", name: "Sunyani" },
+    { "@type": "City", name: "Ho" },
+    { "@type": "AdministrativeArea", name: "Greater Accra Region" },
+    { "@type": "AdministrativeArea", name: "Ashanti Region" },
+  ],
   currenciesAccepted: "GHS",
   paymentAccepted: "Mobile Money, Credit Card, Cash on Delivery",
   priceRange: "$",
   hasMap: "https://maps.google.com/?q=Accra,Ghana",
   sameAs: [
     "https://twitter.com/cartlyhub",
-    // add Facebook, Instagram, LinkedIn as you create them
+    "https://www.instagram.com/cartlyhub",
+    "https://www.tiktok.com/@cartly_hub",
+    // add Facebook + LinkedIn URLs here once you have the exact page links
   ],
 };
 

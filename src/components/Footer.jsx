@@ -1,6 +1,20 @@
 "use client";
 
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
+import { getFlattenedCategories } from "@/utils/categories";
+import { slugForCategory } from "@/lib/category-url";
+
+/**
+ * Top-level categories, linked site-wide.
+ *
+ * Without these the /category pages were orphans — present in the sitemap but
+ * with no internal links pointing at them. Internal links are how relevance
+ * reaches a page, so an orphan is crawled rarely and ranks poorly no matter
+ * what its own markup says. The list is static data, so there is no fetch.
+ */
+const TOP_CATEGORIES = getFlattenedCategories().filter(
+  (category) => category.level === 1,
+);
 
 const Tiktok = ({ className }) => (
   <svg 
@@ -47,8 +61,8 @@ export default function Footer() {
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-black">Marketplace</h4>
             <ul className="space-y-3">
               <li><a href="/products" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">All Products</a></li>
-              <li><a href="/products?category=fashion" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">Fashion</a></li>
-              <li><a href="/products?category=electronics" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">Electronics</a></li>
+              <li><a href="/category/fashion" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">Fashion</a></li>
+              <li><a href="/category/electronics" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">Electronics</a></li>
               <li><a href="/seller/onboarding" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors">Start Selling</a></li>
             </ul>
           </div>
@@ -86,8 +100,27 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Shop by category — the internal links that make these pages rankable */}
+        <nav aria-label="Shop by category" className="pt-12 mt-12 border-t border-gray-50">
+          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-black mb-5">
+            Shop by category in Ghana
+          </h4>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2.5">
+            {TOP_CATEGORIES.map((category) => (
+              <li key={category.id}>
+                <a
+                  href={`/category/${slugForCategory(category.id)}`}
+                  className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-black transition-colors"
+                >
+                  {category.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         {/* Bottom Bar */}
-        <div className="pt-10 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div className="pt-10 mt-12 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">
             © {currentYear} CartlyHub Ghana. All rights reserved.
           </p>

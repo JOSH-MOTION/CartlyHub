@@ -153,13 +153,13 @@ export default function Navbar() {
               Shop All
             </a>
             <a
-              href="/products?category=fashion"
+              href="/category/fashion"
               className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors"
             >
               Fashion
             </a>
             <a
-              href="/products?category=shoes"
+              href="/category/shoes-footwear"
               className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors"
             >
               Shoes
@@ -339,8 +339,8 @@ export default function Navbar() {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { name: "All", href: "/products", icon: Store },
-                  { name: "Fashion", href: "/products?category=fashion", icon: Heart },
-                  { name: "Shoes", href: "/products?category=shoes", icon: ShoppingCart }
+                  { name: "Fashion", href: "/category/fashion", icon: Heart },
+                  { name: "Shoes", href: "/category/shoes-footwear", icon: ShoppingCart }
                 ].map((item) => (
                   <a 
                     key={item.name}

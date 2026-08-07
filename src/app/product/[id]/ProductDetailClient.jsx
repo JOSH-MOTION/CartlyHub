@@ -43,8 +43,10 @@ import {
 import { resolvePricing } from "@/lib/pricing";
 import ReviewsSection from "@/components/marketplace/ReviewsSection";
 
-export default function ProductDetailClient({ params }) {
-  const { id } = params;
+export default function ProductDetailClient({ params, productId }) {
+  // The URL segment is a slug (`name-words-<id>`), so the resolved document id
+  // is passed down from the server component. params is kept as a fallback.
+  const id = productId || params?.id;
   const router = useRouter();
   const { addItem } = useCart();
   const { toggleWishlist, wishlist } = useApp();

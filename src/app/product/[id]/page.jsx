@@ -1,42 +1,80 @@
+import { cache } from "react";
+import { notFound, permanentRedirect } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
-import { getProducts } from "@/utils/firebaseData";
+import { getProductById } from "@/utils/firebaseData";
+import { resolveListPricing } from "@/lib/pricing";
+import { productIdFromSlug, productSlug } from "@/lib/product-url";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
+
+/**
+ * Resolves the URL segment to a product, one Firestore read per request,
+ * shared by generateMetadata and the page.
+ *
+ * The segment is normally `name-words-<id>`, but a bare `<id>` from an older
+ * link must still work. The trailing segment is tried first; if that misses,
+ * the whole value is tried, covering legacy ids that contain a hyphen.
+ *
+ * This previously called getProducts() — the entire collection — separately in
+ * the layout's metadata, this file's metadata and the page body: three full
+ * collection reads to render one product.
+ */
+const loadProduct = cache(async (slug) => {
+  const candidate = productIdFromSlug(slug);
+
+  const product = await getProductById(candidate);
+  if (product) return product;
+
+  return candidate === slug ? null : getProductById(slug);
+});
+
+/** schema.org wants a condition URL, sellers pick from a friendlier list. */
+const CONDITION_URLS = {
+  "Brand New": "https://schema.org/NewCondition",
+  "Like New": "https://schema.org/UsedCondition",
+  "Used (Normal Wear)": "https://schema.org/UsedCondition",
+  Refurbished: "https://schema.org/RefurbishedCondition",
+  Vintage: "https://schema.org/UsedCondition",
+};
+
+const totalStock = (product) =>
+  (product?.variants || []).reduce(
+    (sum, variant) => sum + (Number(variant.stock) || 0),
+    0,
+  );
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
-  const allProducts = await getProducts();
-  const product = allProducts.find(p => p.id === id);
+  const product = await loadProduct(params.id);
 
-  if (!product) {
-    return {
-      title: "Product Not Found | CartlyHub",
-    };
-  }
+  if (!product) return { title: "Product Not Found | Cartly Hub" };
 
-  const title = `${product.name}`;
-  const description = product.description?.substring(0, 150) || `Shop ${product.name} online for GH₵${product.basePrice} on Cartly Hub. Secure online ordering with fast delivery in Accra, Kumasi, and across Ghana.`;
-  const image = product.images?.[0] || "https://cartlyhubgh.com/default-share-image.jpg";
+  const pricing = resolveListPricing(product);
+  // The root layout appends "| Buy Online in Ghana | Cartly Hub", so the page
+  // title carries only the product name. Open Graph ignores that template and
+  // takes the fuller string.
+  const title = product.name;
+  const socialTitle = `${product.name} | Buy in ${product.region || "Ghana"} | Cartly Hub`;
+  const description =
+    product.description?.substring(0, 155) ||
+    `Shop ${product.name} for GH₵${pricing.price} on Cartly Hub. Buy from verified Ghanaian sellers with delivery in Accra, Kumasi and nationwide.`;
+  const image = product.images?.[0] || `${SITE_URL}/cartly-og.png`;
+  const url = `${SITE_URL}/product/${productSlug(product)}`;
 
   return {
     title,
     description,
+    alternates: { canonical: url },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
-      url: `https://cartlyhubgh.com/product/${product.id}`,
-      siteName: 'CartlyHub',
-      images: [
-        {
-          url: image,
-          width: 800,
-          height: 600,
-          alt: product.name,
-        },
-      ],
-      type: 'website',
+      url,
+      siteName: "Cartly Hub",
+      images: [{ url: image, width: 800, height: 600, alt: product.name }],
+      type: "website",
     },
     twitter: {
-      card: 'summary_large_image',
-      title,
+      card: "summary_large_image",
+      title: socialTitle,
       description,
       images: [image],
     },
@@ -44,35 +82,63 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const { id } = params;
-  const allProducts = await getProducts();
-  const product = allProducts.find(p => p.id === id);
+  const product = await loadProduct(params.id);
 
-  // Structured Data (JSON-LD)
-  const jsonLd = product ? {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": product.name,
-    "image": product.images || [],
-    "description": product.description,
-    "brand": {
-      "@type": "Brand",
-      "name": product.brand || "Cartly Hub"
-    },
-    "offers": {
-      "@type": "Offer",
-      "url": `https://cartlyhubgh.com/product/${product.id}`,
-      "priceCurrency": "GHS",
-      "price": product.basePrice,
-      "availability": "https://schema.org/InStock",
-      "itemCondition": "https://schema.org/NewCondition"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": product.averageRating || 5,
-      "reviewCount": product.reviewCount || 1
+  // A missing product must answer 404, not 200 with an empty shell — a soft
+  // 404 gets indexed as a real page.
+  if (!product) notFound();
+
+  // Send bare-id and stale-name URLs to the canonical slug with a 308, so only
+  // one URL per product is ever indexed and old links keep working.
+  const canonical = productSlug(product);
+  if (params.id !== canonical) permanentRedirect(`/product/${canonical}`);
+
+  let jsonLd = null;
+
+  {
+    const pricing = resolveListPricing(product);
+    const inStock = totalStock(product) > 0;
+    const reviewCount = Number(product.reviewCount) || 0;
+    const rating = Number(product.averageRating) || 0;
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      image: product.images || [],
+      description: product.description,
+      sku: product.id,
+      brand: { "@type": "Brand", name: product.brand || "Cartly Hub" },
+      offers: {
+        "@type": "Offer",
+        url: `${SITE_URL}/product/${productSlug(product)}`,
+        priceCurrency: "GHS",
+        // The payable figure — for a discounted item this is the sale price,
+        // which is what Google must show.
+        price: pricing.price,
+        availability: inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+        itemCondition:
+          CONDITION_URLS[product.condition] || "https://schema.org/NewCondition",
+        seller: {
+          "@type": "Organization",
+          name: product.sellerName || "Cartly Hub",
+        },
+      },
+    };
+
+    // Only claim a rating when real reviews exist. Inventing one (the old code
+    // defaulted to 5 stars from 1 review) is fabricated structured data and
+    // risks Google suppressing rich results across the whole domain.
+    if (reviewCount > 0 && rating > 0) {
+      jsonLd.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: Number(rating.toFixed(1)),
+        reviewCount,
+      };
     }
-  } : null;
+  }
 
   return (
     <>
@@ -82,7 +148,7 @@ export default async function Page({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ProductDetailClient params={params} />
+      <ProductDetailClient params={params} productId={product?.id} />
     </>
   );
 }

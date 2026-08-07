@@ -5,6 +5,7 @@ import useCart from '../store/useCart';
 import { useApp } from '../context/AppContext';
 import { toast } from "sonner";
 import { resolveListPricing } from "@/lib/pricing";
+import { productPath } from "@/lib/product-url";
 
 export default function ProductCard({ product, categories = [] }) {
   const { addItem } = useCart();
@@ -55,7 +56,7 @@ export default function ProductCard({ product, categories = [] }) {
       
       {/* Image Container with Floating Actions */}
       <div className="relative aspect-square overflow-hidden bg-gray-50 flex-shrink-0">
-        <a href={`/product/${product.id}`} className="block w-full h-full">
+        <a href={productPath(product)} className="block w-full h-full">
           <img
             src={
               product.images?.[0] ||
@@ -107,7 +108,7 @@ export default function ProductCard({ product, categories = [] }) {
               e.preventDefault();
               e.stopPropagation();
               try {
-                const url = `${window.location.origin}/product/${product.id}`;
+                const url = `${window.location.origin}${productPath(product)}`;
                 if (navigator.share) {
                   await navigator.share({
                     title: product.name,
@@ -138,7 +139,7 @@ export default function ProductCard({ product, categories = [] }) {
           <p className="text-[8px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-[0.25em] mb-1 sm:mb-2 group-hover:text-black transition-colors duration-300 line-clamp-1">
             {getCategoryName(product.categoryId)}
           </p>
-          <a href={`/product/${product.id}`} className="block group/link">
+          <a href={productPath(product)} className="block group/link">
             <h3 className="text-sm sm:text-base font-black text-gray-900 line-clamp-2 leading-[1.3] tracking-tight group-hover/link:text-emerald-600 transition-colors duration-300">
               {product.name}
             </h3>
@@ -206,7 +207,7 @@ export default function ProductCard({ product, categories = [] }) {
           
           {(product.isRental || product.isService || !!product.sellerId) ? (
             <button
-              onClick={() => window.location.href = `/product/${product.id}`}
+              onClick={() => window.location.href = productPath(product)}
               className="flex items-center justify-center p-2 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-300 border bg-white text-gray-900 border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] active:scale-95"
             >
               <MessageCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5" />

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getSellerProducts, deleteProduct } from "@/utils/firebaseData";
+import { productPath } from "@/lib/product-url";
 import { useApp } from "@/context/AppContext";
 
 export default function SellerProductsPage() {
@@ -156,7 +157,7 @@ export default function SellerProductsPage() {
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
-                        onClick={() => router.push(`/product/${p.id}`)}
+                        onClick={() => router.push(productPath(p))}
                         className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-black transition-all"
                         title="View Public Listing"
                       >
@@ -212,7 +213,7 @@ export default function SellerProductsPage() {
                   
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     <button 
-                      onClick={() => router.push(`/product/${p.id}`)}
+                      onClick={() => router.push(productPath(p))}
                       className="flex items-center justify-center space-x-1 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-gray-600 font-black uppercase tracking-widest text-[8px]"
                     >
                       <Eye className="h-3 w-3" />

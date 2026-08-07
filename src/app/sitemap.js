@@ -1,90 +1,34 @@
-import { getProducts, getCategories } from '../utils/firebaseData';
+import { getProducts, getCategories, getAllSellers } from '../utils/firebaseData';
+import { slugForCategory } from '../lib/category-url';
+import { productSlug } from '../lib/product-url';
 
+/**
+ * Sitemap.
+ *
+ * Only publicly indexable pages belong here. Anything robots.js disallows
+ * (/cart, /checkout, /account, /admin) must stay out — submitting a blocked
+ * URL produces a "Submitted URL blocked by robots.txt" error in Search
+ * Console and wastes crawl budget.
+ */
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
 
-  // Static routes
   const staticRoutes = [
-    {
-      url: `${baseUrl}`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/products`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/cart`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/wishlist`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/account/signin`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/account/signup`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/terms`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/refund`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/cookies`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/safety-tips`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/seller-policy`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    }
-  ];
+    { url: baseUrl, changeFrequency: 'daily', priority: 1 },
+    { url: `${baseUrl}/products`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${baseUrl}/terms`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/refund`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/cookies`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/safety-tips`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${baseUrl}/seller-policy`, changeFrequency: 'monthly', priority: 0.4 },
+  ].map((route) => ({ ...route, lastModified: new Date() }));
 
-  // Dynamic product routes
   let productRoutes = [];
   try {
     const products = await getProducts();
     productRoutes = products.map((product) => ({
-      url: `${baseUrl}/product/${product.id}`,
+      url: `${baseUrl}/product/${productSlug(product)}`,
       lastModified: product.updatedAt || new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
@@ -93,19 +37,39 @@ export default async function sitemap() {
     console.error('Error fetching products for sitemap:', error);
   }
 
-  // Dynamic category routes
+  // Vendor storefronts. On a marketplace these are a large share of the
+  // indexable surface — every verified seller is its own landing page.
+  let storeRoutes = [];
+  try {
+    const sellers = await getAllSellers();
+    storeRoutes = sellers
+      .filter((seller) => seller.storeName && !seller.isSuspended)
+      .map((seller) => ({
+        url: `${baseUrl}/store/${encodeURIComponent(seller.storeName)}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      }));
+  } catch (error) {
+    console.error('Error fetching sellers for sitemap:', error);
+  }
+
+  // Real category paths, not `/products?category=x`. Google consolidates
+  // query-string variants of one route, so those 240 URLs competed as a single
+  // page; a path per category gives each its own rankable page.
   let categoryRoutes = [];
   try {
     const categories = await getCategories();
     categoryRoutes = categories.map((category) => ({
-      url: `${baseUrl}/products?category=${category.id}`,
+      url: `${baseUrl}/category/${slugForCategory(category.id)}`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      // Top-level categories are the ones worth crawling most often.
+      priority: category.level === 1 ? 0.8 : category.level === 2 ? 0.6 : 0.5,
     }));
   } catch (error) {
     console.error('Error fetching categories for sitemap:', error);
   }
 
-  return [...staticRoutes, ...productRoutes, ...categoryRoutes];
+  return [...staticRoutes, ...productRoutes, ...storeRoutes, ...categoryRoutes];
 }
