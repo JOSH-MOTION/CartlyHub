@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { getCategories, createProduct } from "@/utils/firebaseData";
 import { normaliseDiscount } from "@/lib/pricing";
 import DiscountHint from "@/components/marketplace/DiscountHint";
+import BulkPriceBar from "@/components/marketplace/BulkPriceBar";
 import { useApp } from "@/context/AppContext";
 import { PRODUCT_SIZES, GHANA_REGIONS, PRODUCT_GENDERS, PRODUCT_CONDITIONS } from "@/utils/constants";
 import ColorPicker from "@/components/ColorPicker";
@@ -455,6 +456,21 @@ export default function SellerAddProductPage() {
                 Add Variant
               </button>
             </div>
+
+            <BulkPriceBar
+              variantCount={form.variants.length}
+              onApply={({ price, discountPrice }) =>
+                setForm({
+                  ...form,
+                  variants: form.variants.map((variant) => ({
+                    ...variant,
+                    price: Number(price),
+                    discountPrice,
+                  })),
+                })
+              }
+            />
+
             <div className="space-y-4">
               {form.variants.map((v, i) => (
                 <div key={v.vId} className="bg-gray-50 p-6 rounded-2xl space-y-4 relative border border-gray-100">
