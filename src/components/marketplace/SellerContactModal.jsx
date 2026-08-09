@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Tag, PhoneCall, MessageCircle } from "lucide-react";
 import { buildWhatsappLink, normaliseWhatsappNumber } from "@/services/marketplace/whatsapp";
 import { formatCurrency } from "@/services/payments/money";
@@ -25,16 +25,30 @@ export default function SellerContactModal({
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
 
+  // Held in a ref so the effect below depends on `mode` alone. Callers pass an
+  // inline arrow for onClose, which is a new identity every render — as a
+  // dependency it would re-run the effect constantly, and each re-run would
+  // record the already-locked "hidden" as the value to restore.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Hooks run before the `if (!mode) return null` below, so this must no-op
+  // when the modal is closed. Without the guard, simply rendering a closed
+  // modal locked scrolling on the whole page.
   useEffect(() => {
-    const onKeyDown = (event) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKeyDown);
+    if (!mode) return undefined;
+
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event) => event.key === "Escape" && onCloseRef.current();
+    window.addEventListener("keydown", onKeyDown);
+
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previous;
     };
-  }, [onClose]);
+  }, [mode]);
 
   if (!mode) return null;
 
