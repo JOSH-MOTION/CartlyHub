@@ -3,6 +3,7 @@
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
 import { getFlattenedCategories } from "@/utils/categories";
 import { slugForCategory } from "@/lib/category-url";
+import PaymentMethods from "@/components/marketplace/PaymentMethods";
 
 /**
  * Top-level categories, linked site-wide.
@@ -119,25 +120,19 @@ export default function Footer() {
           </ul>
         </nav>
 
+        {/* Payment methods */}
+        <div className="pt-10 mt-12 border-t border-gray-50">
+          <PaymentMethods />
+        </div>
+
         {/* Bottom Bar */}
-        <div className="pt-10 mt-12 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">
+        <div className="pt-8 mt-8 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 text-center md:text-left">
             © {currentYear} CartlyHub Ghana. All rights reserved.
           </p>
-          <div className="flex items-center space-x-6">
-            <img src="/paystack.png" alt="Paystack" className="h-4 opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer" />
-            <div className="flex space-x-2">
-               <div className="w-8 h-5 bg-gray-50 rounded border border-gray-100 flex items-center justify-center">
-                  <span className="text-[6px] font-black uppercase text-gray-400 tracking-tighter">VISA</span>
-               </div>
-               <div className="w-8 h-5 bg-gray-50 rounded border border-gray-100 flex items-center justify-center">
-                  <span className="text-[6px] font-black uppercase text-gray-400 tracking-tighter">MC</span>
-               </div>
-               <div className="w-8 h-5 bg-gray-50 rounded border border-gray-100 flex items-center justify-center">
-                  <span className="text-[6px] font-black uppercase text-gray-400 tracking-tighter">MOMO</span>
-               </div>
-            </div>
-          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+            Accra, Ghana
+          </p>
         </div>
       </div>
     </footer>
