@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   CheckCircle2,
   Info,
-  Tag
+  Tag,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCategories, createProduct } from "@/utils/firebaseData";
@@ -69,6 +70,59 @@ export default function SellerAddProductPage() {
 
   const mainCategories = categories?.filter(c => !c.parentId) || [];
   const getSubCategories = (parentId) => categories?.filter(c => c.parentId === parentId) || [];
+
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const autofillCategories = useMemo(() => {
+    return mainCategories.flatMap((cat) =>
+      getSubCategories(cat.id).map((sub) => ({
+        categoryId: cat.id,
+        categoryName: cat.name,
+        subcategoryId: sub.id,
+        subcategoryName: sub.name,
+      }))
+    );
+  }, [categories]);
+
+  const handleAutoFill = async () => {
+    if (form.images.length === 0) {
+      toast.error("Upload at least one product photo first.");
+      return;
+    }
+    setIsAutoFilling(true);
+    try {
+      const res = await fetch("/api/ai/autofill-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrls: form.images,
+          categories: autofillCategories,
+          genders: PRODUCT_GENDERS,
+          conditions: PRODUCT_CONDITIONS,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.result) {
+        toast.error(data.error || "Auto-fill failed. Please fill in manually.");
+        return;
+      }
+      const r = data.result;
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || r.name || prev.name,
+        description: prev.description || r.description || prev.description,
+        categoryId: prev.categoryId || r.categoryId || prev.categoryId,
+        subcategoryId: prev.subcategoryId || r.subcategoryId || prev.subcategoryId,
+        brand: r.brand || prev.brand,
+        gender: r.gender || prev.gender,
+        condition: r.condition || prev.condition,
+      }));
+      toast.success("Filled in from the photos — review before publishing.");
+    } catch (err) {
+      toast.error("Couldn't reach the AI service. Please fill in manually.");
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
 
   const createProductMutation = useMutation({
     mutationFn: (data) => createProduct(data),
@@ -227,6 +281,44 @@ export default function SellerAddProductPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-6">
+          {/* Media — first, so there's something to hand the AI generator before typing anything */}
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+            <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50">Product Images</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {form.images.map((img, i) => (
+                <div key={i} className="aspect-square bg-gray-100 rounded-2xl relative group overflow-hidden border border-gray-200">
+                  <img src={img} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}
+                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-6 w-6" />
+                  </button>
+                </div>
+              ))}
+              <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors p-4 text-center">
+                {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-black" /> : <ImageIcon className="h-8 w-8 text-gray-300" />}
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
+                <span className="text-[8px] font-bold text-gray-400 mt-1">MAX SIZE: 3MB</span>
+                <input type="file" multiple className="hidden" onChange={handleImageUpload} />
+              </label>
+            </div>
+            {form.images.length > 0 && (
+              <button
+                onClick={handleAutoFill}
+                disabled={isAutoFilling}
+                className="w-full py-3 rounded-xl border-2 border-black/10 bg-black/[0.02] hover:bg-black/5 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {isAutoFilling ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest">Use AI to Generate Product Info</span>
+              </button>
+            )}
+          </section>
+
           {/* Basic Info */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50 flex items-center space-x-2">
@@ -329,30 +421,6 @@ export default function SellerAddProductPage() {
                    placeholder="E.g. Zipper, Button, Leather"
                  />
                </div>
-            </div>
-          </section>
-
-          {/* Media */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            <h2 className="text-lg font-black uppercase tracking-tight pb-3 border-b border-gray-50">Product Images</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {form.images.map((img, i) => (
-                <div key={i} className="aspect-square bg-gray-100 rounded-2xl relative group overflow-hidden border border-gray-200">
-                  <img src={img} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}
-                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-6 w-6" />
-                  </button>
-                </div>
-              ))}
-              <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors p-4 text-center">
-                {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-black" /> : <ImageIcon className="h-8 w-8 text-gray-300" />}
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
-                <span className="text-[8px] font-bold text-gray-400 mt-1">MAX SIZE: 3MB</span>
-                <input type="file" multiple className="hidden" onChange={handleImageUpload} />
-              </label>
             </div>
           </section>
 
