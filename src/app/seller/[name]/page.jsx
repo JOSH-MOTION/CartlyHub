@@ -16,16 +16,24 @@ import {
   User,
 } from "lucide-react";
 import { getProducts, getCategories, getSellerReviews, incrementStoreViews } from "@/utils/firebaseData";
+import { useApp } from "@/context/AppContext";
 import Link from "next/link";
 
 export default function SellerStorePage({ params }) {
   const sellerName = decodeURIComponent(params.name);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const { sellerProfile } = useApp();
 
   useEffect(() => {
+    // Don't let a seller inflate their own count previewing their store, and
+    // only count once per visitor per browser session, not every reload.
+    if (sellerProfile?.storeName === sellerName) return;
+    const seenKey = `store-view-seen:${sellerName}`;
+    if (sessionStorage.getItem(seenKey)) return;
+    sessionStorage.setItem(seenKey, "1");
     incrementStoreViews(sellerName);
-  }, [sellerName]);
+  }, [sellerName, sellerProfile?.storeName]);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", "seller", sellerName, category, search],

@@ -62,7 +62,14 @@ service cloud.firestore {
       allow update: if isAdmin()
                     || (isSelf(sellerId)
                         && !request.resource.data.diff(resource.data)
-                              .affectedKeys().hasAny(['isSuspended', 'isVerified']));
+                              .affectedKeys().hasAny(['isSuspended', 'isVerified']))
+                    // Storefront view counter: anyone (including signed-out
+                    // shoppers) may bump storeViews by exactly 1 and nothing
+                    // else on someone else's doc — this is the only public
+                    // write this collection allows.
+                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['storeViews'])
+                        && request.resource.data.storeViews
+                           == ('storeViews' in resource.data ? resource.data.storeViews : 0) + 1);
       allow delete: if isAdmin();
     }
 

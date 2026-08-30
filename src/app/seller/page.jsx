@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Star,
+  Eye,
   ExternalLink,
   ArrowUpRight,
   Edit2,
@@ -113,6 +114,10 @@ export default function SellerDashboard() {
                   Under review
                 </span>
               )}
+              <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-gray-300 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                <Eye className="h-3 w-3" />
+                {sellerProfile?.storeViews || 0} store views
+              </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-none break-words">
