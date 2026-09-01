@@ -85,8 +85,11 @@ export default async function Page({ params }) {
   const product = await loadProduct(params.id);
 
   // A missing product must answer 404, not 200 with an empty shell — a soft
-  // 404 gets indexed as a real page.
-  if (!product) notFound();
+  // 404 gets indexed as a real page. A seller-deactivated listing gets the
+  // same treatment: getProductById doesn't filter isActive (metadata
+  // generation above needs it either way), so this is the one place that
+  // has to — the old client-only fetch used to filter these out implicitly.
+  if (!product || product.isActive === false) notFound();
 
   // Send bare-id and stale-name URLs to the canonical slug with a 308, so only
   // one URL per product is ever indexed and old links keep working.
@@ -148,7 +151,16 @@ export default async function Page({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ProductDetailClient params={params} productId={product?.id} />
+      <ProductDetailClient
+        params={params}
+        productId={product?.id}
+        // Server-fetched, so the page has real content (H1, price,
+        // description) in the initial HTML instead of only appearing after
+        // a client-side fetch. JSON round-trip strips any non-plain values
+        // (Firestore Timestamps etc.) that can't cross the server→client
+        // component boundary as props.
+        initialProduct={JSON.parse(JSON.stringify(product))}
+      />
     </>
   );
 }

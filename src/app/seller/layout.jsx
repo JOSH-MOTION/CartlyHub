@@ -43,6 +43,20 @@ export default function SellerLayout({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // /seller/{storeName} is a legacy public URL now living inside this
+  // private portal's route tree purely for the redirect it issues — it must
+  // never hit the "no seller profile → bounce to onboarding" gate below, or
+  // the redirect to /store/{storeName} can never run for a signed-out
+  // visitor. Every real dashboard page is one of these known segments.
+  const RESERVED_SELLER_SEGMENTS = [
+    "orders", "products", "inventory", "wallet", "withdrawals",
+    "customers", "feedback", "analytics", "settings", "notifications",
+    "onboarding",
+  ];
+  const segments = pathname.split("/").filter(Boolean);
+  const isLegacyStorefrontRedirect =
+    segments.length === 2 && segments[0] === "seller" && !RESERVED_SELLER_SEGMENTS.includes(segments[1]);
+
   // Live badge — a vendor should see a paid order land without refreshing.
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -58,10 +72,11 @@ export default function SellerLayout({ children }) {
   });
 
   useEffect(() => {
+    if (isLegacyStorefrontRedirect) return;
     if (!isLoading && (!user || !sellerProfile) && pathname !== "/seller/onboarding") {
       router.push("/seller/onboarding");
     }
-  }, [user, sellerProfile, isLoading, pathname, router]);
+  }, [user, sellerProfile, isLoading, pathname, router, isLegacyStorefrontRedirect]);
 
   // Navigating must never leave the drawer covering the page.
   useEffect(() => setDrawerOpen(false), [pathname]);
@@ -84,6 +99,8 @@ export default function SellerLayout({ children }) {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [drawerOpen]);
+
+  if (isLegacyStorefrontRedirect) return <>{children}</>;
 
   if (isLoading) {
     return (

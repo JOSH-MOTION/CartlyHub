@@ -43,9 +43,9 @@ const useImageFailed = () => {
 const METHODS = [
   { id: "visa", label: "Visa", logo: "/payments/visa.svg" },
   { id: "mastercard", label: "Mastercard", logo: "/payments/mastercard.svg" },
-  { id: "mtn-momo", label: "MTN MoMo", logo: "/payments/mtn-momo.svg" },
-  { id: "telecel", label: "Telecel Cash", logo: "/payments/telecel.svg" },
-  { id: "airteltigo", label: "AirtelTigo", logo: "/payments/airteltigo.svg" },
+  { id: "mtn-momo", label: "MTN MoMo", logo: "/payments/mtn-momo.png" },
+  { id: "telecel", label: "Telecel Cash", logo: "/payments/telecel.png" },
+  { id: "airteltigo", label: "AirtelTigo", logo: "/payments/airteltigo.png" },
 ];
 
 const Badge = ({ method }) => {
@@ -90,7 +90,7 @@ export default function PaymentMethods({ className = "" }) {
         ) : (
           <img
             ref={paystackRef}
-            src="/payments/paystack.svg"
+            src="/payments/paystack.png"
             alt="Paystack"
             className="h-4 w-auto"
             onError={markPaystackFailed}

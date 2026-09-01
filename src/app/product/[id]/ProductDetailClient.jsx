@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import useCart from "@/store/useCart";
 import { toast } from "sonner";
-import { getProducts, getProductReviews, submitReview, incrementProductViews, getSellerReviews } from "@/utils/firebaseData";
+import { getProducts, getProductById, getProductReviews, submitReview, incrementProductViews, getSellerReviews } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getTimeOnPlatform, getTimeAgo } from "@/utils/helpers";
@@ -44,7 +44,7 @@ import { resolvePricing } from "@/lib/pricing";
 import ReviewsSection from "@/components/marketplace/ReviewsSection";
 import SellerContactModal from "@/components/marketplace/SellerContactModal";
 
-export default function ProductDetailClient({ params, productId }) {
+export default function ProductDetailClient({ params, productId, initialProduct }) {
   // The URL segment is a slug (`name-words-<id>`), so the resolved document id
   // is passed down from the server component. params is kept as a fallback.
   const id = productId || params?.id;
@@ -70,12 +70,16 @@ export default function ProductDetailClient({ params, productId }) {
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
     queryFn: async () => {
-      const allProducts = await getProducts();
-      const foundProduct = allProducts.find(p => p.id === id);
-      if (!foundProduct) throw new Error("Product not found");
+      const foundProduct = await getProductById(id);
+      if (!foundProduct || foundProduct.isActive === false) throw new Error("Product not found");
 
       return foundProduct;
     },
+    // Server-fetched already (see page.jsx) — this seeds the first render
+    // with real content instead of a loading state, and skips downloading
+    // the whole product catalog just to find this one. React Query still
+    // revalidates in the background per its normal staleness rules.
+    initialData: initialProduct,
   });
 
   const { data: sellerInfo } = useQuery({

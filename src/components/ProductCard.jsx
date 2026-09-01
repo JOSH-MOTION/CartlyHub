@@ -158,7 +158,7 @@ export default function ProductCard({ product, categories = [] }) {
           )}
           {product.sellerName && (
             <a 
-              href={`/seller/${encodeURIComponent(product.sellerName)}`}
+              href={`/store/${encodeURIComponent(product.sellerName)}`}
               className="flex items-center text-[8px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:text-black transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
