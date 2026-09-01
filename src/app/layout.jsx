@@ -175,25 +175,16 @@ export default function RootLayout({ children }) {
           }}
         />
         
-        <link rel="preconnect" href="https://kit.fontawesome.com" />
-        <link rel="preconnect" href="https://ka-f.fontawesome.com" />
-
         <meta name="theme-color" content="#000000" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-
-        <script
-          src="https://kit.fontawesome.com/2c15cc0cc7.js"
-          crossOrigin="anonymous"
-          async
-        />
       </head>
       <body>
         <Providers>
           <div className="antialiased text-gray-900 bg-white min-h-screen flex flex-col font-sans">
-            {children}
+            <main className="contents">{children}</main>
           </div>
         </Providers>
       </body>

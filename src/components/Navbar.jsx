@@ -189,6 +189,7 @@ export default function Navbar() {
               </div>
               <a
                 href="/wishlist"
+                aria-label="View wishlist"
                 className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
               >
                 <Heart className="h-5 w-5" />
@@ -202,6 +203,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
+              aria-label="Open cart"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -260,6 +262,7 @@ export default function Navbar() {
 
             <button
               className="md:hidden p-2"
+              aria-label={isMobileSearchOpen ? "Close search" : "Open search"}
               onClick={() => {
                 setIsMobileSearchOpen(!isMobileSearchOpen);
                 if (isMobileMenuOpen) setIsMobileMenuOpen(false);
@@ -270,6 +273,7 @@ export default function Navbar() {
 
             <button
               className="md:hidden p-2"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               onClick={() => {
                 setIsMobileMenuOpen(!isMobileMenuOpen);
                 if (isMobileSearchOpen) setIsMobileSearchOpen(false);
@@ -310,8 +314,9 @@ export default function Navbar() {
           {/* Mobile Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <img src="/logo-bg.png" alt="Cartly Hub" className="h-7 w-auto" />
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
+              aria-label="Close menu"
               className="p-2 bg-gray-50 rounded-full"
             >
               <X className="h-5 w-5" />

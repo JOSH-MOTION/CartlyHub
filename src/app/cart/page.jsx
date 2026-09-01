@@ -93,6 +93,7 @@ export default function CartPage() {
                         onClick={() =>
                           removeItem(item.product.id, item.variant.id, item.selections)
                         }
+                        aria-label={`Remove ${item.product.name} from cart`}
                         className="p-2 text-gray-300 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="h-5 w-5" />
@@ -110,6 +111,7 @@ export default function CartPage() {
                               item.selections
                             )
                           }
+                          aria-label="Decrease quantity"
                           className="hover:text-black text-gray-400"
                         >
                           <Minus className="h-4 w-4" />
@@ -126,6 +128,7 @@ export default function CartPage() {
                               item.selections
                             )
                           }
+                          aria-label="Increase quantity"
                           className="hover:text-black text-gray-400"
                         >
                           <Plus className="h-4 w-4" />

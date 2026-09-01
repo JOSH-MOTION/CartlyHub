@@ -93,17 +93,20 @@ export default function ProductCard({ product, categories = [] }) {
         </div>
 
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex flex-col gap-2 transition-all duration-300 ease-out sm:translate-x-4 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100">
-          <button 
+          <button
             onClick={handleToggleWishlist}
+            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            aria-pressed={isInWishlist}
             className={`p-2 sm:p-3 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.06)] backdrop-blur-md border border-white/40 transition-all duration-300 hover:scale-110 active:scale-95 ${
-              isInWishlist 
-                ? 'bg-red-500 text-white border-transparent' 
+              isInWishlist
+                ? 'bg-red-500 text-white border-transparent'
                 : 'bg-white/70 text-gray-900 hover:bg-white hover:text-red-500'
             }`}
           >
             <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isInWishlist ? 'fill-current' : ''}`} />
           </button>
-          <button 
+          <button
+            aria-label="Share this product"
             onClick={async (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -208,6 +211,7 @@ export default function ProductCard({ product, categories = [] }) {
           {(product.isRental || product.isService || !!product.sellerId) ? (
             <button
               onClick={() => window.location.href = productPath(product)}
+              aria-label={`Contact seller about ${product.name}`}
               className="flex items-center justify-center p-2 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-300 border bg-white text-gray-900 border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] active:scale-95"
             >
               <MessageCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
@@ -216,6 +220,7 @@ export default function ProductCard({ product, categories = [] }) {
             <button
               onClick={!isOutOfStock ? handleAddToCart : undefined}
               disabled={isOutOfStock}
+              aria-label={isOutOfStock ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
               className={`flex items-center justify-center p-2 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-300 border ${
                 isOutOfStock 
                   ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' 

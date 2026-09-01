@@ -206,11 +206,14 @@ export default function ProductDetailClient({ params, productId, initialProduct 
                 <div className="absolute top-6 right-6 flex flex-col gap-3">
                   <button
                     onClick={handleToggleWishlist}
+                    aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                    aria-pressed={isInWishlist}
                     className={`p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 border ${isInWishlist ? 'bg-red-500 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100 hover:text-red-500'}`}
                   >
                     <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
                   </button>
                   <button
+                    aria-label="Share this product"
                     onClick={async () => {
                       try {
                         if (navigator.share) {

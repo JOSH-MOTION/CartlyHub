@@ -35,7 +35,7 @@ export default function MobileCategoryCircles({ selectedCategory, setSelectedCat
                 )}
               </div>
               <span className={`text-[8px] font-black uppercase tracking-widest text-center max-w-[65px] leading-tight transition-colors ${
-                isActive ? "text-emerald-600" : "text-gray-400"
+                isActive ? "text-emerald-700" : "text-gray-500"
               }`}>
                 {cat.name.split(' & ')[0]}
               </span>
@@ -54,8 +54,8 @@ export default function MobileCategoryCircles({ selectedCategory, setSelectedCat
                 key={sub.id}
                 onClick={() => setSelectedCategory(sub.id)}
                 className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${
-                  isSubActive 
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" 
+                  isSubActive
+                    ? "bg-emerald-700 text-white shadow-lg shadow-emerald-200"
                     : "bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100"
                 }`}
               >

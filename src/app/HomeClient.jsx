@@ -125,7 +125,7 @@ export default function HomePage() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="inline-flex items-center justify-center px-8 py-4 bg-[#fa8929] text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-xl shadow-black/10"
+                      className="inline-flex items-center justify-center px-8 py-4 bg-[#fa8929] text-black hover:text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-xl shadow-black/10"
                     >
                       Shop Now
                       <ArrowRight className="ml-3 h-5 w-5" />
@@ -178,7 +178,7 @@ export default function HomePage() {
             {/* Section Header & Filters */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-16">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-3 block">
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-700 mb-3 block">
                   Curated For You
                 </span>
                 <h2 className="text-4xl font-black text-black tracking-tighter uppercase leading-none">

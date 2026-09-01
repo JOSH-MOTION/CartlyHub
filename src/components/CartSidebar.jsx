@@ -26,6 +26,7 @@ export default function CartSidebar({ isOpen, onClose }) {
             <h2 className="text-xl font-bold uppercase tracking-widest">Shopping Bag</h2>
             <button
               onClick={onClose}
+              aria-label="Close cart"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X className="h-5 w-5" />
@@ -80,6 +81,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateQuantity(item.product.id, item.variant.id, item.quantity - 1)}
+                            aria-label="Decrease quantity"
                             className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             <Minus className="h-3 w-3" />
@@ -87,6 +89,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                           <span className="w-8 text-center font-medium">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.product.id, item.variant.id, item.quantity + 1)}
+                            aria-label="Increase quantity"
                             className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             <Plus className="h-3 w-3" />
@@ -98,6 +101,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                           </span>
                           <button
                             onClick={() => removeItem(item.product.id, item.variant.id)}
+                            aria-label={`Remove ${item.product.name} from cart`}
                             className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -141,7 +141,7 @@ export default function ProductsPage() {
 
             {/* Header */}
             <div className="mb-12">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-3 block">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-700 mb-3 block">
                 Official Collection
               </span>
               <h1 className="text-5xl font-black tracking-tighter uppercase leading-none">
