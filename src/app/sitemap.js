@@ -1,5 +1,6 @@
 import { getProducts, getCategories, getAllSellers } from '../utils/firebaseData';
 import { slugForCategory } from '../lib/category-url';
+import { locationForProduct } from '../lib/location-url';
 import { productSlug } from '../lib/product-url';
 
 /**
@@ -25,6 +26,7 @@ export default async function sitemap() {
   ].map((route) => ({ ...route, lastModified: new Date() }));
 
   let productRoutes = [];
+  let locationRoutes = [];
   try {
     const products = await getProducts();
     productRoutes = products.map((product) => ({
@@ -33,6 +35,24 @@ export default async function sitemap() {
       changeFrequency: 'weekly',
       priority: 0.8,
     }));
+
+    // Category × location pages ("Electronics in Lapaz") — one per real
+    // (categoryId, matched location) combination that has at least one
+    // listing. Same source data as productRoutes above, no extra fetch.
+    const seenLocationRoutes = new Set();
+    for (const product of products) {
+      const location = locationForProduct(product);
+      if (!location || !product.categoryId) continue;
+      const key = `${product.categoryId}::${location.slug}`;
+      if (seenLocationRoutes.has(key)) continue;
+      seenLocationRoutes.add(key);
+      locationRoutes.push({
+        url: `${baseUrl}/category/${slugForCategory(product.categoryId)}/${location.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
+    }
   } catch (error) {
     console.error('Error fetching products for sitemap:', error);
   }
@@ -71,5 +91,5 @@ export default async function sitemap() {
     console.error('Error fetching categories for sitemap:', error);
   }
 
-  return [...staticRoutes, ...productRoutes, ...storeRoutes, ...categoryRoutes];
+  return [...staticRoutes, ...productRoutes, ...storeRoutes, ...categoryRoutes, ...locationRoutes];
 }

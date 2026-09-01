@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { getProducts, getCategories } from "@/utils/firebaseData";
 import { slugForCategory, categoryIdFromSlug } from "@/lib/category-url";
+import { locationForProduct } from "@/lib/location-url";
 import { productSlug } from "@/lib/product-url";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://cartlyhubgh.com";
@@ -72,6 +73,18 @@ export default async function CategoryPage({ params }) {
     : null;
 
   const children = categories.filter((entry) => entry.parentId === category.id);
+
+  // Only meaningful for top-level categories — locationForProduct matches
+  // against product.categoryId, which is always the top-level id (the add
+  // flow never stores a subcategory there).
+  const locations = [
+    ...new Map(
+      products
+        .map((product) => locationForProduct(product))
+        .filter(Boolean)
+        .map((entry) => [entry.slug, entry]),
+    ).values(),
+  ];
 
   const breadcrumb = [
     { name: "Home", item: SITE_URL },
@@ -159,6 +172,25 @@ export default async function CategoryPage({ params }) {
                   className="px-4 py-2 rounded-xl bg-gray-50 hover:bg-black hover:text-white text-xs font-bold transition-colors"
                 >
                   {child.name}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {locations.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">
+              Shop {category.name} by Area
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {locations.map((location) => (
+                <a
+                  key={location.slug}
+                  href={`/category/${params.slug}/${location.slug}`}
+                  className="px-4 py-2 rounded-xl bg-gray-50 hover:bg-black hover:text-white text-xs font-bold transition-colors"
+                >
+                  {location.name}
                 </a>
               ))}
             </div>
