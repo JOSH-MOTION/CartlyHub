@@ -128,6 +128,31 @@ export default async function Page({ params }) {
           "@type": "Organization",
           name: product.sellerName || "Cartly Hub",
         },
+        // Delivery is free platform-wide (order-service always sets
+        // deliveryFee: 0) with a marketplace-configurable estimate that
+        // defaults to 3 business days — see DEFAULT_MARKETPLACE_SETTINGS.
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "GHS" },
+          shippingDestination: {
+            "@type": "DefinedRegion",
+            addressCountry: "GH",
+          },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+            transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
+          },
+        },
+        // Reflects refund.jsx as written: direct/COD sales are negotiated
+        // buyer-to-seller with no platform-guaranteed return, so this can't
+        // honestly claim a return window without misrepresenting the policy
+        // to Google (worse than the missing-field warning it fixes).
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+          applicableCountry: "GH",
+        },
       },
     };
 
