@@ -325,3 +325,105 @@ export const sendVendorWhatsappOrderEmail = async (order, vendorEmail) => {
     ),
   });
 };
+
+// ---------------------------------------------------------------------------
+// Admin broadcasts — announcements, store-share nudges, product spotlights.
+// ---------------------------------------------------------------------------
+
+/** Free-text admin → seller/customer announcement (the broadcast tool). */
+export const sendAnnouncementEmail = async ({ email, name, title, message }) =>
+  send({
+    to: email,
+    subject: title,
+    html: shell(
+      title,
+      name ? `Hi ${String(name).split(' ')[0]}` : 'An update from Cartly Hub',
+      `<p style="margin:0 0 8px;font-size:14px;color:#334155;line-height:1.6;">${String(message).replace(/\n/g, '<br/>')}</p>`,
+    ),
+  });
+
+/** Seller: nudge to put their store link where their customers already are. */
+export const sendStoreShareReminderEmail = async ({ email, ownerName, storeName }) => {
+  const storeHref = `${siteUrl()}/store/${encodeURIComponent(storeName)}`;
+
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
+      Your store has its own link that works anywhere — Instagram bio, WhatsApp
+      status, TikTok, wherever your customers already are. Anyone who opens it
+      sees your full catalogue, ready to buy.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 20px;background:#f8fafc;border-radius:10px;">
+      <tr><td style="padding:14px 16px;font-size:13px;font-weight:700;color:#0f172a;word-break:break-all;">${storeHref}</td></tr>
+    </table>
+    ${button(storeHref, 'View your store')}`;
+
+  return send({
+    to: email,
+    subject: `Share ${storeName} — your store link is ready`,
+    html: shell(
+      `Share ${storeName}`,
+      ownerName ? `Hi ${String(ownerName).split(' ')[0]}` : 'A tip for growing your store',
+      body,
+    ),
+  });
+};
+
+/** Seller: profile has gaps that hurt buyer trust — named, not vague. */
+export const sendProfileIncompleteEmail = async ({ email, ownerName, storeName, missing }) => {
+  const items = missing
+    .map((item) => `<li style="margin:0 0 8px;font-size:13px;color:#334155;">${item}</li>`)
+    .join('');
+
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
+      A few things are still missing from <strong>${storeName}</strong> — filling
+      these in is one of the fastest ways to get more buyers to trust and
+      complete a purchase.
+    </p>
+    <ul style="margin:0 0 20px;padding-left:18px;">${items}</ul>
+    ${button(`${siteUrl()}/seller/settings`, 'Complete your profile')}`;
+
+  return send({
+    to: email,
+    subject: `${missing.length} thing${missing.length === 1 ? '' : 's'} missing from ${storeName}`,
+    html: shell(
+      'Finish setting up your store',
+      ownerName ? `Hi ${String(ownerName).split(' ')[0]}` : 'A quick checklist',
+      body,
+    ),
+  });
+};
+
+/**
+ * Customer: "you might like this" product pick. Marketing, not transactional
+ * — the caller is responsible for filtering out anyone who opted out
+ * (`marketingEmailsOptOut`) before this is ever invoked.
+ */
+export const sendProductSpotlightEmail = async ({ email, name, product }) => {
+  const href = `${siteUrl()}${product.href}`;
+  const image = product.image
+    ? `<img src="${product.image}" alt="${product.name}" style="width:100%;max-width:504px;border-radius:12px;display:block;margin:0 0 16px;" />`
+    : '';
+
+  const body = `
+    ${image}
+    <p style="margin:0 0 4px;font-size:16px;font-weight:800;color:#0f172a;">${product.name}</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;">
+      ${formatCurrency(product.price, product.currency || 'GHS')}${product.storeName ? ` · ${product.storeName}` : ''}
+    </p>
+    ${button(href, 'Check it out')}
+    <p style="margin:24px 0 0;font-size:11px;color:#94a3b8;line-height:1.6;">
+      You're getting this because you have a Cartly Hub account. Turn off
+      product picks anytime from your account settings.
+    </p>`;
+
+  return send({
+    to: email,
+    subject: `You might love this: ${product.name}`,
+    html: shell(
+      "We think you'll like this",
+      name ? `Hi ${String(name).split(' ')[0]}` : 'Handpicked from Cartly Hub sellers',
+      body,
+    ),
+  });
+};

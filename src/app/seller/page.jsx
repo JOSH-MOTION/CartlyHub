@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -22,13 +23,17 @@ import {
   TrendingUp,
   MessageCircle,
   Megaphone,
+  Share2,
+  Copy,
+  Check,
+  AlertTriangle,
 } from "lucide-react";
 import { db } from "../../lib/firebase";
 import { getSellerProducts, getSellerReviews } from "@/utils/firebaseData";
 import { getVendorOrders } from "@/utils/marketplaceData";
 import { apiFetch } from "@/utils/apiClient";
 import { formatCurrency } from "@/services/payments/money";
-import { PAYMENT_STATUS, SELLING_MODE_OPTIONS } from "@/services/marketplace/constants";
+import { PAYMENT_STATUS, SELLING_MODE_OPTIONS, SELLING_MODES } from "@/services/marketplace/constants";
 import {
   StatCard,
   Panel,
@@ -92,6 +97,23 @@ export default function SellerDashboard() {
     : 0;
 
   const storefrontHref = `/store/${encodeURIComponent(sellerProfile?.storeName || "")}`;
+
+  // What's worth nudging a seller to fill in — each item materially affects
+  // whether a buyer trusts the store enough to complete a purchase.
+  const missingProfileItems = [];
+  if (sellerProfile && !sellerProfile.description?.trim()) {
+    missingProfileItems.push({ label: "Store description", href: "/seller/settings" });
+  }
+  if (
+    sellerProfile &&
+    sellerProfile.sellingMode !== SELLING_MODES.ONLINE &&
+    !sellerProfile.whatsappNumber
+  ) {
+    missingProfileItems.push({ label: "WhatsApp number", href: "/seller/settings" });
+  }
+  if (sellerProfile && !productsLoading && products.length === 0) {
+    missingProfileItems.push({ label: "At least one product listed", href: "/seller/products/add" });
+  }
 
   return (
     <div className="space-y-6">
@@ -177,6 +199,36 @@ export default function SellerDashboard() {
           </div>
         </div>
       )}
+
+      {missingProfileItems.length > 0 && (
+        <div className="bg-orange-50 border border-orange-100 p-4 sm:p-5 rounded-2xl flex gap-3">
+          <div className="h-9 w-9 bg-orange-500 rounded-xl flex items-center justify-center text-white shrink-0">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-orange-900">
+              {missingProfileItems.length} thing{missingProfileItems.length === 1 ? "" : "s"} missing from your store
+            </p>
+            <p className="text-xs text-orange-700 leading-relaxed mt-1">
+              Buyers trust a complete store more — this is the fastest way to get more sales.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {missingProfileItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-[10px] font-bold uppercase tracking-wide bg-white text-orange-700 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors"
+                >
+                  {item.label} →
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- Share your store ---------------- */}
+      <ShareStorePanel storeName={sellerProfile?.storeName} storefrontHref={storefrontHref} />
 
       {/* ---------------- Money & volume ---------------- */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -396,6 +448,66 @@ export default function SellerDashboard() {
     </div>
   );
 }
+
+/** Evergreen nudge — every seller has this link, most never think to use it. */
+const ShareStorePanel = ({ storeName, storefrontHref }) => {
+  const [copied, setCopied] = useState(false);
+
+  if (!storeName) return null;
+
+  const storeUrl =
+    typeof window !== "undefined" ? `${window.location.origin}${storefrontHref}` : storefrontHref;
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
+    `Check out my store on Cartly Hub: ${storeUrl}`,
+  )}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(storeUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked (permissions, non-HTTPS context) — the link
+      // is still right there to select manually, so this fails silently.
+    }
+  };
+
+  return (
+    <div className="bg-blue-50 border border-blue-100 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="h-9 w-9 bg-blue-500 rounded-xl flex items-center justify-center text-white shrink-0">
+        <Share2 className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold text-blue-900">Share your store</p>
+        <p className="text-xs text-blue-700 leading-relaxed mt-1">
+          Put this link in your Instagram bio, WhatsApp status or TikTok — anyone who opens it sees
+          your full catalogue on Cartly Hub, ready to buy.
+        </p>
+        <p className="text-xs font-bold text-blue-900 mt-2 truncate bg-white/60 rounded-lg px-3 py-2 border border-blue-100">
+          {storeUrl}
+        </p>
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-2 bg-white text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-3 rounded-xl text-xs font-bold transition-colors"
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Copied" : "Copy link"}
+        </button>
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-xl text-xs font-bold transition-colors"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Share on WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+};
 
 const PanelLink = ({ href, children }) => (
   <Link

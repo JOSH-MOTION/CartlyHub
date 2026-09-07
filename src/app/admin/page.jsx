@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getCategories } from "@/utils/firebaseData";
+import { productSlug } from "@/lib/product-url";
 import { toast } from "sonner";
 import { 
   BarChart, 
@@ -43,7 +44,8 @@ export default function AdminDashboard() {
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
     message: "",
-    isActive: false
+    isActive: false,
+    audience: "sellers"
   });
 
   // Real product and category queries
@@ -224,7 +226,11 @@ export default function AdminDashboard() {
       toast.error("Please fill in Alert Title and Message first.");
       return;
     }
-    if (!confirm("Are you sure you want to send this update email to all registered sellers?")) {
+    const audienceLabel =
+      announcementForm.audience === "all"
+        ? "all sellers and registered customers"
+        : `all registered ${announcementForm.audience}`;
+    if (!confirm(`Are you sure you want to send this update email to ${audienceLabel}?`)) {
       return;
     }
 
@@ -235,13 +241,14 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: announcementForm.title,
-          message: announcementForm.message
+          message: announcementForm.message,
+          audience: announcementForm.audience
         })
       });
 
       const data = await response.json();
       if (response.ok && data.success) {
-        toast.success(`Successfully sent ${data.sent} emails! (${data.failed} failed)`);
+        toast.success(`Successfully sent ${data.sent} of ${data.total} emails! (${data.failed} failed)`);
       } else {
         throw new Error(data.error || "Broadcast failed");
       }
@@ -501,6 +508,19 @@ export default function AdminDashboard() {
                   value={announcementForm.message}
                   onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
                 />
+                <select
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:border-black transition-all"
+                  value={announcementForm.audience}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, audience: e.target.value })}
+                >
+                  <option value="sellers">Email: Sellers only</option>
+                  <option value="customers">Email: Customers only</option>
+                  <option value="all">Email: Everyone</option>
+                </select>
+                <p className="text-[9px] text-gray-400 font-semibold leading-relaxed px-0.5">
+                  "Publish Alert" only shows the dashboard banner to sellers. "Send Email" uses the
+                  audience picked above — the in-app banner and the email are independent.
+                </p>
                 <label className="flex items-center space-x-3 cursor-pointer p-1">
                   <input
                     type="checkbox"
@@ -570,7 +590,132 @@ export default function AdminDashboard() {
           </div>
 
         </div>
+
+        <ProductSpotlightCard products={products} />
       </div>
+    </div>
+  );
+}
+
+/** Admin: hand-pick one product and email it to customers as a "you might like this" pick. */
+function ProductSpotlightCard({ products }) {
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const matches = search.trim()
+    ? products
+        .filter((p) => p.name?.toLowerCase().includes(search.trim().toLowerCase()))
+        .slice(0, 8)
+    : [];
+
+  const selected = products.find((p) => p.id === selectedId) || null;
+
+  const handleSend = async () => {
+    if (!selected) return;
+    if (!confirm(`Send "${selected.name}" as a product pick to all opted-in customers?`)) return;
+
+    setIsSending(true);
+    try {
+      const response = await fetch("/api/admin/broadcast-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "product_spotlight",
+          product: {
+            name: selected.name,
+            price: selected.basePrice ?? selected.price ?? 0,
+            currency: selected.currency || "GHS",
+            image: selected.images?.[0] || null,
+            storeName: selected.sellerName || null,
+            href: `/product/${productSlug(selected)}`,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        toast.success(`Sent to ${data.sent} of ${data.total} customers! (${data.failed} failed)`);
+        setSelectedId("");
+        setSearch("");
+      } else {
+        throw new Error(data.error || "Spotlight send failed");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(`Product spotlight failed: ${err.message || err}`);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+      <h4 className="text-xs font-black uppercase tracking-widest mb-2 flex items-center space-x-2">
+        <Tag className="h-4 w-4 text-orange-500" />
+        <span>Product Spotlight</span>
+      </h4>
+      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">
+        Email one product to every customer who hasn't opted out of picks
+      </p>
+
+      {selected ? (
+        <div className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl mb-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {selected.images?.[0] && (
+              <img
+                src={selected.images[0]}
+                alt={selected.name}
+                className="h-10 w-10 rounded-lg object-cover border border-gray-100 shrink-0"
+              />
+            )}
+            <p className="text-xs font-bold truncate">{selected.name}</p>
+          </div>
+          <button
+            onClick={() => setSelectedId("")}
+            className="text-[10px] font-black uppercase text-gray-400 hover:text-black shrink-0"
+          >
+            Change
+          </button>
+        </div>
+      ) : (
+        <div className="relative mb-3">
+          <input
+            type="text"
+            placeholder="Search a product by name…"
+            className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold outline-none focus:border-black transition-all"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {matches.length > 0 && (
+            <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+              {matches.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setSelectedId(p.id);
+                    setSearch("");
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 text-left"
+                >
+                  {p.images?.[0] && (
+                    <img src={p.images[0]} alt={p.name} className="h-8 w-8 rounded object-cover shrink-0" />
+                  )}
+                  <span className="text-xs font-bold truncate">{p.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={handleSend}
+        disabled={!selected || isSending}
+        className="w-full bg-black text-white hover:bg-gray-800 py-3.5 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+      >
+        {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><span>Send Spotlight</span><Send className="h-3 w-3" /></>}
+      </button>
     </div>
   );
 }
