@@ -16,7 +16,12 @@ import {
   Lightbulb,
   ShieldCheck,
   TrendingUp,
-  Globe
+  Globe,
+  Package,
+  Palette,
+  Share2,
+  Copy,
+  Check
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -29,6 +34,7 @@ export default function SellerOnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [countryCode, setCountryCode] = useState("+233");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [form, setForm] = useState({
     ownerName: user?.name || "",
@@ -235,6 +241,9 @@ export default function SellerOnboardingPage() {
                     value={form.storeName}
                     onChange={(e) => setForm({ ...form, storeName: e.target.value })}
                   />
+                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                    This becomes your store link — keep it short and memorable, it's what you'll share on WhatsApp and Instagram.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -312,6 +321,9 @@ export default function SellerOnboardingPage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  A real description builds trust — say what you sell and how you deliver. You can always add a logo and banner later in Settings.
+                </p>
               </div>
             </div>
 
@@ -368,6 +380,62 @@ export default function SellerOnboardingPage() {
                 Our verification team is reviewing your details to assign your trust badge.
               </p>
             </div>
+
+            {/* Next steps — the three things that most move a new store from
+                zero to its first sale, in order. */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-left space-y-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+                Next steps
+              </p>
+
+              <div className="flex items-start gap-3">
+                <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 text-blue-400">
+                  <Package className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold">List your first product</p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">An empty store doesn't sell — even one listing gives buyers something to find.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 text-purple-400">
+                  <Palette className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold">Add your logo and a banner</p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">Settings → Store Branding. A branded store earns more trust than a blank one.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 text-emerald-400">
+                  <Share2 className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold">Share your store link</p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed mb-2">Put it in your Instagram bio, WhatsApp status, or TikTok — right now, before you forget.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const url = `${window.location.origin}/store/${encodeURIComponent(form.storeName)}`;
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 2000);
+                        } catch {}
+                      }}
+                      className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 rounded-lg text-[10px] font-bold transition-colors"
+                    >
+                      {linkCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {linkCopied ? "Copied" : "Copy link"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col space-y-3 max-w-xs mx-auto">
               <button
                 onClick={() => router.push("/seller")}
