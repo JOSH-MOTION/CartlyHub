@@ -4,6 +4,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import {
   sendAnnouncementEmail,
   sendProductSpotlightEmail,
+  sendFeatureDigestEmail,
 } from '@/services/marketplace/email-service';
 
 /**
@@ -79,7 +80,7 @@ export async function POST(request) {
       if (!product?.name || !product?.href || product?.price === undefined) {
         return NextResponse.json({ error: 'Missing product fields' }, { status: 400 });
       }
-    } else if (!title || !message) {
+    } else if (mode === 'announcement' && (!title || !message)) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -91,11 +92,11 @@ export async function POST(request) {
       respectMarketingOptOut: mode === 'product_spotlight',
     });
 
-    const { sent, failed } = await sendInBatches(recipients, ({ email, name }) =>
-      mode === 'product_spotlight'
-        ? sendProductSpotlightEmail({ email, name, product })
-        : sendAnnouncementEmail({ email, name, title, message }),
-    );
+    const { sent, failed } = await sendInBatches(recipients, ({ email, name }) => {
+      if (mode === 'product_spotlight') return sendProductSpotlightEmail({ email, name, product });
+      if (mode === 'feature_digest') return sendFeatureDigestEmail({ email, name });
+      return sendAnnouncementEmail({ email, name, title, message });
+    });
 
     return NextResponse.json({ success: true, sent, failed, total: recipients.length });
   } catch (error) {

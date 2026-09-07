@@ -380,6 +380,79 @@ export const sendAbandonedCartEmail = async ({ email, name, items }) => {
   });
 };
 
+const featureRow = ({ title, description, href }) => `
+  <tr>
+    <td style="padding:16px 0;border-bottom:1px solid #f1f5f9;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="width:6px;background:#2563eb;border-radius:3px;" width="6"></td>
+          <td style="padding-left:14px;">
+            <p style="margin:0 0 4px;font-size:14px;font-weight:800;color:#0f172a;">${title}</p>
+            <p style="margin:0;font-size:13px;color:#64748b;line-height:1.55;">${description}</p>
+            ${href ? `<a href="${href}" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:800;color:#2563eb;text-decoration:none;">Try it →</a>` : ''}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+
+/** Seller: "what's new" digest — a short card per feature, not a wall of text. */
+export const sendFeatureDigestEmail = async ({ email, name }) => {
+  const site = siteUrl();
+  const rows = [
+    {
+      title: 'AI-powered listings',
+      description:
+        'Upload your product photos and let AI draft the name, description and category for you — review and edit anything before it goes live.',
+      href: `${site}/seller/products/add`,
+    },
+    {
+      title: 'Coupons',
+      description:
+        "Create percentage or fixed-amount discount codes for your store — funded by you, never out of Cartly Hub's commission.",
+      href: `${site}/seller/coupons`,
+    },
+    {
+      title: 'Store branding',
+      description: 'Add your logo, a banner image, and an accent color — your storefront, in your colors.',
+      href: `${site}/seller/settings`,
+    },
+    {
+      title: 'Share your store',
+      description: 'A one-tap copy link and WhatsApp share button for your storefront, right on your dashboard.',
+      href: `${site}/seller`,
+    },
+    {
+      title: 'Tag your products',
+      description: 'Add search tags to a listing so buyers searching for something specific find you faster.',
+      href: `${site}/seller/products/add`,
+    },
+    {
+      title: 'Low-stock alerts',
+      description: "Get notified the moment a variant is running low — before you miss a sale you didn't see coming.",
+    },
+  ]
+    .map(featureRow)
+    .join('');
+
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.6;">
+      A batch of updates landed on Cartly Hub — here's what's new on your seller dashboard.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">${rows}</table>
+    ${button(`${site}/seller`, 'Open your dashboard')}`;
+
+  return send({
+    to: email,
+    subject: "What's new on Cartly Hub — coupons, AI listings, store branding & more",
+    html: shell(
+      "What's new on Cartly Hub",
+      name ? `Hi ${String(name).split(' ')[0]}` : 'A batch of updates for your store',
+      body,
+    ),
+  });
+};
+
 // ---------------------------------------------------------------------------
 // Admin broadcasts — announcements, store-share nudges, product spotlights.
 // ---------------------------------------------------------------------------
