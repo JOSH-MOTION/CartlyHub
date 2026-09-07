@@ -17,6 +17,7 @@ import {
   acceptsWhatsappOrders,
   COLLECTIONS,
   DEFAULT_CURRENCY,
+  LOW_STOCK_THRESHOLD,
   ORDER_CHANNELS,
   ORDER_STATUS,
   PAYMENT_STATUS,
@@ -29,12 +30,15 @@ import {
   notifyCustomerOfStatusChange,
   notifyVendorOfPaidOrder,
   notifyVendorOfWhatsappOrder,
+  notifyVendorOfLowStock,
 } from './notification-service';
 import { buildOrderWhatsappLink } from './whatsapp';
+import { validateCoupon, incrementCouponUsage } from './coupon-service';
 import {
   sendCustomerOrderEmail,
   sendVendorOrderEmail,
   sendVendorWhatsappOrderEmail,
+  sendLowStockEmail,
 } from './email-service';
 import { getPaymentProvider } from '../payments';
 import { round2, splitCommission, toMinor } from '../payments/money';
@@ -102,8 +106,13 @@ const findVariant = (product, variantId) => {
 /**
  * Turns a client cart into authoritative per-vendor groups.
  * Throws if a product is missing, inactive or out of stock.
+ *
+ * `couponCodes` is `{ [vendorId]: code }` — a coupon only discounts its own
+ * seller's items, applied to that group's real subtotal, never the whole
+ * cart, and always re-validated here rather than trusting a client-computed
+ * discount.
  */
-export const buildOrderGroups = async (cartItems) => {
+export const buildOrderGroups = async (cartItems, couponCodes = {}) => {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     throw new Error('Your cart is empty');
   }
@@ -192,7 +201,29 @@ export const buildOrderGroups = async (cartItems) => {
     group.subtotal = round2(group.subtotal + item.lineTotal);
   }
 
-  return Array.from(groups.values());
+  const result = Array.from(groups.values());
+
+  for (const group of result) {
+    const code = couponCodes?.[group.vendorId];
+    if (!code) continue;
+
+    const validation = await validateCoupon({
+      code,
+      sellerId: group.vendorId,
+      subtotal: group.subtotal,
+    });
+
+    if (validation.valid) {
+      group.couponId = validation.coupon.id;
+      group.couponCode = validation.coupon.code;
+      group.discountAmount = validation.discountAmount;
+      group.subtotal = round2(group.subtotal - validation.discountAmount);
+    } else {
+      group.couponError = validation.reason;
+    }
+  }
+
+  return result;
 };
 
 const estimateDelivery = (days) => {
@@ -244,6 +275,13 @@ const buildOrderDocument = ({
     deliveryFee: 0,
     totalAmount: group.subtotal,
     currency: settings.currency || DEFAULT_CURRENCY,
+
+    // group.subtotal above is already net of the discount (buildOrderGroups
+    // applies it before this runs) — these are kept only so the order is
+    // self-explanatory later and so coupon usage can be counted once paid.
+    couponId: group.couponId || null,
+    couponCode: group.couponCode || null,
+    discountAmount: group.discountAmount || 0,
 
     commissionRate,
     commissionAmount,
@@ -314,6 +352,11 @@ export const createWhatsappOrder = async ({ group, customer, delivery, groupId }
 
   const ref = await addDoc(collection(db, COLLECTIONS.ORDERS), payload);
   const order = hydrate(ref.id, payload);
+
+  // WhatsApp orders have no payment step inside Cartly Hub, so "used" is
+  // counted at order creation — the closest thing to a confirmed use the
+  // platform can actually observe.
+  if (order.couponId) await incrementCouponUsage(order.couponId);
 
   await notifyVendorOfWhatsappOrder(order);
 
@@ -411,13 +454,46 @@ const deductStockForOrder = async (order) => {
 
     if (index < 0 || !variants[index]) continue;
 
+    const previousStock = Number(variants[index].stock || 0);
+    const newStock = Math.max(0, previousStock - Number(item.quantity || 0));
+
     const updated = variants.map((variant, position) =>
-      position === index
-        ? { ...variant, stock: Math.max(0, Number(variant.stock || 0) - Number(item.quantity || 0)) }
-        : variant,
+      position === index ? { ...variant, stock: newStock } : variant,
     );
 
     await updateDoc(productRef, { variants: updated, updatedAt: Timestamp.now() });
+
+    // Fires once, the moment a variant crosses the threshold — not on every
+    // sale after, or a popular low-stock item would spam the vendor.
+    if (
+      previousStock > LOW_STOCK_THRESHOLD &&
+      newStock <= LOW_STOCK_THRESHOLD &&
+      order.vendorId &&
+      order.vendorId !== HOUSE_VENDOR.id
+    ) {
+      const variantLabel =
+        [variants[index].size, variants[index].colorName || variants[index].color]
+          .filter(Boolean)
+          .join(' · ') || null;
+
+      await notifyVendorOfLowStock({
+        vendorId: order.vendorId,
+        productId: item.productId,
+        productName: product.name || item.productName,
+        variantLabel,
+        stock: newStock,
+      }).catch((error) => console.error('[orders] low-stock notification failed', error));
+
+      if (order.vendorEmail) {
+        await sendLowStockEmail({
+          email: order.vendorEmail,
+          productId: item.productId,
+          productName: product.name || item.productName,
+          variantLabel,
+          stock: newStock,
+        }).catch((error) => console.error('[orders] low-stock email failed', error));
+      }
+    }
   }
 };
 
@@ -508,6 +584,11 @@ export const fulfilPaidOrders = async (reference, { providerId } = {}) => {
     if (!order.stockDeducted) {
       await deductStockForOrder(order);
     }
+
+    // Counted only here, on the first confirmed payment for this order —
+    // never at checkout start, so an abandoned payment attempt can't burn
+    // through a limited-use coupon without the customer ever actually paying.
+    if (order.couponId) await incrementCouponUsage(order.couponId);
 
     await updateDoc(doc(db, COLLECTIONS.ORDERS, order.id), {
       status: paidOrder.status,

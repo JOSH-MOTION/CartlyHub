@@ -27,6 +27,7 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  Ticket,
 } from "lucide-react";
 import { db } from "../../lib/firebase";
 import { getSellerProducts, getSellerReviews } from "@/utils/firebaseData";
@@ -441,6 +442,7 @@ export default function SellerDashboard() {
               <QuickAction href="/seller/withdrawals" icon={ArrowUpRight} label="Withdraw" />
               <QuickAction href="/seller/inventory" icon={Package} label="Inventory" />
               <QuickAction href="/seller/analytics" icon={TrendingUp} label="Analytics" />
+              <QuickAction href="/seller/coupons" icon={Ticket} label="Coupons" />
             </div>
           </Panel>
         </div>

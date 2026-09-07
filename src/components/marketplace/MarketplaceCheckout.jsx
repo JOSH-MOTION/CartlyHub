@@ -12,6 +12,8 @@ import {
   Store,
   AlertTriangle,
   Lock,
+  Ticket,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import LocationSearch from "@/components/LocationSearch";
@@ -39,6 +41,8 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
   const [quoteError, setQuoteError] = useState(null);
   const [payingOnline, setPayingOnline] = useState(false);
   const [whatsappBusyVendor, setWhatsappBusyVendor] = useState(null);
+  const [couponDrafts, setCouponDrafts] = useState({}); // vendorId -> text being typed
+  const [appliedCoupons, setAppliedCoupons] = useState({}); // vendorId -> code sent to the quote
 
   const [form, setForm] = useState({
     name: userProfile?.name || userProfile?.fullName || "",
@@ -68,7 +72,7 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
       try {
         const data = await apiFetch("/api/checkout/quote", {
           method: "POST",
-          body: { items: payload },
+          body: { items: payload, couponCodes: appliedCoupons },
         });
         if (!cancelled) setQuote(data);
       } catch (error) {
@@ -84,7 +88,22 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
     return () => {
       cancelled = true;
     };
-  }, [payload]);
+  }, [payload, appliedCoupons]);
+
+  const applyCoupon = (vendorId) => {
+    const code = (couponDrafts[vendorId] || "").trim();
+    if (!code) return;
+    setAppliedCoupons((prev) => ({ ...prev, [vendorId]: code }));
+  };
+
+  const removeCoupon = (vendorId) => {
+    setAppliedCoupons((prev) => {
+      const next = { ...prev };
+      delete next[vendorId];
+      return next;
+    });
+    setCouponDrafts((prev) => ({ ...prev, [vendorId]: "" }));
+  };
 
   const deliveryReady =
     form.name.trim() && form.phone.trim() && form.city.trim() && form.details.trim();
@@ -102,7 +121,7 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
     try {
       const data = await apiFetch("/api/checkout/online", {
         method: "POST",
-        body: { items: payload, customer, delivery },
+        body: { items: payload, customer, delivery, couponCodes: appliedCoupons },
       });
 
       // Hand off to the gateway. Fulfilment happens when we come back to
@@ -119,7 +138,13 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
     try {
       const data = await apiFetch("/api/checkout/whatsapp", {
         method: "POST",
-        body: { items: payload, vendorId: group.vendorId, customer, delivery },
+        body: {
+          items: payload,
+          vendorId: group.vendorId,
+          customer,
+          delivery,
+          couponCodes: appliedCoupons,
+        },
       });
 
       toast.success(`Order ${data.order.orderNumber} sent to ${group.vendorStoreName}`);
@@ -447,6 +472,45 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
                     </span>
                   </div>
                 ))}
+
+                {appliedCoupons[group.vendorId] ? (
+                  <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5">
+                      <Ticket className="h-3 w-3" />
+                      {group.couponCode || appliedCoupons[group.vendorId]}
+                      {group.discountAmount > 0 &&
+                        ` · −${formatCurrency(group.discountAmount, quote.currency)}`}
+                    </span>
+                    <button
+                      onClick={() => removeCoupon(group.vendorId)}
+                      className="text-emerald-400 hover:text-emerald-700"
+                      aria-label="Remove coupon"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={couponDrafts[group.vendorId] || ""}
+                      onChange={(e) =>
+                        setCouponDrafts((prev) => ({ ...prev, [group.vendorId]: e.target.value }))
+                      }
+                      onKeyDown={(e) => e.key === "Enter" && applyCoupon(group.vendorId)}
+                      placeholder={`Coupon for ${group.vendorStoreName}`}
+                      className="flex-1 min-w-0 px-3 py-2 bg-white border border-gray-200 rounded-xl text-[11px] font-bold outline-none focus:border-black transition-all"
+                    />
+                    <button
+                      onClick={() => applyCoupon(group.vendorId)}
+                      className="px-3 py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-wide shrink-0"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                )}
+                {group.couponError && (
+                  <p className="text-[10px] font-bold text-red-500">{group.couponError}</p>
+                )}
               </div>
             ))}
 

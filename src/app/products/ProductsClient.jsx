@@ -82,11 +82,14 @@ export default function ProductsPage() {
         });
       }
 
-      // Search filtering
+      // Search filtering — matches name/description, plus a tag the seller
+      // added on the listing (a bare word or a "#tag").
       if (searchQuery) {
-        products = products.filter(product => 
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const needle = searchQuery.toLowerCase().replace(/^#/, "");
+        products = products.filter(product =>
+          product.name.toLowerCase().includes(needle) ||
+          product.description.toLowerCase().includes(needle) ||
+          (product.tags || []).some(tag => tag.toLowerCase().includes(needle))
         );
       }
       

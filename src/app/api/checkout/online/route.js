@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { items, customer = {}, delivery = {} } = body;
+    const { items, customer = {}, delivery = {}, couponCodes } = body;
 
     if (!customer.email) return badRequest('An email address is required to pay online');
     if (!customer.name) return badRequest('Please tell us who the order is for');
@@ -26,7 +26,7 @@ export async function POST(request) {
 
     const user = await optionalUser(request);
 
-    const groups = await buildOrderGroups(items);
+    const groups = await buildOrderGroups(items, couponCodes);
     if (!groups.some((group) => group.supportsOnline)) {
       return badRequest(
         'None of the vendors in your cart accept online payments. Use the WhatsApp option instead.',

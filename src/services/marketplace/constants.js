@@ -121,7 +121,11 @@ export const NOTIFICATION_TYPES = {
   WITHDRAWAL_PAID: 'withdrawal.paid',
   VENDOR_SUSPENDED: 'vendor.suspended',
   VENDOR_REINSTATED: 'vendor.reinstated',
+  LOW_STOCK: 'product.low_stock',
 };
+
+/** Stock at or below this triggers a one-time low-stock alert per variant. */
+export const LOW_STOCK_THRESHOLD = 3;
 
 export const AUDIENCES = {
   VENDOR: 'vendor',

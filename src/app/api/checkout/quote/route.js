@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request) {
   try {
-    const { items } = await request.json();
+    const { items, couponCodes } = await request.json();
     const [groups, settings] = await Promise.all([
-      buildOrderGroups(items),
+      buildOrderGroups(items, couponCodes),
       getMarketplaceSettings(),
     ]);
 
@@ -37,6 +37,9 @@ export async function POST(request) {
         supportsWhatsapp: group.supportsWhatsapp,
         items: group.items,
         subtotal: group.subtotal,
+        couponCode: group.couponCode || null,
+        discountAmount: group.discountAmount || 0,
+        couponError: group.couponError || null,
       })),
       onlineTotal: round2(
         payable.reduce((total, group) => total + group.subtotal, 0),

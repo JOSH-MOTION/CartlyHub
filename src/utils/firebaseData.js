@@ -454,6 +454,19 @@ export const getAllSellers = async () => {
   }
 };
 
+export const getSellerByStoreName = async (sellerName) => {
+  try {
+    const sellersQuery = query(collection(db, 'sellers'), where('storeName', '==', sellerName));
+    const snapshot = await getDocs(sellersQuery);
+    if (snapshot.empty) return null;
+    const sellerDoc = snapshot.docs[0];
+    return { id: sellerDoc.id, ...sellerDoc.data() };
+  } catch (error) {
+    console.error('Error fetching seller by store name:', error);
+    return null;
+  }
+};
+
 export const incrementStoreViews = async (sellerName) => {
   try {
     const sellersQuery = query(collection(db, 'sellers'), where('storeName', '==', sellerName));

@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { 
-  Store, 
-  Phone, 
-  Mail, 
-  FileText, 
-  Save, 
+import {
+  Store,
+  Phone,
+  Mail,
+  FileText,
+  Save,
   Loader2,
   CheckCircle2,
   AlertCircle,
   MapPin,
-  User
+  User,
+  Image as ImageIcon,
+  Palette,
+  X,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
@@ -43,7 +46,12 @@ export default function SellerSettingsPage() {
     contactEmail: sellerProfile?.contactEmail || "",
     region: sellerProfile?.region || "",
     location: sellerProfile?.location || "",
+    storeLogo: sellerProfile?.storeLogo || "",
+    storeBannerImage: sellerProfile?.storeBannerImage || "",
+    storeAccentColor: sellerProfile?.storeAccentColor || "#111827",
   });
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   useEffect(() => {
     if (sellerProfile) {
@@ -56,6 +64,9 @@ export default function SellerSettingsPage() {
         contactEmail: sellerProfile.contactEmail || "",
         region: sellerProfile.region || "",
         location: sellerProfile.location || "",
+        storeLogo: sellerProfile.storeLogo || "",
+        storeBannerImage: sellerProfile.storeBannerImage || "",
+        storeAccentColor: sellerProfile.storeAccentColor || "#111827",
       });
       setPreferences({
         sellingMode: sellerProfile.sellingMode || SELLING_MODES.BOTH,
@@ -63,6 +74,57 @@ export default function SellerSettingsPage() {
       });
     }
   }, [sellerProfile]);
+
+  const uploadToCloudinary = async (file) => {
+    const MAX_FILE_SIZE = 3 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Image too large. Please upload a file smaller than 3MB.");
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "eccomerce");
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dlng6dqtl"}/image/upload`,
+      { method: "POST", body: formData },
+    );
+
+    if (!response.ok) throw new Error("Upload failed");
+    const data = await response.json();
+    return data.secure_url;
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      if (url) setForm((prev) => ({ ...prev, storeLogo: url }));
+    } catch {
+      toast.error("Logo upload failed");
+    } finally {
+      setIsUploadingLogo(false);
+      e.target.value = null;
+    }
+  };
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingBanner(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      if (url) setForm((prev) => ({ ...prev, storeBannerImage: url }));
+    } catch {
+      toast.error("Banner upload failed");
+    } finally {
+      setIsUploadingBanner(false);
+      e.target.value = null;
+    }
+  };
 
   const handleSavePreferences = async () => {
     setIsSavingPreferences(true);
@@ -286,6 +348,97 @@ export default function SellerSettingsPage() {
               />
             </div>
 
+            <div className="space-y-4 pt-2 border-t border-gray-100">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Store Branding
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                    <ImageIcon className="h-3 w-3" />
+                    <span>Store Logo</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {form.storeLogo ? (
+                      <div className="relative h-16 w-16 shrink-0">
+                        <img
+                          src={form.storeLogo}
+                          alt="Store logo"
+                          className="h-16 w-16 rounded-2xl object-cover border border-gray-100"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, storeLogo: "" })}
+                          className="absolute -top-2 -right-2 h-6 w-6 bg-black text-white rounded-full flex items-center justify-center"
+                          aria-label="Remove logo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="h-16 w-16 rounded-2xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center shrink-0">
+                        <ImageIcon className="h-5 w-5 text-gray-300" />
+                      </div>
+                    )}
+                    <label className="flex-1 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-colors">
+                      {isUploadingLogo ? "Uploading…" : "Upload logo"}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                    <Palette className="h-3 w-3" />
+                    <span>Accent Color</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={form.storeAccentColor}
+                      onChange={(e) => setForm({ ...form, storeAccentColor: e.target.value })}
+                      className="h-11 w-14 rounded-lg border border-gray-100 cursor-pointer shrink-0"
+                    />
+                    <input
+                      value={form.storeAccentColor}
+                      onChange={(e) => setForm({ ...form, storeAccentColor: e.target.value })}
+                      className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center space-x-2">
+                  <ImageIcon className="h-3 w-3" />
+                  <span>Store Banner</span>
+                </label>
+                {form.storeBannerImage ? (
+                  <div className="relative">
+                    <img
+                      src={form.storeBannerImage}
+                      alt="Store banner"
+                      className="w-full h-32 rounded-2xl object-cover border border-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, storeBannerImage: "" })}
+                      className="absolute top-3 right-3 h-8 w-8 bg-black/70 text-white rounded-full flex items-center justify-center"
+                      aria-label="Remove banner"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center h-32 cursor-pointer bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-colors">
+                    {isUploadingBanner ? "Uploading…" : "Upload a wide banner image"}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} disabled={isUploadingBanner} />
+                  </label>
+                )}
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={isSubmitting}
@@ -319,7 +472,7 @@ export default function SellerSettingsPage() {
                View how customers see your store profile.
              </p>
              <button
-              onClick={() => window.open(`/seller/${encodeURIComponent(sellerProfile?.storeName)}`, "_blank")}
+              onClick={() => window.open(`/store/${encodeURIComponent(sellerProfile?.storeName)}`, "_blank")}
               className="w-full bg-white text-black py-3 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-100 transition-all"
              >
                View Public Page

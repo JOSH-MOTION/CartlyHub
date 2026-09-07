@@ -141,6 +141,22 @@ export const notifyCustomerOfStatusChange = (order, status) =>
     ctaHref: `/orders/${order.orderNumber}`,
   });
 
+/** Vendor-side low-stock alert — fires once as a variant crosses the threshold. */
+export const notifyVendorOfLowStock = ({ vendorId, productId, productName, variantLabel, stock }) =>
+  createNotification({
+    userId: vendorId,
+    audience: AUDIENCES.VENDOR,
+    type: NOTIFICATION_TYPES.LOW_STOCK,
+    title: stock === 0 ? 'Out of stock' : 'Low stock',
+    message:
+      stock === 0
+        ? `${productName}${variantLabel ? ` (${variantLabel})` : ''} just sold out.`
+        : `Only ${stock} left of ${productName}${variantLabel ? ` (${variantLabel})` : ''} — restock soon to avoid missing sales.`,
+    data: { productId, stock },
+    ctaLabel: 'Update stock',
+    ctaHref: `/seller/products/edit/${productId}`,
+  });
+
 export const listNotifications = async (userId, { limit = 50 } = {}) => {
   if (!userId) return [];
 

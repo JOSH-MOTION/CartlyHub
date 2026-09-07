@@ -326,6 +326,60 @@ export const sendVendorWhatsappOrderEmail = async (order, vendorEmail) => {
   });
 };
 
+/** Vendor: a variant just crossed the low-stock threshold. */
+export const sendLowStockEmail = async ({ email, productId, productName, variantLabel, stock }) => {
+  const href = `${siteUrl()}/seller/products/edit/${productId}`;
+  const label = variantLabel ? `${productName} (${variantLabel})` : productName;
+
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.6;">
+      ${
+        stock === 0
+          ? `<strong>${label}</strong> just sold out — it won't show as purchasable until you restock it.`
+          : `<strong>${label}</strong> is down to <strong>${stock}</strong> left. Restock soon to avoid missing sales while it's popular.`
+      }
+    </p>
+    ${button(href, 'Update stock')}`;
+
+  return send({
+    to: email,
+    subject: stock === 0 ? `${productName} just sold out` : `Low stock: ${productName}`,
+    html: shell(stock === 0 ? 'Out of stock' : 'Running low', 'A quick stock update', body),
+  });
+};
+
+/** Customer: items still sitting in their cart. */
+export const sendAbandonedCartEmail = async ({ email, name, items }) => {
+  const rows = items
+    .slice(0, 6)
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#0f172a;">
+        ${item.productName}
+        <span style="display:block;font-size:11px;color:#94a3b8;margin-top:2px;">Qty ${item.quantity}</span>
+      </td>
+      <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;font-weight:700;color:#0f172a;text-align:right;white-space:nowrap;">
+        ${formatCurrency((item.price || 0) * (item.quantity || 1))}
+      </td>
+    </tr>`,
+    )
+    .join('');
+
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
+      You left these in your bag — they're still here whenever you're ready.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">${rows}</table>
+    ${button(`${siteUrl()}/cart`, 'Finish checking out')}`;
+
+  return send({
+    to: email,
+    subject: "You left something in your bag",
+    html: shell('Still interested?', name ? `Hi ${String(name).split(' ')[0]}` : 'Your bag is waiting', body),
+  });
+};
+
 // ---------------------------------------------------------------------------
 // Admin broadcasts — announcements, store-share nudges, product spotlights.
 // ---------------------------------------------------------------------------

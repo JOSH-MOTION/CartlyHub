@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { useState } from "react";
 import { AppProvider } from "../context/AppContext";
+import CartSync from "./CartSync";
 
 export default function Providers({ children }) {
   const [queryClient] = useState(
@@ -23,6 +24,7 @@ export default function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
+        <CartSync />
         {children}
       </AppProvider>
       <Toaster position="top-center" richColors closeButton />

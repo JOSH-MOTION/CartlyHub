@@ -15,7 +15,7 @@ import {
   MessageCircle,
   User,
 } from "lucide-react";
-import { getProducts, getCategories, getSellerReviews, incrementStoreViews } from "@/utils/firebaseData";
+import { getProducts, getCategories, getSellerReviews, incrementStoreViews, getSellerByStoreName } from "@/utils/firebaseData";
 import { useApp } from "@/context/AppContext";
 import Link from "next/link";
 
@@ -67,6 +67,13 @@ export default function StoreFrontPage({ params }) {
     queryFn: () => getSellerReviews(sellerName),
   });
 
+  const { data: storeProfile } = useQuery({
+    queryKey: ["seller", "byStoreName", sellerName],
+    queryFn: () => getSellerByStoreName(sellerName),
+  });
+
+  const accentColor = storeProfile?.storeAccentColor || "#111827";
+
   const sellerLocation = products?.[0]?.region || "Ghana";
 
   const averageRating = sellerReviews.length > 0
@@ -88,17 +95,38 @@ export default function StoreFrontPage({ params }) {
         </Link>
 
         {/* Store Header */}
-        <div className="bg-gray-50 rounded-[2.5rem] p-10 md:p-16 mb-12 border border-gray-100 relative overflow-hidden">
-          {/* Abstract Decorations */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-3xl" />
+        <div className="bg-gray-50 rounded-[2.5rem] mb-12 border border-gray-100 relative overflow-hidden">
+          {storeProfile?.storeBannerImage ? (
+            <div className="h-40 md:h-56 w-full relative">
+              <img
+                src={storeProfile.storeBannerImage}
+                alt={`${sellerName} banner`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            </div>
+          ) : (
+            <>
+              {/* Abstract Decorations — only shown without a custom banner */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-3xl" />
+            </>
+          )}
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8 p-10 md:p-16">
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-black rounded-2xl">
-                  <Store className="h-6 w-6 text-white" />
-                </div>
+                {storeProfile?.storeLogo ? (
+                  <img
+                    src={storeProfile.storeLogo}
+                    alt={`${sellerName} logo`}
+                    className="h-12 w-12 rounded-2xl object-cover border border-gray-100 shadow-sm"
+                  />
+                ) : (
+                  <div className="p-3 rounded-2xl" style={{ backgroundColor: accentColor }}>
+                    <Store className="h-6 w-6 text-white" />
+                  </div>
+                )}
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
                   Verified Store
                 </span>
@@ -108,9 +136,15 @@ export default function StoreFrontPage({ params }) {
                 {sellerName}
               </h1>
 
+              {storeProfile?.description && (
+                <p className="text-gray-500 text-sm max-w-xl leading-relaxed">
+                  {storeProfile.description}
+                </p>
+              )}
+
               <div className="flex flex-wrap items-center gap-6 pt-2">
                 <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  <MapPin className="h-4 w-4 mr-2 text-emerald-500" />
+                  <MapPin className="h-4 w-4 mr-2" style={{ color: accentColor }} />
                   {sellerLocation}
                 </div>
                 <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-widest">

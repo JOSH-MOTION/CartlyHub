@@ -326,12 +326,25 @@ export default function ProductDetailClient({ params, productId, initialProduct 
                   {product.description || "No description available for this premium piece."}
                 </div>
                 {product.description?.length > 200 && (
-                  <button 
+                  <button
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-[10px] font-black uppercase text-emerald-600 hover:underline pt-2"
                   >
                     {isExpanded ? "Show less" : "Show more"}
                   </button>
+                )}
+                {product.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {product.tags.map((tag) => (
+                      <Link
+                        key={tag}
+                        href={`/products?search=${encodeURIComponent(tag)}`}
+                        className="px-3 py-1.5 bg-gray-50 hover:bg-black hover:text-white rounded-full text-[10px] font-bold text-gray-500 transition-colors"
+                      >
+                        #{tag}
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
 

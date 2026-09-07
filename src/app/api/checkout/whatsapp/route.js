@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { items, vendorId, customer = {}, delivery = {} } = body;
+    const { items, vendorId, customer = {}, delivery = {}, couponCodes } = body;
 
     if (!vendorId) return badRequest('Which vendor is this order for?');
     if (!customer.name) return badRequest('Please tell us who the order is for');
@@ -27,7 +27,7 @@ export async function POST(request) {
 
     const user = await optionalUser(request);
 
-    const groups = await buildOrderGroups(items);
+    const groups = await buildOrderGroups(items, couponCodes);
     const group = groups.find((entry) => entry.vendorId === vendorId);
 
     if (!group) return badRequest('That vendor has no items in your cart');

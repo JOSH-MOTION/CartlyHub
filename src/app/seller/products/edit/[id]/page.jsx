@@ -36,6 +36,7 @@ export default function SellerEditProductPage({ params }) {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    tagsInput: "",
     categoryId: "",
     subcategoryId: "",
     costPrice: "",
@@ -82,6 +83,7 @@ export default function SellerEditProductPage({ params }) {
       setForm({
         name: productData.name || "",
         description: productData.description || "",
+        tagsInput: (productData.tags || []).join(", "),
         categoryId: productData.categoryId || "",
         subcategoryId: productData.subcategoryId || "",
         costPrice: productData.costPrice || "",
@@ -199,8 +201,12 @@ export default function SellerEditProductPage({ params }) {
     if (!validate()) return;
     
     // Construct payload
-    const { discountPrice: _discountEntry, ...formFields } = form;
+    const { discountPrice: _discountEntry, tagsInput, ...formFields } = form;
     let payload = { ...formFields };
+    payload.tags = (tagsInput || "")
+      .split(",")
+      .map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean);
     
     // A discount is stored as a lower `price` plus a `compareAtPrice` holding
     // the original, so the checkout keeps charging from `price` unchanged.
@@ -340,6 +346,18 @@ export default function SellerEditProductPage({ params }) {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Describe your product in detail..."
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Tags (comma-separated)
+                </label>
+                <input
+                  className="w-full px-5 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                  value={form.tagsInput}
+                  onChange={(e) => setForm({ ...form, tagsInput: e.target.value })}
+                  placeholder="e.g. summer, waterproof, gift idea"
+                />
+                <p className="text-[10px] text-gray-400">Helps buyers find this in search — not shown on the listing.</p>
               </div>
             </div>
           </section>
