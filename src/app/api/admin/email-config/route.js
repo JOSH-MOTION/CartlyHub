@@ -14,5 +14,9 @@ export async function GET() {
     hasResendKey: Boolean(process.env.RESEND_API_KEY),
     hasGmailCredentials: Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS),
     hasEmailFrom: Boolean(process.env.EMAIL_FROM),
+    // Vercel sets this automatically per-deployment — the only reliable way
+    // to confirm which commit is actually serving a given request, after a
+    // stretch of deploys that silently failed to update production at all.
+    deployedCommit: process.env.VERCEL_GIT_COMMIT_SHA || null,
   });
 }
