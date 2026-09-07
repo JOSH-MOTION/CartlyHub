@@ -7,6 +7,15 @@ export const dynamic = 'force-dynamic';
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
+// Same spacing as the broadcast endpoint, for the same reason — Resend
+// rate-limits concurrent/rapid requests hard.
+const SEND_DELAY_MS = 550;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// This can run for a while on a real cart list at 550ms/send — 60s is the
+// max Vercel's Hobby plan allows for a function.
+export const maxDuration = 60;
+
 /**
  * Vercel Cron target — see vercel.json. Vercel signs cron requests with
  * CRON_SECRET automatically (Authorization: Bearer <CRON_SECRET>); this just
@@ -26,7 +35,8 @@ export async function GET(request) {
     });
 
     let sent = 0;
-    for (const cart of carts) {
+    for (let i = 0; i < carts.length; i++) {
+      const cart = carts[i];
       const result = await sendAbandonedCartEmail({
         email: cart.email,
         name: cart.name,
@@ -36,6 +46,7 @@ export async function GET(request) {
         await markCartReminded(cart.userId);
         sent++;
       }
+      if (i < carts.length - 1) await sleep(SEND_DELAY_MS);
     }
 
     return ok({ scanned: carts.length, sent });

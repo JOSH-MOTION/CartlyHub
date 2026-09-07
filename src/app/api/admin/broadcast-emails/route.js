@@ -19,8 +19,13 @@ import {
  * them, whichever provider email-service.js ends up using.
  */
 
-const BATCH_SIZE = 25;
-const BATCH_DELAY_MS = 1500;
+// Resend rate-limits concurrent requests hard — firing a batch with
+// Promise.all blew straight through it and silently dropped most of a real
+// send (confirmed via the Resend dashboard: everything that went out landed
+// in the same ~2-second window, everything after was rejected). Sending one
+// at a time, spaced out, is slower but actually reliable regardless of
+// which provider ends up handling it.
+const SEND_DELAY_MS = 550;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -59,18 +64,21 @@ const sendInBatches = async (recipients, sendOne) => {
   let sent = 0;
   let failed = 0;
 
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const batch = recipients.slice(i, i + BATCH_SIZE);
-    const results = await Promise.all(
-      batch.map((recipient) => sendOne(recipient).catch(() => ({ sent: false }))),
-    );
-    results.forEach((result) => (result?.sent ? sent++ : failed++));
+  for (let i = 0; i < recipients.length; i++) {
+    const result = await sendOne(recipients[i]).catch(() => ({ sent: false }));
+    if (result?.sent) sent++;
+    else failed++;
 
-    if (i + BATCH_SIZE < recipients.length) await sleep(BATCH_DELAY_MS);
+    if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
   }
 
   return { sent, failed };
 };
+
+// Sequential, throttled sending means this can run for tens of seconds on a
+// real recipient list — the platform's default function timeout (10s on
+// Hobby) would kill it mid-send otherwise. 60s is the max Hobby allows.
+export const maxDuration = 60;
 
 export async function POST(request) {
   try {
