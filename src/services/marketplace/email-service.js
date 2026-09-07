@@ -54,7 +54,7 @@ const logoAttachment = () => {
  * your own verified domain with SPF and DKIM, which is what actually keeps
  * these out of spam.
  */
-const usingResend = () => Boolean(process.env.RESEND_API_KEY);
+export const usingResend = () => Boolean(process.env.RESEND_API_KEY);
 
 /** e.g. `Cartly Hub <orders@cartlyhubgh.com>` */
 const fromAddress = () =>
@@ -119,15 +119,17 @@ const send = async ({ to, subject, html }) => {
     return { sent: false, error: 'not configured' };
   }
 
+  const provider = usingResend() ? 'resend' : 'gmail';
+
   try {
     const messageId = usingResend()
       ? await sendViaResend({ to, subject, html })
       : await sendViaGmail({ to, subject, html });
 
-    return { sent: true, messageId };
+    return { sent: true, messageId, provider };
   } catch (error) {
     console.error('[email] failed to send', subject, error?.message);
-    return { sent: false, error: error?.message };
+    return { sent: false, error: error?.message, provider };
   }
 };
 

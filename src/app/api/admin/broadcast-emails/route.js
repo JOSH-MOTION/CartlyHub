@@ -5,6 +5,7 @@ import {
   sendAnnouncementEmail,
   sendProductSpotlightEmail,
   sendFeatureDigestEmail,
+  usingResend,
 } from '@/services/marketplace/email-service';
 
 /**
@@ -98,7 +99,15 @@ export async function POST(request) {
       return sendAnnouncementEmail({ email, name, title, message });
     });
 
-    return NextResponse.json({ success: true, sent, failed, total: recipients.length });
+    return NextResponse.json({
+      success: true,
+      sent,
+      failed,
+      total: recipients.length,
+      // Proves which provider this deployment actually used, rather than
+      // guessing from delivery numbers alone.
+      provider: usingResend() ? 'resend' : 'gmail',
+    });
   } catch (error) {
     console.error('Error running broadcast API:', error);
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
