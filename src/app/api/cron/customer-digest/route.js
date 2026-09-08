@@ -30,7 +30,13 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const products = await getProducts();
+    let products;
+    try {
+      products = await getProducts();
+    } catch (error) {
+      return NextResponse.json({ error: `[getProducts] ${error.message}` }, { status: 500 });
+    }
+
     const newArrivals = products.slice(0, 4).map(asDigestProduct);
     const priceDrops = products
       .filter((p) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.basePrice))
@@ -41,7 +47,13 @@ export async function GET(request) {
       return NextResponse.json({ success: true, sent: 0, failed: 0, note: 'nothing to send' });
     }
 
-    const snap = await getDocs(collection(db, 'users'));
+    let snap;
+    try {
+      snap = await getDocs(collection(db, 'users'));
+    } catch (error) {
+      return NextResponse.json({ error: `[users getDocs] ${error.message}` }, { status: 500 });
+    }
+
     const recipients = snap.docs
       .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
       .filter((user) => user.email && user.email.includes('@') && !user.marketingEmailsOptOut);
