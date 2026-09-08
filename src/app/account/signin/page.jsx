@@ -81,6 +81,16 @@ function SignInPage() {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => router.push("/account/forgot-password")}
+                className="text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+
             {error && (
               <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-100">
                 {error}

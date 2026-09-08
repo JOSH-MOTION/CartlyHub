@@ -246,6 +246,25 @@ export const sendWelcomeEmail = async ({ email, name }) => {
   });
 };
 
+/** Password reset — the link is single-use and expires (Firebase's own default, 1 hour). */
+export const sendPasswordResetEmail = async ({ email, resetLink }) => {
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.6;">
+      We got a request to reset the password on your Cartly Hub account. Tap the
+      button below to choose a new one — this link works once and expires in an hour.
+    </p>
+    ${button(resetLink, 'Reset your password')}
+    <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;line-height:1.6;">
+      Didn't ask for this? You can safely ignore this email — your password won't change.
+    </p>`;
+
+  return send({
+    to: email,
+    subject: 'Reset your Cartly Hub password',
+    html: shell('Reset your password', 'Requested for your account', body),
+  });
+};
+
 /** Vendor: you have a new paid order. */
 export const sendVendorOrderEmail = async (order, vendorEmail) => {
   const href = `${siteUrl()}/seller/orders/${order.id}`;
