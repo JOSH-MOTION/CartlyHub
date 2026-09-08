@@ -106,6 +106,20 @@ service cloud.firestore {
     // Two producers write here: the mobile chat service uses `recipientId`,
     // the marketplace notification service uses `userId`. Both are honoured so
     // neither has to change.
+    // Status-originated buyer/seller chats. Reads are live client listeners
+    // (cheaper and faster than polling); writes stay server-only through the
+    // Admin SDK so a new message can trigger the notification/email side effects.
+    match /messageThreads/{threadId} {
+      allow read: if isSelf(resource.data.sellerId) || isSelf(resource.data.customerId);
+      allow write: if false;
+    }
+
+    match /threadMessages/{messageId} {
+      allow read: if isSelf(get(/databases/$(database)/documents/messageThreads/$(resource.data.threadId)).data.sellerId)
+                  || isSelf(get(/databases/$(database)/documents/messageThreads/$(resource.data.threadId)).data.customerId);
+      allow write: if false;
+    }
+
     match /notifications/{notificationId} {
       allow read: if isSelf(resource.data.recipientId) || isSelf(resource.data.userId);
       allow create: if isAuthenticated();

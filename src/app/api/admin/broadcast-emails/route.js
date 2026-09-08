@@ -56,7 +56,7 @@ const collectRecipients = async (audience, { respectMarketingOptOut = false } = 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, message, audience = 'sellers', mode = 'announcement', product } = body;
+    const { title, message, audience = 'sellers', mode = 'announcement', product, imageUrl } = body;
 
     if (mode === 'product_spotlight') {
       if (!product?.name || !product?.href || product?.price === undefined) {
@@ -78,7 +78,7 @@ export async function POST(request) {
     const payloads = recipients.map(({ email, name, userId }) => {
       if (mode === 'product_spotlight') return { email, name, product, userId };
       if (mode === 'feature_digest') return { email, name };
-      return { email, name, title, message };
+      return { email, name, title, message, imageUrl };
     });
 
     const queued = await enqueueMany(queueType, payloads);

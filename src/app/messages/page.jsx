@@ -1,28 +1,50 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { Loader2, MessageCircle, ChevronRight } from "lucide-react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useApp } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
-import { apiFetch } from "@/utils/apiClient";
 import ThreadThumbnail from "@/components/ThreadThumbnail";
 
 export default function MessagesListPage() {
   const { user, isLoading: authLoading } = useApp();
   const router = useRouter();
+  const [asCustomer, setAsCustomer] = useState([]);
+  const [asSeller, setAsSeller] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/account/signin");
   }, [user, authLoading, router]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["messages", "threads"],
-    queryFn: () => apiFetch("/api/messages"),
-    enabled: !!user,
-    refetchInterval: 15000,
-  });
+  // Live listeners — a thread's own updates (new last message) show up here
+  // without a repeating fetch of every thread on a timer.
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const unsubCustomer = onSnapshot(
+      query(collection(db, "messageThreads"), where("customerId", "==", user.id)),
+      (snap) => {
+        setAsCustomer(snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })));
+        setIsLoading(false);
+      },
+    );
+    const unsubSeller = onSnapshot(
+      query(collection(db, "messageThreads"), where("sellerId", "==", user.id)),
+      (snap) => {
+        setAsSeller(snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })));
+        setIsLoading(false);
+      },
+    );
+
+    return () => {
+      unsubCustomer();
+      unsubSeller();
+    };
+  }, [user]);
 
   if (authLoading || isLoading) {
     return (
@@ -32,8 +54,10 @@ export default function MessagesListPage() {
     );
   }
 
-  const threads = data?.threads || [];
-  const currentUserId = data?.currentUserId;
+  const currentUserId = user?.id;
+  const threads = [...asCustomer, ...asSeller].sort(
+    (a, b) => (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">

@@ -514,14 +514,15 @@ export const sendFeatureDigestEmail = async ({ email, name }) => {
 // ---------------------------------------------------------------------------
 
 /** Free-text admin → seller/customer announcement (the broadcast tool). */
-export const sendAnnouncementEmail = async ({ email, name, title, message }) =>
+export const sendAnnouncementEmail = async ({ email, name, title, message, imageUrl }) =>
   send({
     to: email,
     subject: title,
     html: shell(
       title,
       name ? `Hi ${String(name).split(' ')[0]}` : 'An update from Cartly Hub',
-      `<p style="margin:0 0 8px;font-size:14px;color:#334155;line-height:1.6;">${String(message).replace(/\n/g, '<br/>')}</p>`,
+      `${imageUrl ? `<img src="${imageUrl}" alt="" style="width:100%;max-width:504px;border-radius:12px;margin:0 0 20px;display:block;" />` : ''}
+      <p style="margin:0 0 8px;font-size:14px;color:#334155;line-height:1.6;">${String(message).replace(/\n/g, '<br/>')}</p>`,
     ),
   });
 

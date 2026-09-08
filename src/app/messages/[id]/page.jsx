@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, MessageCircle, Send } from "lucide-react";
+import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useApp } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
 import { apiFetch } from "@/utils/apiClient";
@@ -13,25 +14,47 @@ import ThreadThumbnail from "@/components/ThreadThumbnail";
 export default function ThreadPage({ params }) {
   const { user, isLoading: authLoading } = useApp();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [thread, setThread] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const bottomRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/account/signin");
   }, [user, authLoading, router]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["messages", "thread", params.id],
-    queryFn: () => apiFetch(`/api/messages/${params.id}`),
-    enabled: !!user,
-    refetchInterval: 4000,
-  });
+  // Live listeners, not polling — Firestore only bills the initial read plus
+  // whatever actually changes, instead of re-reading the whole conversation
+  // on a timer.
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const unsubThread = onSnapshot(doc(db, "messageThreads", params.id), (snap) => {
+      setThread(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+      setIsLoading(false);
+    });
+
+    const unsubMessages = onSnapshot(
+      query(collection(db, "threadMessages"), where("threadId", "==", params.id)),
+      (snap) => {
+        const list = snap.docs
+          .map((entry) => ({ id: entry.id, ...entry.data() }))
+          .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+        setMessages(list);
+      },
+    );
+
+    return () => {
+      unsubThread();
+      unsubMessages();
+    };
+  }, [user, params.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [data?.messages?.length]);
+  }, [messages.length]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -40,7 +63,6 @@ export default function ThreadPage({ params }) {
     try {
       await apiFetch(`/api/messages/${params.id}/send`, { method: "POST", body: { text } });
       setText("");
-      queryClient.invalidateQueries({ queryKey: ["messages", "thread", params.id] });
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -56,9 +78,7 @@ export default function ThreadPage({ params }) {
     );
   }
 
-  const thread = data?.thread;
-  const messages = data?.messages || [];
-  const currentUserId = data?.currentUserId;
+  const currentUserId = user?.id;
   const isSeller = currentUserId === thread?.sellerId;
   const otherName = isSeller ? thread?.customerName : thread?.sellerStoreName;
   const whatsappHref =

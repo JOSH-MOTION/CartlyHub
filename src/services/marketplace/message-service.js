@@ -21,11 +21,6 @@ const hydrateThread = (entry) => {
   };
 };
 
-const hydrateMessage = (entry) => {
-  const data = entry.data();
-  return { id: entry.id, ...data, createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null };
-};
-
 /** One thread per (status, customer) pair — reopening the same status re-uses the existing conversation. */
 export const getOrCreateThreadForStatus = async ({
   statusId,
@@ -75,22 +70,6 @@ export const assertParticipant = (thread, userId) => {
   if (!thread || (thread.sellerId !== userId && thread.customerId !== userId)) {
     throw new Error('Thread not found');
   }
-};
-
-export const listThreadsForUser = async (userId) => {
-  const [asCustomer, asSeller] = await Promise.all([
-    getDocs(query(collection(db, THREADS), where('customerId', '==', userId))),
-    getDocs(query(collection(db, THREADS), where('sellerId', '==', userId))),
-  ]);
-
-  const threads = [...asCustomer.docs, ...asSeller.docs].map(hydrateThread);
-  threads.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
-  return threads;
-};
-
-export const listMessages = async (threadId) => {
-  const snap = await getDocs(query(collection(db, MESSAGES), where('threadId', '==', threadId)));
-  return snap.docs.map(hydrateMessage).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 };
 
 export const sendMessage = async ({ threadId, senderId, senderRole, text }) => {
