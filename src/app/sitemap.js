@@ -2,6 +2,7 @@ import { getProducts, getCategories, getAllSellers } from '../utils/firebaseData
 import { slugForCategory } from '../lib/category-url';
 import { locationForProduct } from '../lib/location-url';
 import { productSlug } from '../lib/product-url';
+import { getBlogPosts } from '../lib/blog-posts';
 
 /**
  * Sitemap.
@@ -23,7 +24,15 @@ export default async function sitemap() {
     { url: `${baseUrl}/cookies`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/safety-tips`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${baseUrl}/seller-policy`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.6 },
   ].map((route) => ({ ...route, lastModified: new Date() }));
+
+  const blogRoutes = getBlogPosts().map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: 'monthly',
+    priority: 0.5,
+  }));
 
   let productRoutes = [];
   let locationRoutes = [];
@@ -91,5 +100,5 @@ export default async function sitemap() {
     console.error('Error fetching categories for sitemap:', error);
   }
 
-  return [...staticRoutes, ...productRoutes, ...storeRoutes, ...categoryRoutes, ...locationRoutes];
+  return [...staticRoutes, ...productRoutes, ...storeRoutes, ...categoryRoutes, ...locationRoutes, ...blogRoutes];
 }

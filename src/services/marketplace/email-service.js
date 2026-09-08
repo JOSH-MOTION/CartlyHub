@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import { formatCurrency } from '../payments/money';
+import { unsubscribeHref, COLLECTIONS as UNSUB_COLLECTIONS } from '../../lib/unsubscribe';
 
 /**
  * Transactional email for paid orders.
@@ -150,7 +151,13 @@ const masthead = () =>
          Cartly<span style="color:#2563eb;">Hub</span>
        </p>`;
 
-const shell = (heading, subheading, body) => `
+/**
+ * `unsubscribeLink` is only ever passed by non-transactional templates
+ * (weekly digest, product spotlight, engagement nudge) — order
+ * confirmations, receipts and stock alerts never pass one, so there's no
+ * way to accidentally make a transactional email look optional.
+ */
+const shell = (heading, subheading, body, unsubscribeLink) => `
 <div style="background:#f8fafc;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
     <div style="background:#ffffff;padding:28px 28px 20px;border-bottom:1px solid #e2e8f0;">
@@ -165,6 +172,7 @@ const shell = (heading, subheading, body) => `
       <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#0f172a;">Cartly Hub</p>
       <p style="margin:0;font-size:11px;color:#94a3b8;">
         Your Effortless Shop in Ghana · You're receiving this because of activity on your Cartly Hub account.
+        ${unsubscribeLink ? `<a href="${unsubscribeLink}" style="color:#94a3b8;text-decoration:underline;">Unsubscribe</a>` : ''}
       </p>
     </div>
   </div>
@@ -528,7 +536,7 @@ export const sendProfileIncompleteEmail = async ({ email, ownerName, storeName, 
  * — the caller is responsible for filtering out anyone who opted out
  * (`marketingEmailsOptOut`) before this is ever invoked.
  */
-export const sendProductSpotlightEmail = async ({ email, name, product }) => {
+export const sendProductSpotlightEmail = async ({ email, name, product, userId }) => {
   const href = `${siteUrl()}${product.href}`;
   const image = product.image
     ? `<img src="${product.image}" alt="${product.name}" style="width:100%;max-width:504px;border-radius:12px;display:block;margin:0 0 16px;" />`
@@ -540,11 +548,7 @@ export const sendProductSpotlightEmail = async ({ email, name, product }) => {
     <p style="margin:0 0 20px;font-size:14px;color:#334155;">
       ${formatCurrency(product.price, product.currency || 'GHS')}${product.storeName ? ` · ${product.storeName}` : ''}
     </p>
-    ${button(href, 'Check it out')}
-    <p style="margin:24px 0 0;font-size:11px;color:#94a3b8;line-height:1.6;">
-      You're getting this because you have a Cartly Hub account. Turn off
-      product picks anytime from your account settings.
-    </p>`;
+    ${button(href, 'Check it out')}`;
 
   return send({
     to: email,
@@ -553,6 +557,70 @@ export const sendProductSpotlightEmail = async ({ email, name, product }) => {
       "We think you'll like this",
       name ? `Hi ${String(name).split(' ')[0]}` : 'Handpicked from Cartly Hub sellers',
       body,
+      userId ? unsubscribeHref(siteUrl(), UNSUB_COLLECTIONS.CUSTOMERS, userId) : null,
+    ),
+  });
+};
+
+/** Customer: weekly digest — new arrivals and price drops, site-wide. */
+export const sendWeeklyCustomerDigestEmail = async ({ email, name, userId, newArrivals, priceDrops }) => {
+  const productRow = (product) => `
+    <tr>
+      <td style="width:64px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        ${product.image ? `<img src="${product.image}" alt="${product.name}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;display:block;" />` : ''}
+      </td>
+      <td style="padding:10px 0 10px 12px;border-bottom:1px solid #f1f5f9;">
+        <a href="${siteUrl()}${product.href}" style="font-size:13px;font-weight:700;color:#0f172a;text-decoration:none;">${product.name}</a>
+        <span style="display:block;font-size:12px;color:#64748b;margin-top:2px;">${formatCurrency(product.price, product.currency || 'GHS')}</span>
+      </td>
+    </tr>`;
+
+  const section = (title, products) =>
+    products.length
+      ? `<p style="margin:20px 0 8px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">${title}</p>
+         <table style="width:100%;border-collapse:collapse;">${products.map(productRow).join('')}</table>`
+      : '';
+
+  const body = `
+    <p style="margin:0 0 8px;font-size:14px;color:#334155;line-height:1.6;">
+      Here's what's new on Cartly Hub this week.
+    </p>
+    ${section('New arrivals', newArrivals)}
+    ${section('Price drops', priceDrops)}
+    ${button(`${siteUrl()}/products`, 'Browse everything')}`;
+
+  return send({
+    to: email,
+    subject: 'New arrivals and price drops this week on Cartly Hub',
+    html: shell(
+      'This week on Cartly Hub',
+      name ? `Hi ${String(name).split(' ')[0]}` : 'Fresh listings, picked for you',
+      body,
+      userId ? unsubscribeHref(siteUrl(), UNSUB_COLLECTIONS.CUSTOMERS, userId) : null,
+    ),
+  });
+};
+
+/** Seller: hasn't listed anything new in a while — a nudge, not a scold. */
+export const sendSellerEngagementNudgeEmail = async ({ email, ownerName, storeName, userId, hasNoProducts, daysSinceLastListing }) => {
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.6;">
+      ${
+        hasNoProducts
+          ? `<strong>${storeName}</strong> doesn't have any listings yet — buyers can't find a store with nothing in it. Adding even one product gets you into search and category pages.`
+          : `<strong>${storeName}</strong> hasn't had a new listing in ${daysSinceLastListing} days. Buyers browse newest-first, so a quiet store gets seen less over time — even one new item this week helps.`
+      }
+    </p>
+    ${button(`${siteUrl()}/seller/products/add`, 'Add a product')}`;
+
+  return send({
+    to: email,
+    subject: hasNoProducts ? `Add your first product to ${storeName}` : `${storeName} hasn't posted in a while`,
+    html: shell(
+      hasNoProducts ? 'List your first product' : 'Time for a new listing?',
+      ownerName ? `Hi ${String(ownerName).split(' ')[0]}` : 'A quick nudge',
+      body,
+      userId ? unsubscribeHref(siteUrl(), UNSUB_COLLECTIONS.SELLERS, userId) : null,
     ),
   });
 };

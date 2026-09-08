@@ -31,7 +31,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const AUDIENCES = ['sellers', 'customers', 'all'];
 
-/** Collects { email, name } recipients, deduped by email. */
+/** Collects { email, name, userId } recipients, deduped by email. */
 const collectRecipients = async (audience, { respectMarketingOptOut = false } = {}) => {
   const recipients = new Map();
 
@@ -41,7 +41,7 @@ const collectRecipients = async (audience, { respectMarketingOptOut = false } = 
       const data = docSnap.data();
       const email = data.contactEmail;
       if (email && email !== 'N/A' && email.includes('@')) {
-        recipients.set(email, { name: data.ownerName || data.storeName || 'Partner' });
+        recipients.set(email, { name: data.ownerName || data.storeName || 'Partner', userId: docSnap.id });
       }
     });
   }
@@ -53,7 +53,7 @@ const collectRecipients = async (audience, { respectMarketingOptOut = false } = 
       const email = data.email;
       if (!email || !email.includes('@') || recipients.has(email)) return;
       if (respectMarketingOptOut && data.marketingEmailsOptOut) return;
-      recipients.set(email, { name: data.name || null });
+      recipients.set(email, { name: data.name || null, userId: docSnap.id });
     });
   }
 
@@ -101,8 +101,8 @@ export async function POST(request) {
       respectMarketingOptOut: mode === 'product_spotlight',
     });
 
-    const { sent, failed } = await sendInBatches(recipients, ({ email, name }) => {
-      if (mode === 'product_spotlight') return sendProductSpotlightEmail({ email, name, product });
+    const { sent, failed } = await sendInBatches(recipients, ({ email, name, userId }) => {
+      if (mode === 'product_spotlight') return sendProductSpotlightEmail({ email, name, product, userId });
       if (mode === 'feature_digest') return sendFeatureDigestEmail({ email, name });
       return sendAnnouncementEmail({ email, name, title, message });
     });
