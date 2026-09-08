@@ -42,16 +42,25 @@ export default function BlogIndexPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="block p-6 sm:p-8 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors"
+              className="flex flex-col sm:flex-row gap-6 p-6 sm:p-8 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors"
             >
-              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
-                {post.category}
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight mt-2 mb-3">{post.title}</h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-3">{post.description}</p>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                {new Date(post.publishedAt).toLocaleDateString("en-GH", { month: "long", day: "numeric", year: "numeric" })}
-              </span>
+              {post.coverImage && (
+                <img
+                  src={post.coverImage}
+                  alt={post.title}
+                  className="w-full sm:w-48 h-32 object-cover rounded-xl border border-gray-100 shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
+                  {post.category}
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight mt-2 mb-3">{post.title}</h2>
+                <p className="text-gray-500 text-sm leading-relaxed mb-3">{post.description}</p>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  {new Date(post.publishedAt).toLocaleDateString("en-GH", { month: "long", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
             </Link>
           ))}
         </div>

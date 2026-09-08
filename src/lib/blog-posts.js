@@ -18,6 +18,7 @@ export const BLOG_POSTS = [
       "Online shopping scams are common in Ghana — fake listings, sellers who vanish after payment, counterfeit goods. Here's a practical checklist for buying safely, whether you're on Cartly Hub or anywhere else.",
     publishedAt: '2026-09-08',
     category: 'Buyer Guides',
+    coverImage: '/blog/buying-safely-online-in-ghana.png',
     content: [
       {
         type: 'paragraph',

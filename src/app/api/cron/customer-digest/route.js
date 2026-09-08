@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { db, collection, getDocs } from '@/lib/firestore-server';
 import { getProducts } from '@/utils/firebaseData';
 import { sendWeeklyCustomerDigestEmail } from '@/services/marketplace/email-service';
 import { productSlug } from '@/lib/product-url';

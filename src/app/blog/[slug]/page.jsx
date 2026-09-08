@@ -13,6 +13,7 @@ export async function generateMetadata({ params }) {
   if (!post) return { title: "Post Not Found | Cartly Hub" };
 
   const url = `${SITE_URL}/blog/${post.slug}`;
+  const image = post.coverImage ? `${SITE_URL}${post.coverImage}` : `${SITE_URL}/cartly-og.png`;
 
   return {
     title: post.title,
@@ -24,12 +25,13 @@ export async function generateMetadata({ params }) {
       url,
       siteName: "Cartly Hub",
       type: "article",
-      images: [{ url: `${SITE_URL}/cartly-og.png`, width: 1200, height: 630, alt: post.title }],
+      images: [{ url: image, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.description,
+      images: [image],
     },
   };
 }
@@ -39,12 +41,14 @@ export default function BlogPostPage({ params }) {
   if (!post) notFound();
 
   const url = `${SITE_URL}/blog/${post.slug}`;
+  const image = post.coverImage ? `${SITE_URL}${post.coverImage}` : `${SITE_URL}/cartly-og.png`;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     description: post.description,
+    image,
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
     url,
@@ -79,6 +83,14 @@ export default function BlogPostPage({ params }) {
             {new Date(post.publishedAt).toLocaleDateString("en-GH", { month: "long", day: "numeric", year: "numeric" })}
           </span>
         </header>
+
+        {post.coverImage && (
+          <img
+            src={post.coverImage}
+            alt={post.title}
+            className="w-full rounded-2xl border border-gray-100 mb-10"
+          />
+        )}
 
         <BlogContent blocks={post.content} />
       </main>
