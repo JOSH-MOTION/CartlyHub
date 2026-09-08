@@ -13,7 +13,8 @@ import {
   LayoutDashboard,
   Store,
   ChevronRight,
-  Instagram
+  Instagram,
+  Bell
 } from "lucide-react";
 
 const Tiktok = ({ className }) => (
@@ -31,6 +32,7 @@ import useCart from '../store/useCart';
 import CartSidebar from './CartSidebar';
 import { db } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { subscribeToNotifications } from "../utils/marketplaceData";
 
 export default function Navbar() {
   const router = useRouter();
@@ -43,6 +45,15 @@ export default function Navbar() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const [announcement, setAnnouncement] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Live badge — a customer should see "order shipped" land without refreshing.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    return subscribeToNotifications(user.id, (notifications) =>
+      setUnreadCount(notifications.filter((entry) => !entry.read).length),
+    );
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchAnnouncement = async () => {
@@ -199,6 +210,20 @@ export default function Navbar() {
                   </span>
                 )}
               </a>
+              {user && (
+                <a
+                  href="/account/notifications"
+                  aria-label="View notifications"
+                  className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </a>
+              )}
             </div>
 
             <button
@@ -372,6 +397,15 @@ export default function Navbar() {
                     <a href="/wishlist" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent">
                       <Heart className="h-4 w-4 text-gray-400" />
                       <span className="text-[9px] font-black uppercase tracking-widest">Saved</span>
+                    </a>
+                    <a href="/account/notifications" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent relative">
+                      <Bell className="h-4 w-4 text-gray-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Alerts</span>
+                      {unreadCount > 0 && (
+                        <span className="absolute top-2 right-2 h-4 w-4 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
                     </a>
                     {sellerProfile ? (
                       <a href="/seller" className="col-span-2 flex items-center justify-between p-4 bg-black text-white rounded-xl">

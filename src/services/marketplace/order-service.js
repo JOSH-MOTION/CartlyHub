@@ -20,6 +20,7 @@ import {
   LOW_STOCK_THRESHOLD,
   ORDER_CHANNELS,
   ORDER_STATUS,
+  ORDER_STATUS_LABELS,
   PAYMENT_STATUS,
   SELLING_MODES,
 } from './constants';
@@ -36,6 +37,7 @@ import { buildOrderWhatsappLink } from './whatsapp';
 import { validateCoupon, incrementCouponUsage } from './coupon-service';
 import {
   sendCustomerOrderEmail,
+  sendCustomerStatusUpdateEmail,
   sendVendorOrderEmail,
   sendVendorWhatsappOrderEmail,
   sendLowStockEmail,
@@ -719,6 +721,15 @@ export const updateOrderStatus = async (orderId, status, { actorId, note } = {})
 
   if (order.customerId) {
     await notifyCustomerOfStatusChange(order, status);
+  }
+
+  // Sits alongside the in-app notification, never instead of it — a status
+  // change is otherwise invisible until the customer happens to reopen their
+  // order page. Best-effort: the status update has already succeeded.
+  if (order.customerEmail) {
+    await sendCustomerStatusUpdateEmail(order, status, ORDER_STATUS_LABELS[status] || status).catch((error) =>
+      console.error('[orders] status update email failed', error),
+    );
   }
 
   return { ...order, status };

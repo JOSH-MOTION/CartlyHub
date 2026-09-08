@@ -307,6 +307,27 @@ export const sendCustomerOrderEmail = async (order) => {
   });
 };
 
+/** Customer: the seller updated the order's status (shipped, delivered, etc). */
+export const sendCustomerStatusUpdateEmail = async (order, status, statusLabel) => {
+  const href = `${siteUrl()}/orders/${order.orderNumber}`;
+
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.6;">
+      ${order.vendorStoreName || 'The seller'} updated order <strong>${order.orderNumber}</strong>.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      ${row('Order number', order.orderNumber, true)}
+      ${row('Status', statusLabel, true)}
+    </table>
+    ${button(href, 'Track your order')}`;
+
+  return send({
+    to: order.customerEmail,
+    subject: `Order ${order.orderNumber} — ${statusLabel}`,
+    html: shell(statusLabel, `An update on your order`, body),
+  });
+};
+
 /** Vendor: a WhatsApp order was saved against your store. */
 export const sendVendorWhatsappOrderEmail = async (order, vendorEmail) => {
   const href = `${siteUrl()}/seller/orders/${order.id}`;
