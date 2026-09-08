@@ -81,7 +81,7 @@ export default function StatusBar() {
 
   return (
     <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-100">
+      <div>
         <div className="flex gap-4 overflow-x-auto pb-1">
           {sellerProfile && (
             <button

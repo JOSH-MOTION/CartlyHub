@@ -86,7 +86,6 @@ export default function HomePage() {
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
       <Navbar />
-      <StatusBar />
 
       <div className="flex-grow flex overflow-hidden">
         {/* Sidebar - Desktop Only */}
@@ -175,6 +174,11 @@ export default function HomePage() {
                 selectedCategory={selectedCategory} 
                 setSelectedCategory={setSelectedCategory} 
               />
+            </div>
+
+            {/* Status bar */}
+            <div className="mb-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-100 pb-2">
+              <StatusBar />
             </div>
 
             {/* Section Header & Filters */}
