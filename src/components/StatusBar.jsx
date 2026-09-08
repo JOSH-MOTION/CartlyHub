@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,6 +9,17 @@ import { useApp } from "@/context/AppContext";
 import { apiFetch } from "@/utils/apiClient";
 import { formatCurrency } from "@/services/payments/money";
 
+const AUTO_ADVANCE_MS = 5000;
+const VIEWED_KEY = "cartly-viewed-statuses";
+
+const readViewedIds = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(VIEWED_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+};
+
 /** Ephemeral seller status strip — live 24h, gone after (and permanently deleted server-side). */
 export default function StatusBar() {
   const router = useRouter();
@@ -16,6 +27,11 @@ export default function StatusBar() {
   const [openSellerIndex, setOpenSellerIndex] = useState(null);
   const [statusIndex, setStatusIndex] = useState(0);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [viewedIds, setViewedIds] = useState(new Set());
+
+  useEffect(() => {
+    setViewedIds(readViewedIds());
+  }, []);
 
   const { data: sellers = [] } = useQuery({
     queryKey: ["statuses", "active"],
@@ -23,17 +39,25 @@ export default function StatusBar() {
     refetchInterval: 60000,
   });
 
-  if (sellers.length === 0 && !sellerProfile) return null;
-
   const openSeller = openSellerIndex !== null ? sellers[openSellerIndex] : null;
   const status = openSeller?.statuses?.[statusIndex];
 
-  const openViewer = (index) => {
-    setOpenSellerIndex(index);
-    setStatusIndex(0);
-  };
-
-  const closeViewer = () => setOpenSellerIndex(null);
+  // Marks the open status seen — the ring for that seller dims once every
+  // one of their active statuses has been viewed, same as Instagram/WhatsApp.
+  useEffect(() => {
+    if (!status) return;
+    setViewedIds((prev) => {
+      if (prev.has(status.id)) return prev;
+      const next = new Set(prev);
+      next.add(status.id);
+      try {
+        localStorage.setItem(VIEWED_KEY, JSON.stringify([...next]));
+      } catch {
+        // Private browsing / storage disabled — the ring just won't dim, harmless.
+      }
+      return next;
+    });
+  }, [status?.id]);
 
   const next = () => {
     if (!openSeller) return;
@@ -46,6 +70,24 @@ export default function StatusBar() {
       closeViewer();
     }
   };
+
+  // Auto-advance, like a real story — resets on every status change,
+  // whether that change came from this timer or a manual tap.
+  useEffect(() => {
+    if (!status) return undefined;
+    const timer = setTimeout(next, AUTO_ADVANCE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.id]);
+
+  if (sellers.length === 0 && !sellerProfile) return null;
+
+  const openViewer = (index) => {
+    setOpenSellerIndex(index);
+    setStatusIndex(0);
+  };
+
+  const closeViewer = () => setOpenSellerIndex(null);
 
   const prev = () => {
     if (statusIndex > 0) {
@@ -81,6 +123,13 @@ export default function StatusBar() {
 
   return (
     <>
+      <style>{`
+        @keyframes storyFill {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
+
       <div>
         <div className="flex gap-4 overflow-x-auto pb-1">
           {sellerProfile && (
@@ -97,26 +146,33 @@ export default function StatusBar() {
             </button>
           )}
 
-          {sellers.map((seller, index) => (
-            <button
-              key={seller.sellerId}
-              onClick={() => openViewer(index)}
-              className="flex flex-col items-center gap-1.5 shrink-0 group"
-            >
-              <div className="h-16 w-16 rounded-full p-[2px] bg-gradient-to-tr from-amber-400 via-orange-500 to-pink-500">
-                <div className="h-full w-full rounded-full border-2 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
-                  {seller.storeLogo ? (
-                    <img src={seller.storeLogo} alt={seller.storeName} className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="h-6 w-6 text-gray-400" />
-                  )}
+          {sellers.map((seller, index) => {
+            const allViewed = seller.statuses.every((s) => viewedIds.has(s.id));
+            return (
+              <button
+                key={seller.sellerId}
+                onClick={() => openViewer(index)}
+                className="flex flex-col items-center gap-1.5 shrink-0 group"
+              >
+                <div
+                  className={`h-16 w-16 rounded-full p-[2px] ${
+                    allViewed ? "bg-gray-200" : "bg-gradient-to-tr from-amber-400 via-orange-500 to-pink-500"
+                  }`}
+                >
+                  <div className="h-full w-full rounded-full border-2 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
+                    {seller.storeLogo ? (
+                      <img src={seller.storeLogo} alt={seller.storeName} className="w-full h-full object-cover" />
+                    ) : (
+                      <Store className="h-6 w-6 text-gray-400" />
+                    )}
+                  </div>
                 </div>
-              </div>
-              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide max-w-[64px] truncate group-hover:text-black transition-colors">
-                {seller.storeName}
-              </span>
-            </button>
-          ))}
+                <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide max-w-[64px] truncate group-hover:text-black transition-colors">
+                  {seller.storeName}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -125,7 +181,15 @@ export default function StatusBar() {
           <div className="absolute top-0 left-0 right-0 flex gap-1 p-3 z-10">
             {openSeller.statuses.map((_, i) => (
               <div key={i} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-                <div className={`h-full bg-white ${i <= statusIndex ? "w-full" : "w-0"}`} />
+                {i < statusIndex ? (
+                  <div className="h-full w-full bg-white" />
+                ) : i === statusIndex ? (
+                  <div
+                    key={`${openSellerIndex}-${statusIndex}`}
+                    className="h-full bg-white"
+                    style={{ animation: `storyFill ${AUTO_ADVANCE_MS}ms linear forwards` }}
+                  />
+                ) : null}
               </div>
             ))}
           </div>
