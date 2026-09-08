@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getCategories } from "@/utils/firebaseData";
+import { apiFetch } from "@/utils/apiClient";
 import { productSlug } from "@/lib/product-url";
 import { toast } from "sonner";
 import { 
@@ -45,7 +46,8 @@ export default function AdminDashboard() {
     title: "",
     message: "",
     isActive: false,
-    audience: "sellers"
+    audience: "sellers",
+    imageUrl: ""
   });
 
   // Real product and category queries
@@ -236,26 +238,21 @@ export default function AdminDashboard() {
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch('/api/admin/broadcast-emails', {
+      const data = await apiFetch('/api/admin/broadcast-emails', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           title: announcementForm.title,
           message: announcementForm.message,
-          audience: announcementForm.audience
-        })
+          audience: announcementForm.audience,
+          imageUrl: announcementForm.imageUrl || undefined
+        }
       });
 
-      const data = await response.json();
-      if (response.ok && data.success) {
-        const leftover = data.queued - data.sent - data.failed;
-        toast.success(
-          `Sent ${data.sent} of ${data.queued} now (${data.failed} failed)` +
-            (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
-        );
-      } else {
-        throw new Error(data.error || "Broadcast failed");
-      }
+      const leftover = data.queued - data.sent - data.failed;
+      toast.success(
+        `Sent ${data.sent} of ${data.queued} now (${data.failed} failed)` +
+          (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
+      );
     } catch (err) {
       console.error(err);
       toast.error(`Email broadcast failed: ${err.message || err}`);
@@ -521,6 +518,13 @@ export default function AdminDashboard() {
                   <option value="customers">Email: Customers only</option>
                   <option value="all">Email: Everyone</option>
                 </select>
+                <input
+                  type="text"
+                  placeholder="Banner image URL (optional)"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold outline-none focus:border-black transition-all"
+                  value={announcementForm.imageUrl}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, imageUrl: e.target.value })}
+                />
                 <p className="text-[9px] text-gray-400 font-semibold leading-relaxed px-0.5">
                   "Publish Alert" only shows the dashboard banner to sellers. "Send Email" uses the
                   audience picked above — the in-app banner and the email are independent.
@@ -621,10 +625,9 @@ function ProductSpotlightCard({ products }) {
 
     setIsSending(true);
     try {
-      const response = await fetch("/api/admin/broadcast-emails", {
+      const data = await apiFetch("/api/admin/broadcast-emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           mode: "product_spotlight",
           product: {
             name: selected.name,
@@ -634,21 +637,16 @@ function ProductSpotlightCard({ products }) {
             storeName: selected.sellerName || null,
             href: `/product/${productSlug(selected)}`,
           },
-        }),
+        },
       });
 
-      const data = await response.json();
-      if (response.ok && data.success) {
-        const leftover = data.queued - data.sent - data.failed;
-        toast.success(
-          `Sent ${data.sent} of ${data.queued} customers now (${data.failed} failed)` +
-            (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
-        );
-        setSelectedId("");
-        setSearch("");
-      } else {
-        throw new Error(data.error || "Spotlight send failed");
-      }
+      const leftover = data.queued - data.sent - data.failed;
+      toast.success(
+        `Sent ${data.sent} of ${data.queued} customers now (${data.failed} failed)` +
+          (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
+      );
+      setSelectedId("");
+      setSearch("");
     } catch (err) {
       console.error(err);
       toast.error(`Product spotlight failed: ${err.message || err}`);

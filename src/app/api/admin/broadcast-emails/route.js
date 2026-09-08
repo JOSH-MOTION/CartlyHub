@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, collection, getDocs } from '@/lib/firestore-server';
 import { usingResend } from '@/services/marketplace/email-service';
 import { enqueueMany, processEmailQueue } from '@/services/marketplace/email-queue-service';
+import { requireAdmin } from '@/app/api/_lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -55,6 +56,7 @@ const collectRecipients = async (audience, { respectMarketingOptOut = false } = 
 
 export async function POST(request) {
   try {
+    await requireAdmin(request);
     const body = await request.json();
     const { title, message, audience = 'sellers', mode = 'announcement', product, imageUrl } = body;
 
@@ -94,6 +96,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Error running broadcast API:', error);
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Server error' }, { status: error.status || 500 });
   }
 }
