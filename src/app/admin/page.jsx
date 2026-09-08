@@ -18,7 +18,9 @@ import {
   Tag,
   Users,
   Send,
-  Mail
+  Mail,
+  ImageIcon,
+  Trash2
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -221,6 +223,35 @@ export default function AdminDashboard() {
   };
 
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large — please upload a file smaller than 5MB.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "eccomerce");
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dlng6dqtl"}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
+      setAnnouncementForm((prev) => ({ ...prev, imageUrl: data.secure_url }));
+    } catch (err) {
+      toast.error("Image upload failed");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
 
   const handleEmailBroadcast = async (e) => {
     e.preventDefault();
@@ -518,13 +549,37 @@ export default function AdminDashboard() {
                   <option value="customers">Email: Customers only</option>
                   <option value="all">Email: Everyone</option>
                 </select>
-                <input
-                  type="text"
-                  placeholder="Banner image URL (optional)"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold outline-none focus:border-black transition-all"
-                  value={announcementForm.imageUrl}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, imageUrl: e.target.value })}
-                />
+                {announcementForm.imageUrl ? (
+                  <div className="relative w-full h-28">
+                    <img
+                      src={announcementForm.imageUrl}
+                      alt=""
+                      className="w-full h-full object-cover rounded-lg border border-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAnnouncementForm({ ...announcementForm, imageUrl: "" })}
+                      className="absolute top-2 right-2 h-7 w-7 bg-black/70 text-white rounded-full flex items-center justify-center"
+                      aria-label="Remove banner image"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center h-20 cursor-pointer bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-200 rounded-lg text-gray-400 transition-colors gap-1">
+                    <ImageIcon className="h-4 w-4" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">
+                      {isUploadingBanner ? "Uploading…" : "Add banner image (optional)"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner}
+                    />
+                  </label>
+                )}
                 <p className="text-[9px] text-gray-400 font-semibold leading-relaxed px-0.5">
                   "Publish Alert" only shows the dashboard banner to sellers. "Send Email" uses the
                   audience picked above — the in-app banner and the email are independent.
@@ -552,7 +607,7 @@ export default function AdminDashboard() {
               
               <button
                 onClick={handleEmailBroadcast}
-                disabled={isSendingEmail}
+                disabled={isSendingEmail || isUploadingBanner}
                 className="flex-grow bg-white text-black border-2 border-black hover:bg-gray-50 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 {isSendingEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><span>Send Email</span><Mail className="h-3.5 w-3.5" /></>}
