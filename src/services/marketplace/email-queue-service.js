@@ -47,20 +47,44 @@ const SENDERS = {
   },
 };
 
+/**
+ * The Admin SDK rejects `undefined` outright (unlike the web SDK, which
+ * silently drops it) — a single recipient with an unset optional field
+ * (no `name` on their user doc, say) throws and aborts the whole batch.
+ * `null` is a valid Firestore value, so that's what `undefined` becomes.
+ */
+const sanitizeForFirestore = (value) => {
+  if (value === undefined) return null;
+  if (Array.isArray(value)) return value.map(sanitizeForFirestore);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, sanitizeForFirestore(val)]));
+  }
+  return value;
+};
+
 /** Adds one email to the queue. Cheap and synchronous-feeling — the actual send happens in processQueue. */
 export const enqueueEmail = async (type, payload) => {
   if (!SENDERS[type]) throw new Error(`Unknown queued email type: ${type}`);
   await addDoc(collection(db, QUEUE), {
     type,
-    payload,
+    payload: sanitizeForFirestore(payload),
     status: 'pending',
     createdAt: Timestamp.now(),
   });
 };
 
+/** One bad recipient (any reason) shouldn't stop the rest of the batch from being queued. */
 export const enqueueMany = async (type, payloads) => {
-  for (const payload of payloads) await enqueueEmail(type, payload);
-  return payloads.length;
+  let queued = 0;
+  for (const payload of payloads) {
+    try {
+      await enqueueEmail(type, payload);
+      queued++;
+    } catch (error) {
+      console.error(`[email-queue] failed to enqueue ${type}`, error.message);
+    }
+  }
+  return queued;
 };
 
 const getRemainingQuota = async () => {
