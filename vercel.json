@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/process-email-queue",
+      "schedule": "0 1 * * *"
+    },
+    {
       "path": "/api/cron/abandoned-carts",
       "schedule": "0 3 * * *"
     },

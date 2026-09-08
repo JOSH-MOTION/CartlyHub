@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db, collection, getDocs } from '@/lib/firestore-server';
 import { getSellerProducts } from '@/utils/firebaseData';
-import { sendSellerEngagementNudgeEmail } from '@/services/marketplace/email-service';
+import { enqueueMany, processEmailQueue } from '@/services/marketplace/email-queue-service';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const SEND_DELAY_MS = 550;
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const STALE_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -15,6 +13,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * Weekly, see vercel.json. Only emails a seller who's actually gone quiet —
  * zero listings, or nothing new in 7+ days — never every seller regardless
  * of activity, so this stays a useful nudge rather than noise.
+ *
+ * Enqueues rather than sending directly — see email-queue-service.js for
+ * why (a shared 70/day budget across every non-transactional email type).
  */
 export async function GET(request) {
   try {
@@ -36,14 +37,11 @@ export async function GET(request) {
       );
 
     const now = Date.now();
-    let sent = 0;
-    let failed = 0;
+    const toNudge = [];
     let skipped = 0;
 
-    for (let i = 0; i < sellers.length; i++) {
-      const seller = sellers[i];
+    for (const seller of sellers) {
       const products = await getSellerProducts(seller.id);
-
       const hasNoProducts = products.length === 0;
       let daysSinceLastListing = null;
 
@@ -60,22 +58,20 @@ export async function GET(request) {
         continue;
       }
 
-      const result = await sendSellerEngagementNudgeEmail({
+      toNudge.push({
         email: seller.contactEmail,
         ownerName: seller.ownerName,
         storeName: seller.storeName,
         userId: seller.id,
         hasNoProducts,
         daysSinceLastListing,
-      }).catch(() => ({ sent: false }));
-
-      if (result?.sent) sent++;
-      else failed++;
-
-      if (i < sellers.length - 1) await sleep(SEND_DELAY_MS);
+      });
     }
 
-    return NextResponse.json({ success: true, sent, failed, skipped, total: sellers.length });
+    const queued = await enqueueMany('seller_nudge', toNudge);
+    const result = await processEmailQueue();
+
+    return NextResponse.json({ success: true, queued, skipped, total: sellers.length, ...result });
   } catch (error) {
     console.error('Error running seller engagement nudge cron:', error);
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });

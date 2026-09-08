@@ -1,34 +1,28 @@
 import { NextResponse } from 'next/server';
 import { db, collection, getDocs } from '@/lib/firestore-server';
-import {
-  sendAnnouncementEmail,
-  sendProductSpotlightEmail,
-  sendFeatureDigestEmail,
-  usingResend,
-} from '@/services/marketplace/email-service';
+import { usingResend } from '@/services/marketplace/email-service';
+import { enqueueMany, processEmailQueue } from '@/services/marketplace/email-queue-service';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * Admin broadcast tool: a free-text announcement to sellers/customers/both,
  * or a "you might like this" product spotlight to customers.
  *
- * Batched deliberately. Gmail SMTP (the fallback when RESEND_API_KEY isn't
- * set) throttles hard past a few dozen messages in a short window and will
- * start silently failing sends well before any real seller/customer list is
- * fully covered — so this always sends in small chunks with a pause between
- * them, whichever provider email-service.js ends up using.
+ * Enqueues rather than sending directly — see email-queue-service.js. A
+ * large broadcast may now take more than one day to fully go out if it's
+ * bigger than the remaining daily budget; the response tells you how many
+ * queued vs. how many actually went out in this call.
  */
 
-// Resend rate-limits concurrent requests hard — firing a batch with
-// Promise.all blew straight through it and silently dropped most of a real
-// send (confirmed via the Resend dashboard: everything that went out landed
-// in the same ~2-second window, everything after was rejected). Sending one
-// at a time, spaced out, is slower but actually reliable regardless of
-// which provider ends up handling it.
-const SEND_DELAY_MS = 550;
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const AUDIENCES = ['sellers', 'customers', 'all'];
+
+const MODE_TO_QUEUE_TYPE = {
+  product_spotlight: 'product_spotlight',
+  feature_digest: 'feature_digest',
+  announcement: 'announcement',
+};
 
 /** Collects { email, name, userId } recipients, deduped by email. */
 const collectRecipients = async (audience, { respectMarketingOptOut = false } = {}) => {
@@ -59,26 +53,6 @@ const collectRecipients = async (audience, { respectMarketingOptOut = false } = 
   return Array.from(recipients.entries()).map(([email, info]) => ({ email, ...info }));
 };
 
-const sendInBatches = async (recipients, sendOne) => {
-  let sent = 0;
-  let failed = 0;
-
-  for (let i = 0; i < recipients.length; i++) {
-    const result = await sendOne(recipients[i]).catch(() => ({ sent: false }));
-    if (result?.sent) sent++;
-    else failed++;
-
-    if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
-  }
-
-  return { sent, failed };
-};
-
-// Sequential, throttled sending means this can run for tens of seconds on a
-// real recipient list — the platform's default function timeout (10s on
-// Hobby) would kill it mid-send otherwise. 60s is the max Hobby allows.
-export const maxDuration = 60;
-
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -100,17 +74,20 @@ export async function POST(request) {
       respectMarketingOptOut: mode === 'product_spotlight',
     });
 
-    const { sent, failed } = await sendInBatches(recipients, ({ email, name, userId }) => {
-      if (mode === 'product_spotlight') return sendProductSpotlightEmail({ email, name, product, userId });
-      if (mode === 'feature_digest') return sendFeatureDigestEmail({ email, name });
-      return sendAnnouncementEmail({ email, name, title, message });
+    const queueType = MODE_TO_QUEUE_TYPE[mode] || 'announcement';
+    const payloads = recipients.map(({ email, name, userId }) => {
+      if (mode === 'product_spotlight') return { email, name, product, userId };
+      if (mode === 'feature_digest') return { email, name };
+      return { email, name, title, message };
     });
+
+    const queued = await enqueueMany(queueType, payloads);
+    const result = await processEmailQueue();
 
     return NextResponse.json({
       success: true,
-      sent,
-      failed,
-      total: recipients.length,
+      queued,
+      ...result,
       // Proves which provider this deployment actually used, rather than
       // guessing from delivery numbers alone.
       provider: usingResend() ? 'resend' : 'gmail',

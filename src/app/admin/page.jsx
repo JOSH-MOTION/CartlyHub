@@ -248,7 +248,11 @@ export default function AdminDashboard() {
 
       const data = await response.json();
       if (response.ok && data.success) {
-        toast.success(`Successfully sent ${data.sent} of ${data.total} emails! (${data.failed} failed)`);
+        const leftover = data.queued - data.sent - data.failed;
+        toast.success(
+          `Sent ${data.sent} of ${data.queued} now (${data.failed} failed)` +
+            (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
+        );
       } else {
         throw new Error(data.error || "Broadcast failed");
       }
@@ -635,7 +639,11 @@ function ProductSpotlightCard({ products }) {
 
       const data = await response.json();
       if (response.ok && data.success) {
-        toast.success(`Sent to ${data.sent} of ${data.total} customers! (${data.failed} failed)`);
+        const leftover = data.queued - data.sent - data.failed;
+        toast.success(
+          `Sent ${data.sent} of ${data.queued} customers now (${data.failed} failed)` +
+            (leftover > 0 ? ` — ${leftover} queued for the next day with quota room.` : "."),
+        );
         setSelectedId("");
         setSearch("");
       } else {
