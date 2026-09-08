@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/seller-engagement-nudge",
-      "schedule": "0 9 * * 1"
+      "schedule": "0 8 * * 3"
     }
   ]
 }
