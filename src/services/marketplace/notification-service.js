@@ -157,6 +157,19 @@ export const notifyVendorOfLowStock = ({ vendorId, productId, productName, varia
     ctaHref: `/seller/products/edit/${productId}`,
   });
 
+/** Either side of a message thread — recipientRole tells the bell which audience this belongs to. */
+export const notifyNewMessage = ({ recipientId, recipientRole, senderName, threadId, preview }) =>
+  createNotification({
+    userId: recipientId,
+    audience: recipientRole === 'seller' ? AUDIENCES.VENDOR : AUDIENCES.CUSTOMER,
+    type: NOTIFICATION_TYPES.NEW_MESSAGE,
+    title: `New message from ${senderName}`,
+    message: preview,
+    data: { threadId },
+    ctaLabel: 'Reply',
+    ctaHref: `/messages/${threadId}`,
+  });
+
 export const listNotifications = async (userId, { limit = 50 } = {}) => {
   if (!userId) return [];
 

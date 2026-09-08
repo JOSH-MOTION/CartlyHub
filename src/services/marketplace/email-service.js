@@ -329,6 +329,30 @@ export const sendCustomerStatusUpdateEmail = async (order, status, statusLabel) 
   });
 };
 
+/** Either side of a message thread — a new reply came in. */
+export const sendNewMessageEmail = async ({ email, recipientName, senderName, preview, threadId }) => {
+  const href = `${siteUrl()}/messages/${threadId}`;
+
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
+      <strong>${senderName}</strong> sent you a message.
+    </p>
+    <div style="background:#f8fafc;border-radius:10px;padding:14px 16px;margin:0 0 24px;">
+      <p style="margin:0;font-size:13px;color:#334155;font-style:italic;">"${preview}"</p>
+    </div>
+    ${button(href, 'Reply')}`;
+
+  return send({
+    to: email,
+    subject: `New message from ${senderName}`,
+    html: shell(
+      'New message',
+      recipientName ? `Hi ${String(recipientName).split(' ')[0]}` : 'You have a new message',
+      body,
+    ),
+  });
+};
+
 /** Vendor: a WhatsApp order was saved against your store. */
 export const sendVendorWhatsappOrderEmail = async (order, vendorEmail) => {
   const href = `${siteUrl()}/seller/orders/${order.id}`;

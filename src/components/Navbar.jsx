@@ -14,7 +14,8 @@ import {
   Store,
   ChevronRight,
   Instagram,
-  Bell
+  Bell,
+  MessageSquare
 } from "lucide-react";
 
 const Tiktok = ({ className }) => (
@@ -211,18 +212,27 @@ export default function Navbar() {
                 )}
               </a>
               {user && (
-                <a
-                  href="/account/notifications"
-                  aria-label="View notifications"
-                  className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </a>
+                <>
+                  <a
+                    href="/messages"
+                    aria-label="View messages"
+                    className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                  </a>
+                  <a
+                    href="/account/notifications"
+                    aria-label="View notifications"
+                    className="text-sm font-semibold uppercase tracking-widest hover:text-gray-500 transition-colors relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </a>
+                </>
               )}
             </div>
 
@@ -397,6 +407,10 @@ export default function Navbar() {
                     <a href="/wishlist" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent">
                       <Heart className="h-4 w-4 text-gray-400" />
                       <span className="text-[9px] font-black uppercase tracking-widest">Saved</span>
+                    </a>
+                    <a href="/messages" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent">
+                      <MessageSquare className="h-4 w-4 text-gray-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Messages</span>
                     </a>
                     <a href="/account/notifications" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all border border-transparent relative">
                       <Bell className="h-4 w-4 text-gray-400" />

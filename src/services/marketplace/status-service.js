@@ -27,7 +27,7 @@ const hydrate = (entry) => {
   };
 };
 
-export const createStatus = async ({ sellerId, storeName, storeLogo, whatsappNumber, image, imagePublicId, caption, price }) => {
+export const createStatus = async ({ sellerId, storeName, storeLogo, whatsappNumber, sellerEmail, image, imagePublicId, caption, price }) => {
   const existing = await getDocs(query(collection(db, STATUSES), where('sellerId', '==', sellerId)));
   const now = Date.now();
   const activeCount = existing.docs.filter((entry) => {
@@ -45,6 +45,7 @@ export const createStatus = async ({ sellerId, storeName, storeLogo, whatsappNum
     storeName: storeName || 'A Cartly Hub seller',
     storeLogo: storeLogo || null,
     whatsappNumber: whatsappNumber || null,
+    sellerEmail: sellerEmail || null,
     image,
     imagePublicId: imagePublicId || null,
     caption: caption || '',
@@ -54,6 +55,11 @@ export const createStatus = async ({ sellerId, storeName, storeLogo, whatsappNum
   });
 
   return { id: ref.id };
+};
+
+export const getStatusById = async (statusId) => {
+  const snap = await getDoc(doc(db, STATUSES, statusId));
+  return snap.exists() ? hydrate(snap) : null;
 };
 
 export const listSellerStatuses = async (sellerId) => {

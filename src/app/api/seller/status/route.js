@@ -24,6 +24,7 @@ export async function POST(request) {
       storeName: vendor.storeName,
       storeLogo: vendor.storeLogo || null,
       whatsappNumber: vendor.whatsappNumber || null,
+      sellerEmail: vendor.contactEmail || null,
       image,
       imagePublicId,
       caption,

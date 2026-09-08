@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { X, ChevronLeft, ChevronRight, MessageCircle, Store } from "lucide-react";
+import { toast } from "sonner";
+import { X, ChevronLeft, ChevronRight, MessageCircle, Store, Plus, Send } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { apiFetch } from "@/utils/apiClient";
 import { formatCurrency } from "@/services/payments/money";
 
 /** Ephemeral seller status strip — live 24h, gone after (and permanently deleted server-side). */
 export default function StatusBar() {
+  const router = useRouter();
+  const { user, sellerProfile } = useApp();
   const [openSellerIndex, setOpenSellerIndex] = useState(null);
   const [statusIndex, setStatusIndex] = useState(0);
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
   const { data: sellers = [] } = useQuery({
     queryKey: ["statuses", "active"],
@@ -17,7 +23,7 @@ export default function StatusBar() {
     refetchInterval: 60000,
   });
 
-  if (sellers.length === 0) return null;
+  if (sellers.length === 0 && !sellerProfile) return null;
 
   const openSeller = openSellerIndex !== null ? sellers[openSellerIndex] : null;
   const status = openSeller?.statuses?.[statusIndex];
@@ -51,6 +57,22 @@ export default function StatusBar() {
     }
   };
 
+  const handleMessageSeller = async () => {
+    if (!user) {
+      router.push("/account/signin");
+      return;
+    }
+    setIsStartingChat(true);
+    try {
+      const { id } = await apiFetch("/api/messages/start", { method: "POST", body: { statusId: status.id } });
+      router.push(`/messages/${id}`);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
   const whatsappHref = status?.whatsappNumber
     ? `https://wa.me/${status.whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
         `Hi! I saw your status on Cartly Hub${status.caption ? ` — "${status.caption}"` : ""}. Still available?`,
@@ -61,6 +83,20 @@ export default function StatusBar() {
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-100">
         <div className="flex gap-4 overflow-x-auto pb-1">
+          {sellerProfile && (
+            <button
+              onClick={() => router.push("/seller/status")}
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
+            >
+              <div className="h-16 w-16 rounded-full border-2 border-dashed border-gray-300 group-hover:border-black flex items-center justify-center bg-gray-50 transition-colors">
+                <Plus className="h-6 w-6 text-gray-400 group-hover:text-black transition-colors" />
+              </div>
+              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide group-hover:text-black transition-colors">
+                Add status
+              </span>
+            </button>
+          )}
+
           {sellers.map((seller, index) => (
             <button
               key={seller.sellerId}
@@ -123,16 +159,29 @@ export default function StatusBar() {
               <p className="text-[10px] font-black uppercase tracking-widest text-white/60">{status.storeName}</p>
               {status.caption && <p className="text-sm text-white font-medium leading-relaxed">{status.caption}</p>}
               {status.price && <p className="text-lg font-black text-white">{formatCurrency(status.price)}</p>}
-              {whatsappHref && (
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px]"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Message seller
-                </a>
+
+              {status.sellerId !== user?.id && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleMessageSeller}
+                    disabled={isStartingChat}
+                    className="flex-1 flex items-center justify-center gap-2 bg-white text-black py-3 rounded-xl font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isStartingChat ? "Opening…" : "Message seller"}
+                  </button>
+                  {whatsappHref && (
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shrink-0"
+                      aria-label="Message on WhatsApp"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </div>

@@ -131,6 +131,7 @@ export default function SellerLayout({ children }) {
       items: [
         { name: "Dashboard", icon: LayoutDashboard, href: "/seller" },
         { name: "Orders", icon: ShoppingBag, href: "/seller/orders" },
+        { name: "Messages", icon: MessageCircle, href: "/messages" },
         {
           name: "Notifications",
           icon: Bell,

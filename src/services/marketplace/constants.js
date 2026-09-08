@@ -122,6 +122,7 @@ export const NOTIFICATION_TYPES = {
   VENDOR_SUSPENDED: 'vendor.suspended',
   VENDOR_REINSTATED: 'vendor.reinstated',
   LOW_STOCK: 'product.low_stock',
+  NEW_MESSAGE: 'message.new',
 };
 
 /** Stock at or below this triggers a one-time low-stock alert per variant. */
