@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, ChevronLeft, ChevronRight, MessageCircle, Store, Plus, Send } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { apiFetch } from "@/utils/apiClient";
 import { formatCurrency } from "@/services/payments/money";
+import StatusComposer from "@/components/StatusComposer";
 
 const AUTO_ADVANCE_MS = 5000;
 const VIEWED_KEY = "cartly-viewed-statuses";
@@ -20,14 +21,26 @@ const readViewedIds = () => {
   }
 };
 
+const timeAgo = (date) => {
+  if (!date) return "";
+  const ms = Date.now() - new Date(date).getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+};
+
 /** Ephemeral seller status strip — live 24h, gone after (and permanently deleted server-side). */
 export default function StatusBar() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, sellerProfile } = useApp();
   const [openSellerIndex, setOpenSellerIndex] = useState(null);
   const [statusIndex, setStatusIndex] = useState(0);
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [viewedIds, setViewedIds] = useState(new Set());
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
 
   useEffect(() => {
     setViewedIds(readViewedIds());
@@ -38,6 +51,9 @@ export default function StatusBar() {
     queryFn: async () => (await apiFetch("/api/statuses")).sellers,
     refetchInterval: 60000,
   });
+
+  const ownActiveCount =
+    sellers.find((seller) => seller.sellerId === user?.id)?.statuses.length || 0;
 
   const openSeller = openSellerIndex !== null ? sellers[openSellerIndex] : null;
   const status = openSeller?.statuses?.[statusIndex];
@@ -134,7 +150,7 @@ export default function StatusBar() {
         <div className="flex gap-4 overflow-x-auto pb-1">
           {sellerProfile && (
             <button
-              onClick={() => router.push("/seller/status")}
+              onClick={() => setIsComposerOpen(true)}
               className="flex flex-col items-center gap-1.5 shrink-0 group"
             >
               <div className="h-16 w-16 rounded-full border-2 border-dashed border-gray-300 group-hover:border-black flex items-center justify-center bg-gray-50 transition-colors">
@@ -160,8 +176,12 @@ export default function StatusBar() {
                   }`}
                 >
                   <div className="h-full w-full rounded-full border-2 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
-                    {seller.storeLogo ? (
-                      <img src={seller.storeLogo} alt={seller.storeName} className="w-full h-full object-cover" />
+                    {seller.statuses[0]?.image || seller.storeLogo ? (
+                      <img
+                        src={seller.statuses[0]?.image || seller.storeLogo}
+                        alt={seller.storeName}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <Store className="h-6 w-6 text-gray-400" />
                     )}
@@ -220,7 +240,10 @@ export default function StatusBar() {
           <div className="max-w-md w-full h-full sm:h-auto sm:max-h-[85vh] flex flex-col">
             <img src={status.image} alt={status.caption} className="w-full h-full sm:h-auto sm:max-h-[70vh] object-contain" />
             <div className="bg-black/80 p-5 space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/60">{status.storeName}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/60">{status.storeName}</p>
+                <span className="text-[10px] font-bold text-white/40">· {timeAgo(status.createdAt)}</span>
+              </div>
               {status.caption && <p className="text-sm text-white font-medium leading-relaxed">{status.caption}</p>}
               {status.price && <p className="text-lg font-black text-white">{formatCurrency(status.price)}</p>}
 
@@ -248,6 +271,30 @@ export default function StatusBar() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {isComposerOpen && (
+        <div className="fixed inset-0 z-[210] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-3xl rounded-t-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-black uppercase tracking-widest">Post a status</p>
+              <button
+                onClick={() => setIsComposerOpen(false)}
+                className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <StatusComposer
+              activeCount={ownActiveCount}
+              onPosted={() => {
+                setIsComposerOpen(false);
+                queryClient.invalidateQueries({ queryKey: ["statuses", "active"] });
+              }}
+            />
           </div>
         </div>
       )}
