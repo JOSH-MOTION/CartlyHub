@@ -89,6 +89,11 @@ export default function ProductCard({ product, categories = [] }) {
               Pack of {product.packSize}
             </span>
           )}
+          {product.isPreOrder && (
+            <span className="bg-amber-500/90 backdrop-blur-md text-white border border-amber-500/20 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-[0_4px_10px_rgba(217,119,6,0.2)]">
+              Pre-order
+            </span>
+          )}
           {/* Low stock badges removed */}
         </div>
 

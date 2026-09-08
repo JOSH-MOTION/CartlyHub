@@ -130,7 +130,14 @@ export default function SellerProductsPage() {
                           <img src={p.images?.[0]} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <p className="font-black text-xs uppercase tracking-tight text-gray-900">{p.name}</p>
+                          <p className="font-black text-xs uppercase tracking-tight text-gray-900 flex items-center gap-1.5">
+                            {p.name}
+                            {p.isPreOrder && (
+                              <span className="bg-amber-50 text-amber-700 border border-amber-100 text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">
+                                Pre-order
+                              </span>
+                            )}
+                          </p>
                           <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-1">{p.category_name || "Clothing"}</p>
                         </div>
                       </div>
@@ -198,7 +205,14 @@ export default function SellerProductsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-black text-xs uppercase tracking-tight text-gray-900 truncate">{p.name}</p>
+                          <p className="font-black text-xs uppercase tracking-tight text-gray-900 truncate flex items-center gap-1.5">
+                            {p.name}
+                            {p.isPreOrder && (
+                              <span className="bg-amber-50 text-amber-700 border border-amber-100 text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0">
+                                Pre-order
+                              </span>
+                            )}
+                          </p>
                           <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{p.category_name || "Clothing"}</p>
                         </div>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest ${

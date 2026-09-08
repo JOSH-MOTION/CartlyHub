@@ -466,10 +466,23 @@ export default function ProductDetailClient({ params, productId, initialProduct 
             {/* Seller Info Card */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
               <div className="mb-4">
+                {product.isPreOrder && (
+                  <span className="inline-block bg-amber-500 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full mb-2">
+                    Pre-order
+                  </span>
+                )}
                 <h1 className="text-xl font-black text-black tracking-tight uppercase mb-1">{product.name}</h1>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   Listed in {product.category_name} • {product.region}
                 </p>
+                {product.isPreOrder && product.preOrderNote && (
+                  <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                    <Zap className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-[11px] font-bold text-amber-800 leading-relaxed">
+                      {product.preOrderNote}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center space-x-3 mb-6">

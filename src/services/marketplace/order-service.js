@@ -142,7 +142,11 @@ export const buildOrderGroups = async (cartItems, couponCodes = {}) => {
 
     const { variant, index } = match;
     const available = Number(variant.stock ?? 0);
-    if (available < quantity) {
+    // Pre-order listings have nothing on hand by definition — gating the
+    // purchase on stock would make the feature pointless. A seller who wants
+    // a hard cap on pre-order units still sets a real stock number; only
+    // zero/unset stock is treated as "unlimited pre-order slots".
+    if (!(product.isPreOrder && available === 0) && available < quantity) {
       throw new Error(
         `Only ${available} left of ${product.name}${variant.size ? ` (${variant.size})` : ''}`,
       );
@@ -179,6 +183,11 @@ export const buildOrderGroups = async (cartItems, couponCodes = {}) => {
         color: variant.colorName || variant.color || null,
         hexColor: variant.hexColor || null,
       },
+      // Snapshotted at purchase time — if the seller edits the pre-order
+      // note later, this order's record still reflects what the buyer
+      // actually agreed to when they paid.
+      isPreOrder: Boolean(product.isPreOrder),
+      preOrderNote: product.isPreOrder ? product.preOrderNote || null : null,
     };
 
     const key = vendor.id;

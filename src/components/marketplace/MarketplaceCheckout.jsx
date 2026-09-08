@@ -452,12 +452,22 @@ export default function MarketplaceCheckout({ cart, userProfile, onCancel, onOrd
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-black truncate">{item.productName}</p>
+                        <p className="text-xs font-black truncate">
+                          {item.productName}
+                          {item.isPreOrder && (
+                            <span className="ml-1.5 inline-block bg-amber-100 text-amber-700 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded align-middle">
+                              Pre-order
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                           Qty {item.quantity}
                           {item.variantInfo?.size ? ` • ${item.variantInfo.size}` : ""}
                           {item.variantInfo?.color ? ` • ${item.variantInfo.color}` : ""}
                         </p>
+                        {item.isPreOrder && item.preOrderNote && (
+                          <p className="text-[9px] text-amber-700 font-bold mt-0.5">{item.preOrderNote}</p>
+                        )}
                       </div>
                     </div>
                     <span className="text-right whitespace-nowrap">

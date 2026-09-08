@@ -191,10 +191,11 @@ const itemsTable = (order) => `
         (item) => `
       <tr>
         <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#0f172a;">
-          ${item.productName}
+          ${item.productName}${item.isPreOrder ? ' <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:4px;">Pre-order</span>' : ''}
           <span style="display:block;font-size:11px;color:#94a3b8;margin-top:2px;">
             Qty ${item.quantity}${item.variantInfo?.size ? ` · ${item.variantInfo.size}` : ''}${item.variantInfo?.color ? ` · ${item.variantInfo.color}` : ''}
           </span>
+          ${item.isPreOrder && item.preOrderNote ? `<span style="display:block;font-size:11px;color:#b45309;margin-top:2px;">${item.preOrderNote}</span>` : ''}
         </td>
         <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;font-weight:700;color:#0f172a;text-align:right;white-space:nowrap;">
           ${formatCurrency(item.lineTotal ?? item.price * item.quantity, order.currency)}

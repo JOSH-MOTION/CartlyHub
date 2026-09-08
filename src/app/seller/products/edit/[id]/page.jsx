@@ -60,6 +60,8 @@ export default function SellerEditProductPage({ params }) {
     closure: "",
     color: "",
     isService: false,
+    isPreOrder: false,
+    preOrderNote: "",
     selectedSizes: [],
   });
 
@@ -119,6 +121,8 @@ export default function SellerEditProductPage({ params }) {
         closure: productData.closure || "",
         color: productData.color || "",
         isService: productData.isService || false,
+        isPreOrder: productData.isPreOrder || false,
+        preOrderNote: productData.preOrderNote || "",
       });
     }
   }, [productData]);
@@ -192,6 +196,10 @@ export default function SellerEditProductPage({ params }) {
     }
     if (!form.hasVariants && !form.basePrice) {
       toast.error("Please enter a Selling Price");
+      return false;
+    }
+    if (form.isPreOrder && !form.preOrderNote.trim()) {
+      toast.error("Tell buyers when to expect a pre-order item");
       return false;
     }
     return true;
@@ -482,6 +490,43 @@ export default function SellerEditProductPage({ params }) {
                 </label>
               </div>
             </div>
+
+            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <div>
+                <h4 className="text-sm font-black uppercase tracking-widest text-amber-900 mb-1">
+                  Pre-order
+                </h4>
+                <p className="text-[10px] text-amber-700 font-bold uppercase leading-tight">
+                  Selling something not in stock yet? Buyers can still order — stock isn't required.
+                </p>
+              </div>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 rounded-lg bg-white/10 accent-amber-600"
+                  checked={form.isPreOrder}
+                  onChange={(e) => setForm({ ...form, isPreOrder: e.target.checked })}
+                />
+              </label>
+            </div>
+
+            {form.isPreOrder && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Tell buyers when to expect it *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-black outline-none font-bold text-sm"
+                  placeholder="e.g. Ships in 2-3 weeks after order"
+                  value={form.preOrderNote}
+                  onChange={(e) => setForm({ ...form, preOrderNote: e.target.value })}
+                />
+                <p className="text-[10px] text-gray-400">
+                  Shown on the listing and in the buyer's order confirmation — be specific, it's what they're agreeing to.
+                </p>
+              </div>
+            )}
 
             {!form.hasVariants && !form.isService && (
                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
