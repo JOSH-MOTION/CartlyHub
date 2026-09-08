@@ -23,6 +23,7 @@ import {
   Menu,
   X,
   Ticket,
+  Clock,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { subscribeToNotifications } from "@/utils/marketplaceData";
@@ -52,7 +53,7 @@ export default function SellerLayout({ children }) {
   const RESERVED_SELLER_SEGMENTS = [
     "orders", "products", "inventory", "wallet", "withdrawals",
     "customers", "feedback", "analytics", "settings", "notifications",
-    "onboarding", "coupons",
+    "onboarding", "coupons", "status",
   ];
   const segments = pathname.split("/").filter(Boolean);
   const isLegacyStorefrontRedirect =
@@ -144,6 +145,7 @@ export default function SellerLayout({ children }) {
         { name: "Products", icon: Package, href: "/seller/products" },
         { name: "Inventory", icon: Boxes, href: "/seller/inventory" },
         { name: "Coupons", icon: Ticket, href: "/seller/coupons" },
+        { name: "Status", icon: Clock, href: "/seller/status" },
       ],
     },
     {

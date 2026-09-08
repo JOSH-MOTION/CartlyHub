@@ -9,6 +9,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/expire-statuses",
+      "schedule": "0 4 * * *"
+    },
+    {
       "path": "/api/cron/customer-digest",
       "schedule": "0 8 * * 1"
     },

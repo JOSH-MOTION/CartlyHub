@@ -10,6 +10,7 @@ import { categories } from "../utils/categories";
 import HomeCategorySidebar from "../components/HomeCategorySidebar";
 import MobileCategoryCircles from "../components/MobileCategoryCircles";
 import Navbar from "@/components/Navbar";
+import StatusBar from "@/components/StatusBar";
 import ProductCard from "@/components/ProductCard";
 import FilterSidebar from "@/components/FilterSidebar";
 import Footer from "@/components/Footer";
@@ -85,6 +86,7 @@ export default function HomePage() {
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
       <Navbar />
+      <StatusBar />
 
       <div className="flex-grow flex overflow-hidden">
         {/* Sidebar - Desktop Only */}
