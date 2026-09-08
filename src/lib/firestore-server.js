@@ -41,7 +41,6 @@ const hasAdminCredentials = Boolean(
 );
 
 let adminDb = null;
-let adminApp = null;
 
 if (hasAdminCredentials) {
   try {
@@ -58,7 +57,6 @@ if (hasAdminCredentials) {
         });
 
     adminDb = getFirestore(app);
-    adminApp = app;
   } catch (error) {
     console.error(
       '[firestore-server] Admin SDK failed to initialise, falling back to the web SDK. ' +
@@ -79,9 +77,6 @@ if (hasAdminCredentials) {
 }
 
 export const isAdminSdk = Boolean(adminDb);
-
-/** The initialized Admin SDK app, for services that need more than Firestore (e.g. Admin Auth for password resets). Null when running on the web-SDK fallback. */
-export const getAdminApp = () => adminApp;
 
 // ---------------------------------------------------------------------------
 // Web SDK fallback: hand back the real thing unchanged.

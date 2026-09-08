@@ -4,13 +4,6 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'res.cloudinary.com', 'firebasestorage.googleapis.com'],
   },
-  // firebase-admin/auth pulls in jwks-rsa -> jose (ESM-only), which webpack's
-  // bundling of serverless functions can't require() — ERR_REQUIRE_ESM in
-  // production even though it builds fine locally. Excluding firebase-admin
-  // from bundling lets Node resolve it natively at runtime instead.
-  experimental: {
-    serverComponentsExternalPackages: ['firebase-admin'],
-  },
   async rewrites() {
     return [
       {
