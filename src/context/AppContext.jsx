@@ -324,9 +324,18 @@ export const AppProvider = ({ children }) => {
         whatsappNumber: storeData.whatsappNumber,
       });
 
+      // storeName ends up in URLs (/store/[name]) and link-preview lookups,
+      // which do exact string matching — an untrimmed value (a stray leading
+      // or trailing space from the input) silently breaks both.
+      const TRIMMED_FIELDS = ['storeName', 'ownerName', 'description', 'location', 'region', 'contactEmail'];
+      const trimmed = { ...storeData };
+      TRIMMED_FIELDS.forEach((field) => {
+        if (typeof trimmed[field] === 'string') trimmed[field] = trimmed[field].trim();
+      });
+
       const sellerData = {
         uid: user.id,
-        ...storeData,
+        ...trimmed,
         ...preferences,
         isVerified: false,
         isSuspended: false,

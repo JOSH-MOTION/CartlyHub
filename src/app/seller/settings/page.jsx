@@ -159,16 +159,31 @@ export default function SellerSettingsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.storeName || !form.ownerName || !form.contactPhone) {
+
+    // storeName ends up in URLs (/store/[name]) and link-preview lookups,
+    // which do exact string matching — a stray leading/trailing space from
+    // the input silently breaks both.
+    const trimmedForm = {
+      ...form,
+      storeName: form.storeName.trim(),
+      ownerName: form.ownerName.trim(),
+      description: form.description.trim(),
+      contactPhone: form.contactPhone.trim(),
+      contactEmail: form.contactEmail.trim(),
+      location: form.location.trim(),
+    };
+
+    if (!trimmedForm.storeName || !trimmedForm.ownerName || !trimmedForm.contactPhone) {
       toast.error("Required fields missing");
       return;
     }
 
+    setForm(trimmedForm);
     setIsSubmitting(true);
     try {
       // 1. Update seller profile. The WhatsApp number is owned by the
       // Selling & Payment Preferences card above, so it is not written here.
-      const { whatsappNumber: _managedSeparately, ...profileFields } = form;
+      const { whatsappNumber: _managedSeparately, ...profileFields } = trimmedForm;
       const sellerRef = doc(db, "sellers", user.id);
       await updateDoc(sellerRef, {
         ...profileFields,
@@ -178,13 +193,13 @@ export default function SellerSettingsPage() {
       // 2. Query and update all products belonging to this seller
       const productsQuery = query(collection(db, "products"), where("sellerId", "==", user.id));
       const productsSnap = await getDocs(productsQuery);
-      const productPromises = productsSnap.docs.map((docSnap) => 
+      const productPromises = productsSnap.docs.map((docSnap) =>
         updateDoc(docSnap.ref, {
-          sellerName: form.storeName,
-          sellerPhone: form.contactPhone,
-          sellerEmail: form.contactEmail || "",
-          region: form.region,
-          location: form.location
+          sellerName: trimmedForm.storeName,
+          sellerPhone: trimmedForm.contactPhone,
+          sellerEmail: trimmedForm.contactEmail || "",
+          region: trimmedForm.region,
+          location: trimmedForm.location
         })
       );
 
@@ -193,7 +208,7 @@ export default function SellerSettingsPage() {
       const reviewsSnap = await getDocs(reviewsQuery);
       const reviewPromises = reviewsSnap.docs.map((docSnap) =>
         updateDoc(docSnap.ref, {
-          sellerName: form.storeName
+          sellerName: trimmedForm.storeName
         })
       );
 
