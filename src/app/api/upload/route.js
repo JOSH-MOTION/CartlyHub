@@ -41,6 +41,7 @@ async function uploadToCloudinary({ url, buffer, base64 }) {
       if (result) {
         return {
           url: result.secure_url,
+          publicId: result.public_id,
           mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
         };
       }
@@ -76,6 +77,7 @@ async function uploadToCloudinary({ url, buffer, base64 }) {
     const result = await response.json();
     return {
       url: result.secure_url,
+      publicId: result.public_id,
       mimeType: result.resource_type === 'image' ? `image/${result.format}` : result.resource_type
     };
 
