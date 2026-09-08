@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, MessageCircle, Send } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
 import { apiFetch } from "@/utils/apiClient";
+import ThreadThumbnail from "@/components/ThreadThumbnail";
 
 export default function ThreadPage({ params }) {
   const { user, isLoading: authLoading } = useApp();
@@ -76,9 +77,7 @@ export default function ThreadPage({ params }) {
           <button onClick={() => router.push("/messages")} aria-label="Back to messages" className="p-1">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          {thread?.statusImage && (
-            <img src={thread.statusImage} alt="" className="h-9 w-9 rounded-xl object-cover border border-gray-100" />
-          )}
+          <ThreadThumbnail src={thread?.statusImage} className="h-9 w-9 rounded-xl border border-gray-100" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black truncate">{otherName}</p>
             {thread?.statusCaption && <p className="text-[10px] text-gray-400 truncate">{thread.statusCaption}</p>}

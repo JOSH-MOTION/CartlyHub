@@ -7,6 +7,7 @@ import { Loader2, MessageCircle, ChevronRight } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
 import { apiFetch } from "@/utils/apiClient";
+import ThreadThumbnail from "@/components/ThreadThumbnail";
 
 export default function MessagesListPage() {
   const { user, isLoading: authLoading } = useApp();
@@ -69,9 +70,7 @@ export default function MessagesListPage() {
                   onClick={() => router.push(`/messages/${thread.id}`)}
                   className="w-full text-left p-5 sm:p-6 flex items-center gap-4 group first:rounded-t-[2rem] last:rounded-b-[2rem] hover:bg-gray-50 transition-colors"
                 >
-                  <div className="h-11 w-11 rounded-2xl bg-gray-100 overflow-hidden shrink-0">
-                    {thread.statusImage && <img src={thread.statusImage} alt="" className="w-full h-full object-cover" />}
-                  </div>
+                  <ThreadThumbnail src={thread.statusImage} className="h-11 w-11 rounded-2xl shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-black truncate">{otherName}</p>
                     <p className="text-xs text-gray-500 truncate mt-0.5">
