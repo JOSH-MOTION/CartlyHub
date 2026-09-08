@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, orderBy, limit, setDoc, Timestamp } from '../../lib/firestore-server';
+import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, setDoc, Timestamp } from '../../lib/firestore-server';
 import {
   sendAnnouncementEmail,
   sendProductSpotlightEmail,
@@ -85,16 +85,22 @@ export const processEmailQueue = async () => {
   const { ref: quotaRef, sentToday: startingSentToday, remaining } = await getRemainingQuota();
   if (remaining <= 0) return { processed: 0, sent: 0, failed: 0, remaining: 0 };
 
-  const snap = await getDocs(
-    query(collection(db, QUEUE), where('status', '==', 'pending'), orderBy('createdAt', 'asc'), limit(remaining)),
-  );
+  // Filtering on `status` and ordering by `createdAt` together needs a
+  // composite index Firestore won't build automatically — sorting the
+  // (small) pending set in memory avoids that, same reasoning as
+  // notification-service.js's listNotifications.
+  const pendingSnap = await getDocs(query(collection(db, QUEUE), where('status', '==', 'pending')));
+  const docs = pendingSnap.docs
+    .slice()
+    .sort((a, b) => (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0))
+    .slice(0, remaining);
 
   let sent = 0;
   let failed = 0;
   let sentToday = startingSentToday;
 
-  for (let i = 0; i < snap.docs.length; i++) {
-    const item = snap.docs[i];
+  for (let i = 0; i < docs.length; i++) {
+    const item = docs[i];
     const { type, payload } = item.data();
 
     try {
@@ -122,10 +128,10 @@ export const processEmailQueue = async () => {
       failed++;
     }
 
-    if (i < snap.docs.length - 1) await sleep(SEND_DELAY_MS);
+    if (i < docs.length - 1) await sleep(SEND_DELAY_MS);
   }
 
-  return { processed: snap.docs.length, sent, failed, remaining: Math.max(0, DAILY_LIMIT - sentToday) };
+  return { processed: docs.length, sent, failed, remaining: Math.max(0, DAILY_LIMIT - sentToday) };
 };
 
 /** For visibility — how much of today's budget is left, and how big the backlog is. */
