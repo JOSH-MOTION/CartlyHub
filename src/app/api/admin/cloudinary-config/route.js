@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
+import { requireAdmin } from '@/app/api/_lib/auth';
+import { fail } from '@/app/api/_lib/respond';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +11,13 @@ export const dynamic = 'force-dynamic';
  * to confirm status-service.js's deletion path can actually work, without
  * needing a real image or a seller-authenticated request to test it.
  */
-export async function GET() {
+export async function GET(request) {
+  try {
+    await requireAdmin(request);
+  } catch (error) {
+    return fail(error, 400);
+  }
+
   const hasKey = Boolean(process.env.CLOUDINARY_API_KEY);
   const hasSecret = Boolean(process.env.CLOUDINARY_API_SECRET);
 

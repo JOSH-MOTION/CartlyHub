@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { usingResend } from '@/services/marketplace/email-service';
 import { isAdminSdk } from '@/lib/firestore-server';
+import { requireAdmin } from '@/app/api/_lib/auth';
+import { fail } from '@/app/api/_lib/respond';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +11,13 @@ export const dynamic = 'force-dynamic';
  * actually use, without sending anything. Exists so "is Resend wired?" can
  * be checked without re-broadcasting to every seller/customer each time.
  */
-export async function GET() {
+export async function GET(request) {
+  try {
+    await requireAdmin(request);
+  } catch (error) {
+    return fail(error, 400);
+  }
+
   return NextResponse.json({
     provider: usingResend() ? 'resend' : 'gmail',
     hasResendKey: Boolean(process.env.RESEND_API_KEY),

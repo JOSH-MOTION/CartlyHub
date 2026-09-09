@@ -3,6 +3,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   limit as fsLimit,
   query,
@@ -17,11 +18,16 @@ import {
   ORDER_STATUS_LABELS,
 } from './constants';
 import { formatCurrency } from '../payments/money';
+import { sendExpoPush } from '../../lib/expo-push';
 
 /**
  * In-app notifications. Every notification carries a call-to-action so the
  * bell menu can render a "View order" / "View withdrawal" button without the
  * UI needing to know anything about notification types.
+ *
+ * A push is fired alongside every notification here (best-effort — never
+ * blocks the write or the caller) so a mobile user with the app backgrounded
+ * or killed still hears about it, not just someone with it open.
  */
 export const createNotification = async ({
   userId,
@@ -49,6 +55,18 @@ export const createNotification = async ({
   };
 
   const ref = await addDoc(collection(db, COLLECTIONS.NOTIFICATIONS), payload);
+
+  // Awaited, not fire-and-forget: a serverless function can be frozen the
+  // instant it returns, so a detached promise here would routinely never
+  // actually finish sending in production even though it looks fine locally.
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const token = userSnap.exists() ? userSnap.data().expoPushToken : null;
+    if (token) await sendExpoPush({ to: token, title, body: message, data: { ctaHref, ...data } });
+  } catch (error) {
+    console.error('[notifications] push lookup failed', error.message);
+  }
+
   return { id: ref.id, ...payload };
 };
 
