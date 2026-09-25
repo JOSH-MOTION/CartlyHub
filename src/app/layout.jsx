@@ -49,7 +49,8 @@ export const metadata = {
   ],
   authors: [{ name: "Cartly Hub" }],
   alternates: {
-    canonical: siteUrl,
+    // "./" resolves to each page's own URL (not always the homepage)
+    canonical: "./",
   },
   openGraph: {
     title: "Cartly Hub | Ghana's #1 Online Shopping Marketplace",

@@ -4,6 +4,18 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'res.cloudinary.com', 'firebasestorage.googleapis.com'],
   },
+  async redirects() {
+    // Send the old Vercel address to the real domain so Google indexes cartlyhubgh.com.
+    // /api is excluded so crons and webhooks hitting the vercel.app host keep working.
+    return [
+      {
+        source: '/:path((?!api/).*)',
+        has: [{ type: 'host', value: 'cartly-hub.vercel.app' }],
+        destination: 'https://cartlyhubgh.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
